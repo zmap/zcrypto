@@ -27,8 +27,10 @@ import (
 	"net"
 	"strconv"
 	"time"
+	_"fmt"
 
 	"github.com/zmap/zgrab/ztools/x509/pkix"
+	"github.com/zmap/zgrab/ztools/zct"
 )
 
 // pkixPublicKey reflects a PKIX public key structure. See SubjectPublicKeyInfo
@@ -150,6 +152,7 @@ type publicKeyInfo struct {
 	Algorithm pkix.AlgorithmIdentifier
 	PublicKey asn1.BitString
 }
+
 
 // RFC 5280,  4.2.1.1
 type authKeyId struct {
@@ -563,6 +566,9 @@ type Certificate struct {
 
 	// Internal
 	validSignature bool
+
+	// CT
+	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp
 }
 
 // ErrUnsupportedAlgorithm results from attempting to perform an operation that
@@ -1124,6 +1130,31 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 					out.IssuingCertificateURL = append(out.IssuingCertificateURL, string(v.Location.Bytes))
 				}
 			}
+		} else if e.Id.Equal(oidExtSignedCertificateTimestampList) {
+			// SignedCertificateTimestamp
+			//var scts asn1.RawValue
+			var scts []byte;
+			if _, err = asn1.Unmarshal(e.Value, &scts); err != nil {
+				return nil, err
+			}
+			// ignore length of
+			scts = scts[2:]
+			for len(scts) > 0 {
+				length := int(scts[1]) + (int(scts[0]) << 8)
+				//var sct *ct.SignedCertificateTimestamp
+				sct, err := ct.DeserializeSCT(bytes.NewReader(scts[2:length+2]))
+				if err != nil {
+					return nil, err
+				}
+				scts = scts[2+length:]
+				out.SignedCertificateTimestampList = append(out.SignedCertificateTimestampList, sct)
+			}
+
+			//for _, raw := range scts {
+			//	var v asn1.RawValue
+			//	raw, err = asn1.Unmarshal(raw, &v)
+			//	//fmt.Printf("fuck %i\n", v)
+			//}
 		}
 
 		if e.Critical {
@@ -1183,16 +1214,17 @@ func reverseBitsInAByte(in byte) byte {
 }
 
 var (
-	oidExtensionSubjectKeyId          = []int{2, 5, 29, 14}
-	oidExtensionKeyUsage              = []int{2, 5, 29, 15}
-	oidExtensionExtendedKeyUsage      = []int{2, 5, 29, 37}
-	oidExtensionAuthorityKeyId        = []int{2, 5, 29, 35}
-	oidExtensionBasicConstraints      = []int{2, 5, 29, 19}
-	oidExtensionSubjectAltName        = []int{2, 5, 29, 17}
-	oidExtensionCertificatePolicies   = []int{2, 5, 29, 32}
-	oidExtensionNameConstraints       = []int{2, 5, 29, 30}
-	oidExtensionCRLDistributionPoints = []int{2, 5, 29, 31}
-	oidExtensionAuthorityInfoAccess   = []int{1, 3, 6, 1, 5, 5, 7, 1, 1}
+	oidExtensionSubjectKeyId             = []int{2, 5, 29, 14}
+	oidExtensionKeyUsage                 = []int{2, 5, 29, 15}
+	oidExtensionExtendedKeyUsage         = []int{2, 5, 29, 37}
+	oidExtensionAuthorityKeyId           = []int{2, 5, 29, 35}
+	oidExtensionBasicConstraints         = []int{2, 5, 29, 19}
+	oidExtensionSubjectAltName           = []int{2, 5, 29, 17}
+	oidExtensionCertificatePolicies      = []int{2, 5, 29, 32}
+	oidExtensionNameConstraints          = []int{2, 5, 29, 30}
+	oidExtensionCRLDistributionPoints    = []int{2, 5, 29, 31}
+	oidExtensionAuthorityInfoAccess      = []int{1, 3, 6, 1, 5, 5, 7, 1, 1}
+	oidExtSignedCertificateTimestampList = []int{1, 3, 6, 1, 4, 1, 11129, 2, 4, 2}
 )
 
 var (
