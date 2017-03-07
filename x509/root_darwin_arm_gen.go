@@ -29,7 +29,7 @@ import (
 	"os/exec"
 	"strings"
 	
-	"github.com/zmap/zgrab/ztools/x509"
+	"github.com/zmap/zcrypto/x509"
 )
 
 var output = flag.String("output", "root_darwin_armx.go", "file name to write")

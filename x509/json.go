@@ -17,7 +17,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/zmap/zgrab/ztools/keys"
-	"github.com/zmap/zgrab/ztools/x509/pkix"
+	"github.com/zmap/zcrypto/x509/pkix"
 )
 
 type auxKeyUsage struct {
