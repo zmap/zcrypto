@@ -102,7 +102,7 @@ func (ka *dheKeyAgreement) DHParams() *keys.DHParams {
 	}
 	if ka.yServer != nil {
 		out.ServerPublic = new(big.Int).Set(ka.yServer)
-		if ka.yOurs != nil && ka.yServer.Cmp(ka.yOurs) == 0 && ka.xOurs != nil {
+		if ka.yOurs != nil && ka.xOurs != nil && ka.yServer.Cmp(ka.yOurs) == 0 {
 			out.ServerPrivate = new(big.Int).Set(ka.xOurs)
 		}
 	}
@@ -119,7 +119,7 @@ func (ka *dheKeyAgreement) ClientDHParams() *keys.DHParams {
 	}
 	if ka.yClient != nil {
 		out.ClientPublic = new(big.Int).Set(ka.yClient)
-		if ka.yOurs != nil && ka.yClient.Cmp(ka.yOurs) == 0 && ka.xOurs != nil {
+		if ka.yOurs != nil && ka.xOurs != nil && ka.yClient.Cmp(ka.yOurs) == 0 {
 			out.ClientPrivate = new(big.Int).Set(ka.xOurs)
 		}
 	}
