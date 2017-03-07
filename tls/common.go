@@ -435,6 +435,10 @@ type Config struct {
 	// supported for ECDHE key exchanges
 	ExplicitCurvePreferences bool
 
+	// If enabled, specifies the signature and hash algorithms to be accepted by
+	// a server, or sent by a client
+	SignatureAndHashes []signatureAndHash
+
 	serverInitOnce sync.Once // guards calling (*Config).serverInit
 
 	// Add all ciphers in CipherSuites to Client Hello even if unimplemented
@@ -739,20 +743,16 @@ func (c *Config) getCertificateForName(name string) *Certificate {
 }
 
 func (c *Config) signatureAndHashesForServer() []signatureAndHash {
-	/*
-		if c != nil && c.SignatureAndHashes != nil {
-			return c.SignatureAndHashes
-		}
-	*/
+	if c != nil && c.SignatureAndHashes != nil {
+		return c.SignatureAndHashes
+	}
 	return supportedClientCertSignatureAlgorithms
 }
 
 func (c *Config) signatureAndHashesForClient() []signatureAndHash {
-	/*
-		if c != nil && c.SignatureAndHashes != nil {
-			return c.SignatureAndHashes
-		}
-	*/
+	if c != nil && c.SignatureAndHashes != nil {
+		return c.SignatureAndHashes
+	}
 	if c.ClientDSAEnabled {
 		return supportedSKXSignatureAlgorithms
 	}
