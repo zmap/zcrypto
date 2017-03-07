@@ -159,9 +159,11 @@ func (e *ExtendedMasterSecretExtension) Marshal() []byte {
 }
 
 type NextProtocolNegotiationExtension struct {
+	Protocols []string
 }
 
 func (e *NextProtocolNegotiationExtension) WriteToConfig(c *Config) error {
+	c.NextProtos = e.Protocols
 	return nil
 }
 
