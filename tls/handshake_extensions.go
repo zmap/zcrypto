@@ -159,9 +159,11 @@ func (e *ExtendedMasterSecretExtension) Marshal() []byte {
 }
 
 type NextProtocolNegotiationExtension struct {
+	Protocols []string
 }
 
 func (e *NextProtocolNegotiationExtension) WriteToConfig(c *Config) error {
+	c.NextProtos = e.Protocols
 	return nil
 }
 
@@ -346,8 +348,7 @@ type SignatureAlgorithmExtension struct {
 }
 
 func (e *SignatureAlgorithmExtension) WriteToConfig(c *Config) error {
-	supportedSKXSignatureAlgorithms = e.getStructuredAlgorithms()
-	defaultSKXSignatureAlgorithms = e.getStructuredAlgorithms()
+	c.SignatureAndHashes = e.getStructuredAlgorithms()
 	return nil
 }
 

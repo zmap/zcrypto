@@ -14,6 +14,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/asn1"
 	"errors"
 	"io"
@@ -196,6 +197,15 @@ func (ka *rsaKeyAgreement) generateClientKeyExchange(config *Config, clientHello
 }
 
 // sha1Hash calculates a SHA1 hash over the given byte slices.
+func md5Hash(slices [][]byte) []byte {
+	h := md5.New()
+	for _, slice := range slices {
+		h.Write(slice)
+	}
+	return h.Sum(nil)
+}
+
+// sha1Hash calculates a SHA1 hash over the given byte slices.
 func sha1Hash(slices [][]byte) []byte {
 	hsha1 := sha1.New()
 	for _, slice := range slices {
@@ -217,9 +227,36 @@ func md5SHA1Hash(slices [][]byte) []byte {
 	return md5sha1
 }
 
+// sha224Hash implements TLS 1.2's hash function.
+func sha224Hash(slices [][]byte) []byte {
+	h := crypto.SHA224.New()
+	for _, slice := range slices {
+		h.Write(slice)
+	}
+	return h.Sum(nil)
+}
+
 // sha256Hash implements TLS 1.2's hash function.
 func sha256Hash(slices [][]byte) []byte {
 	h := sha256.New()
+	for _, slice := range slices {
+		h.Write(slice)
+	}
+	return h.Sum(nil)
+}
+
+// sha256Hash implements TLS 1.2's hash function.
+func sha384Hash(slices [][]byte) []byte {
+	h := crypto.SHA384.New()
+	for _, slice := range slices {
+		h.Write(slice)
+	}
+	return h.Sum(nil)
+}
+
+// sha512Hash implements TLS 1.2's hash function.
+func sha512Hash(slices [][]byte) []byte {
+	h := sha512.New()
 	for _, slice := range slices {
 		h.Write(slice)
 	}
@@ -232,10 +269,18 @@ func sha256Hash(slices [][]byte) []byte {
 func hashForServerKeyExchange(sigType, hashFunc uint8, version uint16, slices ...[]byte) ([]byte, crypto.Hash, error) {
 	if version >= VersionTLS12 {
 		switch hashFunc {
+		case hashSHA512:
+			return sha512Hash(slices), crypto.SHA512, nil
+		case hashSHA384:
+			return sha384Hash(slices), crypto.SHA384, nil
 		case hashSHA256:
 			return sha256Hash(slices), crypto.SHA256, nil
+		case hashSHA224:
+			return sha224Hash(slices), crypto.SHA224, nil
 		case hashSHA1:
 			return sha1Hash(slices), crypto.SHA1, nil
+		case hashMD5:
+			return md5Hash(slices), crypto.MD5, nil
 		default:
 			return nil, crypto.Hash(0), errors.New("tls: unknown hash function used by peer")
 		}

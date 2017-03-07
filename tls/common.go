@@ -228,11 +228,24 @@ type signatureAndHash struct {
 // supportedSKXSignatureAlgorithms contains the signature and hash algorithms
 // that the code advertises as supported in a TLS 1.2 ClientHello.
 var supportedSKXSignatureAlgorithms = []signatureAndHash{
+	{signatureRSA, hashSHA512},
+	{signatureECDSA, hashSHA512},
+	{signatureDSA, hashSHA512},
+	{signatureRSA, hashSHA384},
+	{signatureECDSA, hashSHA384},
+	{signatureDSA, hashSHA384},
 	{signatureRSA, hashSHA256},
 	{signatureECDSA, hashSHA256},
+	{signatureDSA, hashSHA256},
+	{signatureRSA, hashSHA224},
+	{signatureECDSA, hashSHA224},
+	{signatureDSA, hashSHA224},
 	{signatureRSA, hashSHA1},
 	{signatureECDSA, hashSHA1},
 	{signatureDSA, hashSHA1},
+	{signatureRSA, hashMD5},
+	{signatureECDSA, hashMD5},
+	{signatureDSA, hashMD5},
 }
 
 var defaultSKXSignatureAlgorithms = []signatureAndHash{
@@ -421,6 +434,10 @@ type Config struct {
 	// If enabled, empty CurvePreferences indicates that there are no curves
 	// supported for ECDHE key exchanges
 	ExplicitCurvePreferences bool
+
+	// If enabled, specifies the signature and hash algorithms to be accepted by
+	// a server, or sent by a client
+	SignatureAndHashes []signatureAndHash
 
 	serverInitOnce sync.Once // guards calling (*Config).serverInit
 
@@ -726,20 +743,16 @@ func (c *Config) getCertificateForName(name string) *Certificate {
 }
 
 func (c *Config) signatureAndHashesForServer() []signatureAndHash {
-	/*
-		if c != nil && c.SignatureAndHashes != nil {
-			return c.SignatureAndHashes
-		}
-	*/
+	if c != nil && c.SignatureAndHashes != nil {
+		return c.SignatureAndHashes
+	}
 	return supportedClientCertSignatureAlgorithms
 }
 
 func (c *Config) signatureAndHashesForClient() []signatureAndHash {
-	/*
-		if c != nil && c.SignatureAndHashes != nil {
-			return c.SignatureAndHashes
-		}
-	*/
+	if c != nil && c.SignatureAndHashes != nil {
+		return c.SignatureAndHashes
+	}
 	if c.ClientDSAEnabled {
 		return supportedSKXSignatureAlgorithms
 	}
