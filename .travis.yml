@@ -2,6 +2,6 @@ language: go
 go: 
     - 1.7.4
 install:
-    go get github.com/zmap/zcrypto
+    go get github.com/zmap/zcrypto/tls
 test:
     go test -v ./...

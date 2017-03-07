@@ -1,6 +1,6 @@
 #zcrypto
 
-[![Build Status](https://travis-ci.org/zmap/zcrypto.zvg?branch=master)](https://travis-ci.org/zmap/zcrypto)
+[![Build Status](https://travis-ci.org/zmap/zcrypto.svg?branch=master)](https://travis-ci.org/zmap/zcrypto)
 
 Don't roll your own crypto, they said. 
 
