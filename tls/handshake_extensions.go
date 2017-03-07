@@ -346,8 +346,7 @@ type SignatureAlgorithmExtension struct {
 }
 
 func (e *SignatureAlgorithmExtension) WriteToConfig(c *Config) error {
-	supportedSKXSignatureAlgorithms = e.getStructuredAlgorithms()
-	defaultSKXSignatureAlgorithms = e.getStructuredAlgorithms()
+	c.SignatureAndHashes = e.getStructuredAlgorithms()
 	return nil
 }
 
