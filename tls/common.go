@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zmap/zgrab/ztools/x509"
+	"github.com/zmap/zcrypto/x509"
 )
 
 const (

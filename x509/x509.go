@@ -29,7 +29,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/zmap/zgrab/ztools/x509/pkix"
+	"github.com/zmap/zcrypto/x509/pkix"
 	"github.com/zmap/zgrab/ztools/zct"
 	//	"github.com/google/certificate-transparency/go"
 )
