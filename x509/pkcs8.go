@@ -9,7 +9,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/zmap/zgrab/ztools/x509/pkix"
+	"github.com/zmap/zcrypto/x509/pkix"
 )
 
 // pkcs8 reflects an ASN.1, PKCS#8 PrivateKey. See
