@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package ztls
+package tls
 
 import (
 	"container/list"
@@ -1016,7 +1016,7 @@ type ClientHelloInfo struct {
 	// connection to fail.
 	Conn net.Conn
 
-	// Add a pointer to the entire ztls handshake structure so that it can
+	// Add a pointer to the entire tls handshake structure so that it can
 	// be retrieved without hijacking the connection from higher-level
 	// packages
 	HandshakeLog *ServerHandshake
@@ -1125,7 +1125,7 @@ func (info *ClientHelloInfo) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// FakeConn and FakeAddr are to allow unmarshaling of ztls objects that contain
+// FakeConn and FakeAddr are to allow unmarshaling of tls objects that contain
 // net.Conn objects
 // With the exeption of recovering the net.Addr strings contained in the JSON,
 // any attempt to use these objects will result in a runtime panic()

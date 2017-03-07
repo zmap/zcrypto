@@ -1,4 +1,4 @@
-package ztls
+package tls
 
 import (
 	"errors"

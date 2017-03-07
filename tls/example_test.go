@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package ztls_test
+package tls_test
 
 import (
 	"github.com/zmap/zgrab/ztools/x509"
-	"github.com/zmap/zgrab/ztools/ztls"
+	"github.com/zmap/zcrypto/tls"
 )
 
 func ExampleDial() {
@@ -47,7 +47,7 @@ yuGnBXj8ytqU0CwIPX4WecigUCAkVDNx
 		panic("failed to parse root certificate")
 	}
 
-	conn, err := ztls.Dial("tcp", "mail.google.com:443", &ztls.Config{
+	conn, err := tls.Dial("tcp", "mail.google.com:443", &tls.Config{
 		RootCAs: roots,
 	})
 	if err != nil {

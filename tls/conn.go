@@ -4,7 +4,7 @@
 
 // TLS low level connection and record layer
 
-package ztls
+package tls
 
 import (
 	"bytes"
@@ -56,7 +56,7 @@ type Conn struct {
 
 	tmp [16]byte
 
-	// ztls
+	// tls
 	heartbeat     bool
 	handshakeLog  *ServerHandshake
 	heartbleedLog *Heartbleed
