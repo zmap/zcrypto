@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zmap/zcrypto/x509/pkix"
 	"github.com/zmap/zcrypto/ct"
+	"github.com/zmap/zcrypto/x509/pkix"
 )
 
 var (
@@ -34,10 +34,6 @@ var (
 )
 
 type encodedUnknownExtensions []encodedUnknownExtension
-
-type ExtendedKeyUsageExtension struct {
-	Value ExtendedKeyUsage `json:"value,omitempty"`
-}
 
 type CertificateExtensions struct {
 	KeyUsage                       KeyUsage                         `json:"key_usage,omitempty"`
@@ -350,6 +346,35 @@ func (kid SubjAuthKeyId) MarshalJSON() ([]byte, error) {
 
 type ExtendedKeyUsage []ExtKeyUsage
 
+type ExtendedKeyUsageExtension struct {
+	Known   ExtendedKeyUsage
+	Unknown []asn1.ObjectIdentifier
+}
+
+// MarshalJSON implements the json.Marshal interface. The output is a struct of
+// bools, with an additional `Value` field containing the actual OIDs.
+func (e *ExtendedKeyUsageExtension) MarshalJSON() ([]byte, error) {
+	aux := new(auxExtendedKeyUsage)
+	for _, e := range e.Known {
+		aux.populateFromExtKeyUsage(e)
+	}
+	for _, oid := range e.Unknown {
+		aux.Unknown = append(aux.Unknown, oid.String())
+	}
+	return json.Marshal(aux)
+}
+
+func (e *ExtendedKeyUsageExtension) UnmarshalJSON(b []byte) error {
+	aux := new(auxExtendedKeyUsage)
+	if err := json.Unmarshal(b, aux); err != nil {
+		return err
+	}
+	// TODO: Generate the reverse functions.
+	return nil
+}
+
+//go:generate go run extended_key_usage_gen.go
+
 // The string functions for CertValidationLevel are auto-generated via
 // `go generate <full_path_to_x509_package>` or running `go generate` in the package directory
 //go:generate stringer -type=CertValidationLevel -output=generated_certvalidationlevel_string.go
@@ -604,7 +629,8 @@ func (c *Certificate) jsonifyExtensions() (*CertificateExtensions, UnknownCertif
 			exts.AuthKeyID = c.AuthorityKeyId
 		} else if e.Id.Equal(oidExtExtendedKeyUsage) {
 			exts.ExtendedKeyUsage = new(ExtendedKeyUsageExtension)
-			exts.ExtendedKeyUsage.Value = c.ExtKeyUsage
+			exts.ExtendedKeyUsage.Known = c.ExtKeyUsage
+			exts.ExtendedKeyUsage.Unknown = c.UnknownExtKeyUsage
 		} else if e.Id.Equal(oidExtCertificatePolicy) {
 			exts.CertificatePolicies.PolicyIdentifiers = c.PolicyIdentifiers
 			exts.CertificatePolicies.NoticeRefNumbers = c.NoticeRefNumbers
