@@ -14,7 +14,7 @@ import (
 
 	"github.com/zmap/zgrab/ztools/keys"
 	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zgrab/ztools/zct"
+	"github.com/zmap/zcrypto/ct"
 )
 
 var ErrUnimplementedCipher error = errors.New("unimplemented cipher suite")
