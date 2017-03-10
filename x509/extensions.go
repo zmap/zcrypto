@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/zmap/zcrypto/x509/pkix"
-	"github.com/zmap/zgrab/ztools/zct"
+	"github.com/zmap/zcrypto/ct"
 )
 
 var (
