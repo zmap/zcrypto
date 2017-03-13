@@ -444,25 +444,8 @@ const (
 // Each of the ExtKeyUsage* constants define a unique action.
 type ExtKeyUsage int
 
-/*
-const (
-	ExtKeyUsageAny ExtKeyUsage = iota
-	ExtKeyUsageServerAuth
-	ExtKeyUsageClientAuth
-	ExtKeyUsageCodeSigning
-	ExtKeyUsageEmailProtection
-	ExtKeyUsageIpsecEndSystem
-	ExtKeyUsageIpsecTunnel
-	ExtKeyUsageIpsecUser
-	ExtKeyUsageTimeStamping
-	ExtKeyUsageOCSPSigning
-	ExtKeyUsageMicrosoftServerGatedCrypto
-	ExtKeyUsageNetscapeServerGatedCrypto
-)
-*/
-
 // extKeyUsageOIDs contains the mapping between an ExtKeyUsage and its OID.
-var extKeyUsageOIDs = []struct {
+var nativeExtKeyUsageOIDs = []struct {
 	extKeyUsage ExtKeyUsage
 	oid         asn1.ObjectIdentifier
 }{
@@ -481,16 +464,13 @@ var extKeyUsageOIDs = []struct {
 }
 
 func extKeyUsageFromOID(oid asn1.ObjectIdentifier) (eku ExtKeyUsage, ok bool) {
-	for _, pair := range extKeyUsageOIDs {
-		if oid.Equal(pair.oid) {
-			return pair.extKeyUsage, true
-		}
-	}
+	s := oid.String()
+	eku, ok = ekuConstants[s]
 	return
 }
 
 func oidFromExtKeyUsage(eku ExtKeyUsage) (oid asn1.ObjectIdentifier, ok bool) {
-	for _, pair := range extKeyUsageOIDs {
+	for _, pair := range nativeExtKeyUsageOIDs {
 		if eku == pair.extKeyUsage {
 			return pair.oid, true
 		}
