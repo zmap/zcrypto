@@ -14,4 +14,4 @@
 
 // Package browser performs detailed certificate validation mimicking the
 // behavior of popular browsers and root stores.
-package browser
+package verifier

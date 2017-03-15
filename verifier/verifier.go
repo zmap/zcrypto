@@ -12,7 +12,7 @@
  * permissions and limitations under the License.
  */
 
-package browser
+package verifier
 
 import (
 	"time"
@@ -21,7 +21,7 @@ import (
 )
 
 // VerificationResult contains the result of a verification of a certificate
-// against a Browser. It discerns between NameError, meaning the name on the
+// against a browser. It discerns between NameError, meaning the name on the
 // certificate does not match, and a ValidationError, meaning some sort of issue
 // with the cryptography, or other issues with the chain.
 type VerificationResult struct {
@@ -58,9 +58,9 @@ func (res *VerificationResult) MatchesDomain() bool {
 	return res.NameError == nil && res.Name != ""
 }
 
-// Verifier is an interface to implement additional browser specific logic at
+// VerifyProcedure is an interface to implement additional browser specific logic at
 // the start and end of verification.
-type Verifier interface {
+type VerifyProcedure interface {
 	PreValidate(c *x509.Certificate) error
 	PostValidate(c *x509.Certificate, chains [][]*x509.Certificate) error
 }
@@ -78,20 +78,20 @@ func (opt *VerificationOptions) clean() {
 	}
 }
 
-// A Browser represents a context for verifying certificates.
-type Browser struct {
-	Roots         *x509.CertPool
-	Intermediates *x509.CertPool
-	Blacklist     *x509.CertPool
-	Whitelist     *x509.CertPool
-	Verifier      Verifier
+// A Verifier represents a context for verifying certificates.
+type Verifier struct {
+	Roots           *x509.CertPool
+	Intermediates   *x509.CertPool
+	Blacklist       *x509.CertPool
+	Whitelist       *x509.CertPool
+	VerifyProcedure VerifyProcedure
 }
 
-func (b *Browser) convertOptions(opt *VerificationOptions) (out x509.VerifyOptions) {
+func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOptions) {
 	opt.clean()
 	out.CurrentTime = opt.VerifyTime
-	out.Roots = b.Roots
-	out.Intermediates = b.Intermediates
+	out.Roots = v.Roots
+	out.Intermediates = v.Intermediates
 	out.DNSName = opt.Name
 	return
 }
@@ -106,14 +106,14 @@ func (b *Browser) Verify(c *x509.Certificate, opts VerificationOptions) (res *Ve
 	res.Name = opts.Name
 
 	// Always run prevalidate.
-	if err := b.Verifier.PreValidate(c); err != nil {
+	if err := v.VerifyProcedure.PreValidate(c); err != nil {
 		res.ValidationError = err
 	}
 
 	// XXX: x509 should expose the validation we want with out this struct
 	// designed for JSON output.
 	if res.ValidationError == nil {
-		xopts := b.convertOptions(&opts)
+		xopts := v.convertOptions(&opts)
 		chains, validation, _ := c.ValidateWithStupidDetail(xopts)
 		res.Chains = chains
 		res.ValidationError = validation.ValidationError
@@ -123,18 +123,18 @@ func (b *Browser) Verify(c *x509.Certificate, opts VerificationOptions) (res *Ve
 
 	// Run PostValidate if there was no exisiting validation error.
 	if res.ValidationError == nil {
-		if err := b.Verifier.PostValidate(c, res.Chains); err != nil {
+		if err := v.VerifyProcedure.PostValidate(c, res.Chains); err != nil {
 			res.ValidationError = err
 		}
 	}
 
 	// Check the whitelist
-	if b.Whitelist.Contains(c) {
+	if v.Whitelist.Contains(c) {
 		res.Whitelisted = true
 	}
 
 	// Check the blacklist
-	if b.Blacklist.Contains(c) {
+	if v.Blacklist.Contains(c) {
 		res.Blacklisted = true
 	}
 
