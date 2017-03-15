@@ -103,7 +103,6 @@ func writeHeader(out io.Writer) {
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package x509 parses X.509-encoded keys and certificates.
 package x509
 
 import (
