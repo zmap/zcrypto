@@ -5,6 +5,7 @@
 package x509
 
 import (
+	"encoding/asn1"
 	"fmt"
 	"net"
 	"strings"
@@ -144,4 +145,15 @@ type SystemRootsError struct{}
 
 func (SystemRootsError) Error() string {
 	return "x509: failed to load system roots and no roots provided"
+}
+
+// UnhandledCriticalExtension results when the certificate contains an
+// unimplemented X.509 extension marked as critical.
+type UnhandledCriticalExtension struct {
+	oid     asn1.ObjectIdentifier
+	message string
+}
+
+func (h UnhandledCriticalExtension) Error() string {
+	return fmt.Sprintf("x509: unhandled critical extension: %s | %s", h.oid, h.message)
 }

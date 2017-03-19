@@ -7,7 +7,6 @@ package x509
 import (
 	"fmt"
 	"net"
-	"runtime"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -30,14 +29,8 @@ type VerifyOptions struct {
 	KeyUsages []ExtKeyUsage
 }
 
-const (
-	leafCertificate = iota
-	intermediateCertificate
-	rootCertificate
-)
-
 // isValid performs validity checks on the c.
-func (c *Certificate) isValid(certType int, currentChain []*Certificate, opts *VerifyOptions) error {
+func (c *Certificate) isValid(certType CertificateType, currentChain []*Certificate, opts *VerifyOptions) error {
 	now := opts.CurrentTime
 	if now.IsZero() {
 		now = time.Now()
@@ -49,7 +42,7 @@ func (c *Certificate) isValid(certType int, currentChain []*Certificate, opts *V
 	// The name constraints extension, which MUST be used only in a CA
 	// certificate, indicates a name space within which all subject names in
 	// subsequent certificates in a certification path MUST be located.
-	if certType != leafCertificate {
+	if certType != CertificateTypeLeaf {
 		// PermittedDNSDomains
 		if len(opts.DNSName) > 0 && len(c.PermittedDNSDomains) > 0 {
 			ok := false
@@ -222,7 +215,7 @@ func (c *Certificate) isValid(certType int, currentChain []*Certificate, opts *V
 	// keyUsage, and a keyUsage containing a flag indicating that the RSA
 	// encryption key could only be used for Diffie-Hellman key agreement.
 
-	if certType == intermediateCertificate && (!c.BasicConstraintsValid || !c.IsCA) {
+	if certType == CertificateTypeIntermediate && (!c.BasicConstraintsValid || !c.IsCA) {
 		return CertificateInvalidError{c, NotAuthorizedToSign}
 	}
 
@@ -246,11 +239,8 @@ func (c *Certificate) isValid(certType int, currentChain []*Certificate, opts *V
 //
 // WARNING: this doesn't do any revocation checking.
 func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err error) {
-	// Use Windows's own verification and chain building.
-	if opts.Roots == nil && runtime.GOOS == "windows" {
-		return c.systemVerify(&opts)
-	}
 
+	// TODO: Populate with the correct OID
 	if len(c.UnhandledCriticalExtensions) > 0 {
 		return nil, UnhandledCriticalExtension{nil, ""}
 	}
@@ -262,7 +252,7 @@ func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err e
 		}
 	}
 
-	err = c.isValid(leafCertificate, nil, &opts)
+	err = c.isValid(CertificateTypeLeaf, nil, &opts)
 	if err != nil {
 		return
 	}
@@ -316,7 +306,7 @@ func (c *Certificate) buildChains(cache map[int][][]*Certificate, currentChain [
 	possibleRoots, failedRoot, rootErr := opts.Roots.findVerifiedParents(c)
 	for _, rootNum := range possibleRoots {
 		root := opts.Roots.certs[rootNum]
-		err = root.isValid(rootCertificate, currentChain, opts)
+		err = root.isValid(CertificateTypeRoot, currentChain, opts)
 		if err != nil {
 			continue
 		}
@@ -332,7 +322,7 @@ nextIntermediate:
 				continue nextIntermediate
 			}
 		}
-		err = intermediate.isValid(intermediateCertificate, currentChain, opts)
+		err = intermediate.isValid(CertificateTypeIntermediate, currentChain, opts)
 		if err != nil {
 			continue
 		}

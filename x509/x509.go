@@ -22,7 +22,6 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"io"
 	"math/big"
 	"net"
@@ -831,15 +830,6 @@ func (c *Certificate) CheckSignature(algo SignatureAlgorithm, signed, signature 
 func (c *Certificate) CheckCRLSignature(crl *pkix.CertificateList) (err error) {
 	algo := getSignatureAlgorithmFromOID(crl.SignatureAlgorithm.Algorithm)
 	return c.CheckSignature(algo, crl.TBSCertList.Raw, crl.SignatureValue.RightAlign())
-}
-
-type UnhandledCriticalExtension struct {
-	oid     asn1.ObjectIdentifier
-	message string
-}
-
-func (h UnhandledCriticalExtension) Error() string {
-	return fmt.Sprintf("x509: unhandled critical extension: %s | %s", h.oid, h.message)
 }
 
 type basicConstraints struct {
