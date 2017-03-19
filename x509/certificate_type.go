@@ -42,7 +42,7 @@ func (t CertificateType) MarshalJSON() ([]byte, error) {
 	}
 }
 
-// UnmarshalJSON implemetns the json.Unmarshaler interface. Any unknown string
+// UnmarshalJSON implements the json.Unmarshaler interface. Any unknown string
 // is considered the same CertificateTypeUnknown.
 func (t *CertificateType) UnmarshalJSON(b []byte) error {
 	var certificateTypeString string
