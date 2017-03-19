@@ -1258,10 +1258,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 					case 7:
 						switch len(subtree.Value.Bytes) {
 						case net.IPv4len * 2:
-							ip := net.IPNet{subtree.Value.Bytes[:net.IPv4len], subtree.Value.Bytes[net.IPv4len:]}
+							ip := net.IPNet{IP: subtree.Value.Bytes[:net.IPv4len], Mask: subtree.Value.Bytes[net.IPv4len:]}
 							out.PermittedIPAddresses = append(out.PermittedIPAddresses, GeneralSubtreeIP{Data: ip, Max: subtree.Max, Min: subtree.Min})
 						case net.IPv6len * 2:
-							ip := net.IPNet{subtree.Value.Bytes[:net.IPv6len], subtree.Value.Bytes[net.IPv6len:]}
+							ip := net.IPNet{IP: subtree.Value.Bytes[:net.IPv6len], Mask: subtree.Value.Bytes[net.IPv6len:]}
 							out.PermittedIPAddresses = append(out.PermittedIPAddresses, GeneralSubtreeIP{Data: ip, Max: subtree.Max, Min: subtree.Min})
 						default:
 							return out, errors.New("x509: certificate name constraint contained IP address range of length " + strconv.Itoa(len(subtree.Value.Bytes)))
@@ -1301,10 +1301,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 					case 7:
 						switch len(subtree.Value.Bytes) {
 						case net.IPv4len * 2:
-							ip := net.IPNet{subtree.Value.Bytes[:net.IPv4len], subtree.Value.Bytes[net.IPv4len:]}
+							ip := net.IPNet{IP: subtree.Value.Bytes[:net.IPv4len], Mask: subtree.Value.Bytes[net.IPv4len:]}
 							out.ExcludedIPAddresses = append(out.ExcludedIPAddresses, GeneralSubtreeIP{Data: ip, Max: subtree.Max, Min: subtree.Min})
 						case net.IPv6len * 2:
-							ip := net.IPNet{subtree.Value.Bytes[:net.IPv6len], subtree.Value.Bytes[net.IPv6len:]}
+							ip := net.IPNet{IP: subtree.Value.Bytes[:net.IPv6len], Mask: subtree.Value.Bytes[net.IPv6len:]}
 							out.ExcludedIPAddresses = append(out.ExcludedIPAddresses, GeneralSubtreeIP{Data: ip, Max: subtree.Max, Min: subtree.Min})
 						default:
 							return out, errors.New("x509: certificate name constraint contained IP address range of length " + strconv.Itoa(len(subtree.Value.Bytes)))

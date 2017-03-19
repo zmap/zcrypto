@@ -13,34 +13,43 @@ import (
 	"unicode/utf8"
 )
 
+// InvalidReason is an enumeration of the possible types of
+// CertificateInvalidError
 type InvalidReason int
 
 const (
 	// NotAuthorizedToSign results when a certificate is signed by another
 	// which isn't marked as a CA certificate.
 	NotAuthorizedToSign InvalidReason = iota
+
 	// Expired results when a certificate has expired, based on the time
 	// given in the VerifyOptions.
 	Expired
+
 	// CANotAuthorizedForThisName results when an intermediate or root
 	// certificate has a name constraint which doesn't include the name
 	// being checked.
 	CANotAuthorizedForThisName
+
 	// CANotAuthorizedForThisEmail results when an intermediate or root
 	// certificate has a name constraint which doesn't include the email
 	// being checked.
 	CANotAuthorizedForThisEmail
-	// CANotAuthorizedForThisEmail results when an intermediate or root
+
+	// CANotAuthorizedForThisIP results when an intermediate or root
 	// certificate has a name constraint which doesn't include the IP
 	// being checked.
 	CANotAuthorizedForThisIP
+
 	// CANotAuthorizedForThisDirectory results when an intermediate or root
 	// certificate has a name constraint which doesn't include the directory
 	// being checked.
 	CANotAuthorizedForThisDirectory
+
 	// TooManyIntermediates results when a path length constraint is
 	// violated.
 	TooManyIntermediates
+
 	// IncompatibleUsage results when the certificate's key usage indicates
 	// that it may only be used for a different purpose.
 	IncompatibleUsage
