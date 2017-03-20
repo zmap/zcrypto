@@ -29,14 +29,12 @@ type VerifyOptions struct {
 	KeyUsages []ExtKeyUsage
 }
 
-// isValid performs validity checks on the c.
+// isValid performs validity checks on the c. It will never return a
+// date-related error.
 func (c *Certificate) isValid(certType CertificateType, currentChain []*Certificate, opts *VerifyOptions) error {
 	now := opts.CurrentTime
 	if now.IsZero() {
 		now = time.Now()
-	}
-	if now.Before(c.NotBefore) || now.After(c.NotAfter) {
-		return CertificateInvalidError{c, Expired}
 	}
 
 	// The name constraints extension, which MUST be used only in a CA
@@ -257,13 +255,6 @@ func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err e
 		return
 	}
 
-	if len(opts.DNSName) > 0 {
-		err = c.VerifyHostname(opts.DNSName)
-		if err != nil {
-			return
-		}
-	}
-
 	candidateChains, err := c.buildChains(make(map[int][][]*Certificate), []*Certificate{c}, &opts)
 	if err != nil {
 		return
@@ -275,16 +266,21 @@ func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err e
 	}
 
 	// If any key usage is acceptable then we're done.
+	hasKeyUsageAny := false
 	for _, usage := range keyUsages {
 		if usage == ExtKeyUsageAny {
-			chains = candidateChains
-			return
+			hasKeyUsageAny = true
+			break
 		}
 	}
 
-	for _, candidate := range candidateChains {
-		if checkChainForKeyUsage(candidate, keyUsages) {
-			chains = append(chains, candidate)
+	if hasKeyUsageAny {
+		chains = candidateChains
+	} else {
+		for _, candidate := range candidateChains {
+			if checkChainForKeyUsage(candidate, keyUsages) {
+				chains = append(chains, candidate)
+			}
 		}
 	}
 
@@ -292,6 +288,22 @@ func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err e
 		err = CertificateInvalidError{c, IncompatibleUsage}
 	}
 
+	chains, expired, never := checkExpirations(chains, opts.CurrentTime)
+	if len(chains) == 0 {
+		if len(expired) > 0 {
+			err = CertificateInvalidError{c, Expired}
+		} else if len(never) > 0 {
+			err = CertificateInvalidError{c, NeverValid}
+		}
+		return
+	}
+
+	if len(opts.DNSName) > 0 {
+		err = c.VerifyHostname(opts.DNSName)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 
@@ -318,7 +330,7 @@ nextIntermediate:
 	for _, intermediateNum := range possibleIntermediates {
 		intermediate := opts.Intermediates.certs[intermediateNum]
 		for _, cert := range currentChain {
-			if cert == intermediate {
+			if cert.Equal(intermediate) {
 				continue nextIntermediate
 			}
 		}
@@ -377,6 +389,54 @@ func matchHostnames(pattern, host string) bool {
 	}
 
 	return true
+}
+
+// earlier returns the earlier of a and b
+func earlier(a, b time.Time) time.Time {
+	if a.Before(b) {
+		return a
+	}
+	return b
+}
+
+// later returns the later of a and b
+func later(a, b time.Time) time.Time {
+	if a.After(b) {
+		return a
+	}
+	return b
+}
+
+// check expirations divides chains into a set of disjoint chains, containing
+// current chains valid now, expired chains that were valid at some point, and
+// the set of chains that were never valid.
+func checkExpirations(chains [][]*Certificate, now time.Time) (current, expired, never [][]*Certificate) {
+	for _, chain := range chains {
+		if len(chain) == 0 {
+			continue
+		}
+		leaf := chain[0]
+		lowerBound := leaf.NotBefore
+		upperBound := leaf.NotAfter
+		for _, c := range chain[1:] {
+			lowerBound = later(lowerBound, c.NotBefore)
+			upperBound = earlier(upperBound, c.NotAfter)
+		}
+		valid := lowerBound.Before(now) && upperBound.After(now)
+		wasValid := lowerBound.Before(upperBound)
+		if valid && !wasValid {
+			// Math/logic tells us this is impossible.
+			panic("valid && !wasValid should not be possible")
+		}
+		if valid {
+			current = append(current, chain)
+		} else if wasValid {
+			expired = append(expired, chain)
+		} else {
+			never = append(never, chain)
+		}
+	}
+	return
 }
 
 // toLowerCaseASCII returns a lower-case version of in. See RFC 6125 6.4.1. We use
