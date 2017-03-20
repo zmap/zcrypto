@@ -47,10 +47,10 @@ func (s *CertPool) findVerifiedParents(cert *Certificate) (parents []int, errCer
 	var candidates []int
 
 	if len(cert.AuthorityKeyId) > 0 {
-		candidates = s.bySubjectKeyId[string(cert.AuthorityKeyId)]
+		candidates, _ = s.bySubjectKeyId[string(cert.AuthorityKeyId)]
 	}
 	if len(candidates) == 0 {
-		candidates = s.byName[string(cert.RawIssuer)]
+		candidates, _ = s.byName[string(cert.RawIssuer)]
 	}
 
 	for _, c := range candidates {
