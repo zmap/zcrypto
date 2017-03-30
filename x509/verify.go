@@ -41,10 +41,10 @@ func (c *Certificate) isValid(certType CertificateType, currentChain []*Certific
 	// certificate, indicates a name space within which all subject names in
 	// subsequent certificates in a certification path MUST be located.
 	if certType != CertificateTypeLeaf {
-		// PermittedDNSDomains
-		if len(opts.DNSName) > 0 && len(c.PermittedDNSDomains) > 0 {
+		// PermittedDNSNames
+		if len(opts.DNSName) > 0 && len(c.PermittedDNSNames) > 0 {
 			ok := false
-			for _, domain := range c.PermittedDNSDomains {
+			for _, domain := range c.PermittedDNSNames {
 				if opts.DNSName == domain.Data ||
 					(strings.HasPrefix(domain.Data, ".") && strings.HasSuffix(opts.DNSName, domain.Data)) ||
 					(!strings.HasPrefix(domain.Data, ".") && strings.HasSuffix(opts.DNSName, "."+domain.Data)) {
@@ -59,10 +59,10 @@ func (c *Certificate) isValid(certType CertificateType, currentChain []*Certific
 			}
 		}
 
-		// ExcludedDNSDomains
-		if len(opts.DNSName) > 0 && len(c.ExcludedDNSDomains) > 0 {
+		// ExcludedDNSNames
+		if len(opts.DNSName) > 0 && len(c.ExcludedDNSNames) > 0 {
 			ok := false
-			for _, domain := range c.ExcludedDNSDomains {
+			for _, domain := range c.ExcludedDNSNames {
 				if opts.DNSName == domain.Data ||
 					(strings.HasPrefix(domain.Data, ".") && strings.HasSuffix(opts.DNSName, domain.Data)) ||
 					(!strings.HasPrefix(domain.Data, ".") && strings.HasSuffix(opts.DNSName, "."+domain.Data)) {
@@ -77,10 +77,10 @@ func (c *Certificate) isValid(certType CertificateType, currentChain []*Certific
 			}
 		}
 
-		// PermittedEmailDomains
-		if len(opts.EmailAddress) > 0 && len(c.PermittedEmailDomains) > 0 {
+		// PermittedEmailAddresses
+		if len(opts.EmailAddress) > 0 && len(c.PermittedEmailAddresses) > 0 {
 			ok := false
-			for _, email := range c.PermittedEmailDomains {
+			for _, email := range c.PermittedEmailAddresses {
 				if opts.EmailAddress == email.Data ||
 					(strings.HasPrefix(email.Data, ".") && strings.HasSuffix(opts.EmailAddress, email.Data)) ||
 					(!strings.HasPrefix(email.Data, ".") && strings.HasSuffix(opts.EmailAddress, "@"+email.Data)) {
@@ -96,10 +96,10 @@ func (c *Certificate) isValid(certType CertificateType, currentChain []*Certific
 			}
 		}
 
-		// ExcludedEmailDomains
-		if len(opts.EmailAddress) > 0 && len(c.ExcludedEmailDomains) > 0 {
+		// ExcludedEmailAddresses
+		if len(opts.EmailAddress) > 0 && len(c.ExcludedEmailAddresses) > 0 {
 			ok := true
-			for _, email := range c.PermittedEmailDomains {
+			for _, email := range c.PermittedEmailAddresses {
 				if opts.EmailAddress == email.Data ||
 					(strings.HasPrefix(email.Data, ".") && strings.HasSuffix(opts.EmailAddress, email.Data)) ||
 					(!strings.HasPrefix(email.Data, ".") && strings.HasSuffix(opts.EmailAddress, "@"+email.Data)) {
@@ -236,17 +236,19 @@ func (c *Certificate) isValid(certType CertificateType, currentChain []*Certific
 // will be of type SystemRootsError.
 //
 // WARNING: this doesn't do any revocation checking.
-func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err error) {
+func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never [][]*Certificate, err error) {
 
 	// TODO: Populate with the correct OID
 	if len(c.UnhandledCriticalExtensions) > 0 {
-		return nil, UnhandledCriticalExtension{nil, ""}
+		err = UnhandledCriticalExtension{nil, ""}
+		return
 	}
 
 	if opts.Roots == nil {
 		opts.Roots = systemRootsPool()
 		if opts.Roots == nil {
-			return nil, SystemRootsError{}
+			err = SystemRootsError{}
+			return
 		}
 	}
 
@@ -274,6 +276,7 @@ func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err e
 		}
 	}
 
+	var chains [][]*Certificate
 	if hasKeyUsageAny {
 		chains = candidateChains
 	} else {
@@ -286,10 +289,11 @@ func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err e
 
 	if len(chains) == 0 {
 		err = CertificateInvalidError{c, IncompatibleUsage}
+		return
 	}
 
-	chains, expired, never := checkExpirations(chains, opts.CurrentTime)
-	if len(chains) == 0 {
+	current, expired, never = checkExpirations(chains, opts.CurrentTime)
+	if len(current) == 0 {
 		if len(expired) > 0 {
 			err = CertificateInvalidError{c, Expired}
 		} else if len(never) > 0 {
