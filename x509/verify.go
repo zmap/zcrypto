@@ -236,17 +236,19 @@ func (c *Certificate) isValid(certType CertificateType, currentChain []*Certific
 // will be of type SystemRootsError.
 //
 // WARNING: this doesn't do any revocation checking.
-func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err error) {
+func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never [][]*Certificate, err error) {
 
 	// TODO: Populate with the correct OID
 	if len(c.UnhandledCriticalExtensions) > 0 {
-		return nil, UnhandledCriticalExtension{nil, ""}
+		err = UnhandledCriticalExtension{nil, ""}
+		return
 	}
 
 	if opts.Roots == nil {
 		opts.Roots = systemRootsPool()
 		if opts.Roots == nil {
-			return nil, SystemRootsError{}
+			err = SystemRootsError{}
+			return
 		}
 	}
 
@@ -274,6 +276,7 @@ func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err e
 		}
 	}
 
+	var chains [][]*Certificate
 	if hasKeyUsageAny {
 		chains = candidateChains
 	} else {
@@ -286,10 +289,11 @@ func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err e
 
 	if len(chains) == 0 {
 		err = CertificateInvalidError{c, IncompatibleUsage}
+		return
 	}
 
-	chains, expired, never := checkExpirations(chains, opts.CurrentTime)
-	if len(chains) == 0 {
+	current, expired, never = checkExpirations(chains, opts.CurrentTime)
+	if len(current) == 0 {
 		if len(expired) > 0 {
 			err = CertificateInvalidError{c, Expired}
 		} else if len(never) > 0 {

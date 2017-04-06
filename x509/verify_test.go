@@ -377,7 +377,7 @@ func testVerify(t *testing.T, useSystemRoots bool) {
 			opts.Roots = nil
 		}
 
-		chains, err := leaf.Verify(opts)
+		chains, _, _, err := leaf.Verify(opts)
 
 		if test.testSystemRootsError {
 			systemRoots = oldSystemRoots
