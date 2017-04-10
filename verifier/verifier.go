@@ -101,7 +101,7 @@ func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOpti
 // checks if the Name in the VerificationOptions matches the name on the
 // certificate. Finally, it checks to see if c is blacklisted or whitelisted by
 // the Browser.
-func (b *Browser) Verify(c *x509.Certificate, opts VerificationOptions) (res *VerificationResult) {
+func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *VerificationResult) {
 	res = new(VerificationResult)
 	res.Name = opts.Name
 
@@ -110,8 +110,6 @@ func (b *Browser) Verify(c *x509.Certificate, opts VerificationOptions) (res *Ve
 		res.ValidationError = err
 	}
 
-	// XXX: x509 should expose the validation we want with out this struct
-	// designed for JSON output.
 	if res.ValidationError == nil {
 		xopts := v.convertOptions(&opts)
 		chains, validation, _ := c.ValidateWithStupidDetail(xopts)
