@@ -21,23 +21,28 @@ import (
 )
 
 // VerificationResult contains the result of a verification of a certificate
-// against a browser. It discerns between NameError, meaning the name on the
-// certificate does not match, and a ValidationError, meaning some sort of issue
-// with the cryptography, or other issues with the chain.
+// against a store and its associated policies. It discerns between NameError,
+// meaning the name on the certificate does not match, and a ValidationError,
+// meaning some sort of issue with the cryptography, or other issues with the
+// chain.
 type VerificationResult struct {
 
 	// The name being checked, e.g. "www.censys.io".
 	Name string
 
-	// True if the certificate is whitelisted by a given browser as trusted, e.g.
-	// when Apple whitelisted subset of StartCom certs by SPKI hash in the wake of
-	// the WoSign incidents surrounding misissuance.
+	// Whitelisted is true if the certificate is whitelisted by a given verifier
+	// as trusted, e.g. when Apple whitelisted subset of StartCom certs by SPKI
+	// hash in the wake of the WoSign incidents surrounding misissuance.
 	Whitelisted bool
 
-	// True is the certificate is blacklisted by a given browser as untrusted,
-	// e.g. Cloudflare certificates valid at the time of Heartbleed disclosure in
-	// Chrome.
+	// Blacklisted is true if the certificate is blacklisted by a given verifier
+	// as untrusted, e.g. Cloudflare certificates valid at the time of Heartbleed
+	// disclosure in Chrome.
 	Blacklisted bool
+
+	// Revoked is true if the certificate has been revoked and is listed in the
+	// revocation set that is part of the Verifier (e.g. in OneCRL).
+	Revoked bool
 
 	// ValiditionError will be non-nil when there was some sort of error during
 	// validation not involving a name mismatch, e.g. if a chain could not be
@@ -65,7 +70,7 @@ type VerifyProcedure interface {
 	PostValidate(c *x509.Certificate, chains [][]*x509.Certificate) error
 }
 
-// VerificationOptions contains settings for Browser.Verify().
+// VerificationOptions contains settings for Verifier.Verify().
 // VerificationOptions should be safely copyable.
 type VerificationOptions struct {
 	VerifyTime time.Time
@@ -100,7 +105,7 @@ func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOpti
 // certificate in Intermediates, and returns all such chains. It additional
 // checks if the Name in the VerificationOptions matches the name on the
 // certificate. Finally, it checks to see if c is blacklisted or whitelisted by
-// the Browser.
+// the Verifier.
 func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *VerificationResult) {
 	res = new(VerificationResult)
 	res.Name = opts.Name

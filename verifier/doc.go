@@ -12,6 +12,6 @@
  * permissions and limitations under the License.
  */
 
-// Package browser performs detailed certificate validation mimicking the
+// Package verifier performs detailed certificate validation mimicking the
 // behavior of popular browsers and root stores.
 package verifier
