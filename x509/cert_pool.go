@@ -128,3 +128,7 @@ func (s *CertPool) Subjects() (res [][]byte) {
 	}
 	return
 }
+
+func (s *CertPool) Contains(c *Certificate) bool {
+	return false
+}
