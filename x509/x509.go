@@ -671,8 +671,14 @@ func (ConstraintViolationError) Error() string {
 	return "x509: invalid signature: parent certificate cannot sign this kind of certificate"
 }
 
+// Equal returns true if the two certificates have byte-equal Raw values.
 func (c *Certificate) Equal(other *Certificate) bool {
 	return bytes.Equal(c.Raw, other.Raw)
+}
+
+// SubjectEqual returns true if the two certificates have byte-equal subjects.
+func (c *Certificate) SubjectEqual(other *Certificate) bool {
+	return bytes.Equal(c.RawSubject, other.RawSubject)
 }
 
 // Entrust have a broken root certificate (CN=Entrust.net Certification
