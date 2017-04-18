@@ -11,11 +11,6 @@ import (
 	"github.com/zmap/zcrypto/x509"
 )
 
-const (
-	// matchesNothingRegex is a regex which cannot match any input.
-	matchesNothingRegex = "a^"
-)
-
 // Processes the given entry in the specified log.
 func processEntry(entry ct.LogEntry) (*x509.Certificate, error) {
 	cert := &x509.Certificate{}
@@ -27,7 +22,7 @@ func processEntry(entry ct.LogEntry) (*x509.Certificate, error) {
 		}
 		cert = innerCert
 	case ct.PrecertLogEntryType:
-		innerCert, err := x509.ParseTBSCertificate(entry.Leaf.TimestampedEntry.PrecertEntry.TBSCertificate)
+		innerCert, err := x509.ParseCertificate(entry.Leaf.TimestampedEntry.PrecertEntry.TBSCertificate)
 		if err != nil {
 			return nil, err
 		}
