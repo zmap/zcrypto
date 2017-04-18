@@ -1,0 +1,54 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+
+	"encoding/json"
+	ct "github.com/zmap/zcrypto/ct"
+	"github.com/zmap/zcrypto/ct/client"
+	"github.com/zmap/zcrypto/x509"
+)
+
+const (
+	// matchesNothingRegex is a regex which cannot match any input.
+	matchesNothingRegex = "a^"
+)
+
+var logURI = flag.String("log_uri", "http://ct.googleapis.com/aviator", "CT log base URI")
+var indexToParse = flag.Int64("index", 1, "Index to parse")
+
+// Processes the given entry in the specified log.
+func processEntry(entry ct.LogEntry) *x509.Certificate {
+	cert := &x509.Certificate{}
+	switch entry.Leaf.TimestampedEntry.EntryType {
+	case ct.X509LogEntryType:
+		innerCert, err := x509.ParseCertificate(entry.Leaf.TimestampedEntry.X509Entry)
+		if err != nil {
+			return nil
+		}
+		cert = innerCert
+	case ct.PrecertLogEntryType:
+		innerCert, err := x509.ParseCertificate(entry.Leaf.TimestampedEntry.PrecertEntry.TBSCertificate)
+		if err != nil {
+			return nil
+		}
+		cert = innerCert
+	}
+	return cert
+}
+
+func main() {
+	flag.Parse()
+	logClient := client.New(*logURI)
+	entries, err := logClient.GetEntries(*indexToParse, *indexToParse)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, entry := range entries {
+		cert := processEntry(entry)
+		finalJSON, _ := json.Marshal(cert)
+		fmt.Println(string(finalJSON))
+	}
+}
