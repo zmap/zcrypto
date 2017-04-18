@@ -8,16 +8,13 @@ import (
 	"encoding/json"
 	ct "github.com/zmap/zcrypto/ct"
 	"github.com/zmap/zcrypto/ct/client"
-	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/ct/x509"
 )
 
 const (
 	// matchesNothingRegex is a regex which cannot match any input.
 	matchesNothingRegex = "a^"
 )
-
-var logURI = flag.String("log_uri", "http://ct.googleapis.com/aviator", "CT log base URI")
-var indexToParse = flag.Int64("index", 1, "Index to parse")
 
 // Processes the given entry in the specified log.
 func processEntry(entry ct.LogEntry) (*x509.Certificate, error) {
@@ -40,6 +37,8 @@ func processEntry(entry ct.LogEntry) (*x509.Certificate, error) {
 }
 
 func main() {
+	var logURI = flag.String("log_uri", "http://ct.googleapis.com/aviator", "CT log base URI")
+	var indexToParse = flag.Int64("index", 1, "Index to parse")
 	flag.Parse()
 	logClient := client.New(*logURI)
 	entries, err := logClient.GetEntries(*indexToParse, *indexToParse)
