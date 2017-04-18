@@ -27,7 +27,7 @@ func processEntry(entry ct.LogEntry) (*x509.Certificate, error) {
 		}
 		cert = innerCert
 	case ct.PrecertLogEntryType:
-		innerCert, err := x509.ParseCertificate(entry.Leaf.TimestampedEntry.PrecertEntry.TBSCertificate)
+		innerCert, err := x509.ParseTBSCertificate(entry.Leaf.TimestampedEntry.PrecertEntry.TBSCertificate)
 		if err != nil {
 			return nil, err
 		}

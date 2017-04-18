@@ -1511,6 +1511,21 @@ func ParseCertificate(asn1Data []byte) (*Certificate, error) {
 	return parseCertificate(&cert)
 }
 
+func ParseTBSCertificate(asn1Data []byte) (*Certificate, error) {
+	var tbsCert tbsCertificate
+	rest, err := asn1.Unmarshal(asn1Data, &tbsCert)
+	if err != nil {
+		//log.Print("Err unmarshalling asn1Data", asn1Data, rest)
+		return nil, err
+	}
+	if len(rest) > 0 {
+		return nil, asn1.SyntaxError{Msg: "trailing data"}
+	}
+	return parseCertificate(&certificate{
+		Raw:            tbsCert.Raw,
+		TBSCertificate: tbsCert})
+}
+
 // ParseCertificates parses one or more certificates from the given ASN.1 DER
 // data. The certificates must be concatenated with no intermediate padding.
 func ParseCertificates(asn1Data []byte) ([]*Certificate, error) {
