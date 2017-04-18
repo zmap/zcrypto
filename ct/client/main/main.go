@@ -53,6 +53,6 @@ func main() {
 			continue
 		}
 		finalJSON, _ := json.Marshal(cert)
-		fmt.Println(string(finalJSON))
+        fmt.Printf("%d %s\n", entry.Index, string(finalJSON))
 	}
 }
