@@ -20,23 +20,23 @@ var logURI = flag.String("log_uri", "http://ct.googleapis.com/aviator", "CT log 
 var indexToParse = flag.Int64("index", 1, "Index to parse")
 
 // Processes the given entry in the specified log.
-func processEntry(entry ct.LogEntry) *x509.Certificate {
+func processEntry(entry ct.LogEntry) (*x509.Certificate, error) {
 	cert := &x509.Certificate{}
 	switch entry.Leaf.TimestampedEntry.EntryType {
 	case ct.X509LogEntryType:
 		innerCert, err := x509.ParseCertificate(entry.Leaf.TimestampedEntry.X509Entry)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 		cert = innerCert
 	case ct.PrecertLogEntryType:
 		innerCert, err := x509.ParseCertificate(entry.Leaf.TimestampedEntry.PrecertEntry.TBSCertificate)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 		cert = innerCert
 	}
-	return cert
+	return cert, nil
 }
 
 func main() {
@@ -47,7 +47,11 @@ func main() {
 		log.Fatal(err)
 	}
 	for _, entry := range entries {
-		cert := processEntry(entry)
+		cert, err := processEntry(entry)
+		if err != nil {
+			fmt.Printf("%d %s\n", entry.Index, err.Error())
+			continue
+		}
 		finalJSON, _ := json.Marshal(cert)
 		fmt.Println(string(finalJSON))
 	}
