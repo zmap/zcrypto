@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	ct "github.com/zmap/zcrypto/ct"
 	"github.com/zmap/zcrypto/ct/client"
-	"github.com/zmap/zcrypto/ct/x509"
+	"github.com/zmap/zcrypto/x509"
 )
 
 const (
