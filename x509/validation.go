@@ -17,8 +17,6 @@ type Validation struct {
 // ValidateWithStupidDetail fills out a Validation struct given a leaf
 // certificate and intermediates / roots. If opts.DNSName is set, then it will
 // also check if the domain matches.
-//
-// Deprecated: Use verifier.Verify() instead.
 func (c *Certificate) ValidateWithStupidDetail(opts VerifyOptions) (chains [][]*Certificate, validation *Validation, err error) {
 
 	// Manually set the time, so that all verifies we do get the same time
