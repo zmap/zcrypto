@@ -24,24 +24,23 @@ func (c *Certificate) ValidateWithStupidDetail(opts VerifyOptions) (chains [][]*
 		opts.CurrentTime = time.Now()
 	}
 
-	// XXX: Don't pass a KeyUsage to the Verify API
 	opts.KeyUsages = nil
-	domain := opts.DNSName
-	opts.DNSName = ""
 
 	out := new(Validation)
-	out.Domain = domain
+	out.Domain = opts.DNSName
 
-	if chains, _, _, err = c.Verify(opts); err == nil {
+	if chains, err = c.Verify(opts); err != nil {
+		switch err := err.(type) {
+		case HostnameError:
+			out.BrowserTrusted = true
+			out.MatchesDomain = false
+		default:
+			out.BrowserTrusted = false
+			out.BrowserError = err.Error()
+		}
 	} else {
 		out.BrowserTrusted = true
-	}
-
-	if domain != "" {
-		if err = c.VerifyHostname(domain); err != nil {
-			out.MatchesDomain = false
-			out.BrowserError = err.Error()
-		} else {
+		if len(opts.DNSName) > 0 {
 			out.MatchesDomain = true
 		}
 	}
