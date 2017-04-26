@@ -5,6 +5,7 @@
 package x509
 
 import (
+	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -34,6 +35,165 @@ func (c *Certificate) isValid(certType CertificateType, currentChain []*Certific
 	now := opts.CurrentTime
 	if now.IsZero() {
 		now = time.Now()
+	}
+
+	// The name constraints extension, which MUST be used only in a CA
+	// certificate, indicates a name space within which all subject names in
+	// subsequent certificates in a certification path MUST be located.
+	if certType != CertificateTypeLeaf {
+		// PermittedDNSDomains
+		if len(opts.DNSName) > 0 && len(c.PermittedDNSDomains) > 0 {
+			ok := false
+			for _, domain := range c.PermittedDNSDomains {
+				if opts.DNSName == domain.Data ||
+					(strings.HasPrefix(domain.Data, ".") && strings.HasSuffix(opts.DNSName, domain.Data)) ||
+					(!strings.HasPrefix(domain.Data, ".") && strings.HasSuffix(opts.DNSName, "."+domain.Data)) {
+
+					ok = true
+					break
+				}
+			}
+
+			if !ok {
+				return CertificateInvalidError{c, CANotAuthorizedForThisName}
+			}
+		}
+
+		// ExcludedDNSDomains
+		if len(opts.DNSName) > 0 && len(c.ExcludedDNSDomains) > 0 {
+			ok := false
+			for _, domain := range c.ExcludedDNSDomains {
+				if opts.DNSName == domain.Data ||
+					(strings.HasPrefix(domain.Data, ".") && strings.HasSuffix(opts.DNSName, domain.Data)) ||
+					(!strings.HasPrefix(domain.Data, ".") && strings.HasSuffix(opts.DNSName, "."+domain.Data)) {
+
+					ok = true
+					break
+				}
+			}
+
+			if !ok {
+				return CertificateInvalidError{c, CANotAuthorizedForThisName}
+			}
+		}
+
+		// PermittedEmailDomains
+		if len(opts.EmailAddress) > 0 && len(c.PermittedEmailDomains) > 0 {
+			ok := false
+			for _, email := range c.PermittedEmailDomains {
+				if opts.EmailAddress == email.Data ||
+					(strings.HasPrefix(email.Data, ".") && strings.HasSuffix(opts.EmailAddress, email.Data)) ||
+					(!strings.HasPrefix(email.Data, ".") && strings.HasSuffix(opts.EmailAddress, "@"+email.Data)) {
+
+					ok = true
+					break
+
+				}
+			}
+
+			if !ok {
+				return CertificateInvalidError{c, CANotAuthorizedForThisEmail}
+			}
+		}
+
+		// ExcludedEmailDomains
+		if len(opts.EmailAddress) > 0 && len(c.ExcludedEmailDomains) > 0 {
+			ok := true
+			for _, email := range c.PermittedEmailDomains {
+				if opts.EmailAddress == email.Data ||
+					(strings.HasPrefix(email.Data, ".") && strings.HasSuffix(opts.EmailAddress, email.Data)) ||
+					(!strings.HasPrefix(email.Data, ".") && strings.HasSuffix(opts.EmailAddress, "@"+email.Data)) {
+
+					ok = false
+					break
+				}
+			}
+
+			if !ok {
+				return CertificateInvalidError{c, CANotAuthorizedForThisEmail}
+			}
+		}
+
+		// PermittedIPAddresses
+		if len(opts.IPAddress) > 0 && len(c.PermittedIPAddresses) > 0 {
+			ok := false
+			for _, ip := range c.PermittedIPAddresses {
+				if ip.Data.Contains(opts.IPAddress) {
+					ok = true
+					break
+				}
+			}
+
+			if !ok {
+				return CertificateInvalidError{c, CANotAuthorizedForThisIP}
+			}
+		}
+
+		// ExcludedIPAddresses
+		if len(opts.IPAddress) > 0 && len(c.ExcludedIPAddresses) > 0 {
+			ok := true
+			for _, ip := range c.ExcludedIPAddresses {
+				if ip.Data.Contains(opts.IPAddress) {
+					ok = false
+					break
+				}
+			}
+
+			if !ok {
+				return CertificateInvalidError{c, CANotAuthorizedForThisIP}
+			}
+		}
+
+		// Directory Names need to be checked against the leaf certificate
+		if len(currentChain) > 0 {
+			leaf := currentChain[0]
+
+			// PermittedDirectoryNames
+			if len(leaf.Subject.Names) > 0 && len(c.PermittedDirectoryNames) > 0 {
+				for _, name := range leaf.Subject.Names {
+					for _, dn := range c.PermittedDirectoryNames {
+						ok := true
+						for _, dnName := range dn.Data.Names {
+							if name.Type.Equal(dnName.Type) {
+								ok = false
+								if fmt.Sprintf("%v", name.Value) == fmt.Sprintf("%v", dnName.Value) {
+									ok = true
+									break
+								}
+							}
+						}
+
+						if !ok {
+							return CertificateInvalidError{c, CANotAuthorizedForThisDirectory}
+						}
+
+					}
+				}
+			}
+
+			// ExcludedDirectoryNames
+			if len(leaf.Subject.Names) > 0 && len(c.ExcludedDirectoryNames) > 0 {
+				for _, name := range leaf.Subject.Names {
+					for _, dn := range c.ExcludedDirectoryNames {
+						ok := true
+						for _, dnName := range dn.Data.Names {
+							if name.Type.Equal(dnName.Type) {
+								ok = true
+								if fmt.Sprintf("%v", name.Value) == fmt.Sprintf("%v", dnName.Value) {
+									ok = false
+									break
+								}
+							}
+						}
+
+						if !ok {
+							return CertificateInvalidError{c, CANotAuthorizedForThisDirectory}
+						}
+
+					}
+				}
+			}
+		}
 	}
 
 	// KeyUsage status flags are ignored. From Engineering Security, Peter
@@ -76,19 +236,17 @@ func (c *Certificate) isValid(certType CertificateType, currentChain []*Certific
 // will be of type SystemRootsError.
 //
 // WARNING: this doesn't do any revocation checking.
-func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never [][]*Certificate, err error) {
+func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err error) {
 
 	// TODO: Populate with the correct OID
 	if len(c.UnhandledCriticalExtensions) > 0 {
-		err = UnhandledCriticalExtension{nil, ""}
-		return
+		return nil, UnhandledCriticalExtension{nil, ""}
 	}
 
 	if opts.Roots == nil {
 		opts.Roots = systemRootsPool()
 		if opts.Roots == nil {
-			err = SystemRootsError{}
-			return
+			return nil, SystemRootsError{}
 		}
 	}
 
@@ -116,7 +274,6 @@ func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never [][]*C
 		}
 	}
 
-	var chains [][]*Certificate
 	if hasKeyUsageAny {
 		chains = candidateChains
 	} else {
@@ -129,11 +286,10 @@ func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never [][]*C
 
 	if len(chains) == 0 {
 		err = CertificateInvalidError{c, IncompatibleUsage}
-		return
 	}
 
-	current, expired, never = checkExpirations(chains, opts.CurrentTime)
-	if len(current) == 0 {
+	chains, expired, never := checkExpirations(chains, opts.CurrentTime)
+	if len(chains) == 0 {
 		if len(expired) > 0 {
 			err = CertificateInvalidError{c, Expired}
 		} else if len(never) > 0 {
