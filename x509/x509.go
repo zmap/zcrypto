@@ -578,22 +578,21 @@ type Certificate struct {
 	ParsedNoticeRefOrganization [][]string
 
 	// Name constraints
-	NameConstraintsCritical     bool // if true then the name constraints are marked critical.
-	PermittedDNSDomainsCritical bool // deprecated, use NameConstraintsCritical
-	PermittedDNSDomains         []GeneralSubtreeString
-	ExcludedDNSDomains          []GeneralSubtreeString
-	PermittedEmailDomains       []GeneralSubtreeString
-	ExcludedEmailDomains        []GeneralSubtreeString
-	PermittedIPAddresses        []GeneralSubtreeIP
-	ExcludedIPAddresses         []GeneralSubtreeIP
-	PermittedDirectoryNames     []GeneralSubtreeName
-	ExcludedDirectoryNames      []GeneralSubtreeName
-	PermittedEdiPartyNames      []GeneralSubtreeEdi
-	ExcludedEdiPartyNames       []GeneralSubtreeEdi
-	PermittedRegisteredIDs      []GeneralSubtreeOid
-	ExcludedRegisteredIDs       []GeneralSubtreeOid
-	PermittedX400Addresses      []GeneralSubtreeRaw
-	ExcludedX400Addresses       []GeneralSubtreeRaw
+	NameConstraintsCritical bool // if true then the name constraints are marked critical.
+	PermittedDNSNames       []GeneralSubtreeString
+	ExcludedDNSNames        []GeneralSubtreeString
+	PermittedEmailAddresses []GeneralSubtreeString
+	ExcludedEmailAddresses  []GeneralSubtreeString
+	PermittedIPAddresses    []GeneralSubtreeIP
+	ExcludedIPAddresses     []GeneralSubtreeIP
+	PermittedDirectoryNames []GeneralSubtreeName
+	ExcludedDirectoryNames  []GeneralSubtreeName
+	PermittedEdiPartyNames  []GeneralSubtreeEdi
+	ExcludedEdiPartyNames   []GeneralSubtreeEdi
+	PermittedRegisteredIDs  []GeneralSubtreeOid
+	ExcludedRegisteredIDs   []GeneralSubtreeOid
+	PermittedX400Addresses  []GeneralSubtreeRaw
+	ExcludedX400Addresses   []GeneralSubtreeRaw
 
 	// CRL Distribution Points
 	CRLDistributionPoints []string
@@ -1219,15 +1218,14 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 
 				if e.Critical {
 					out.NameConstraintsCritical = true
-					out.PermittedDNSDomainsCritical = true
 				}
 
 				for _, subtree := range constraints.Permitted {
 					switch subtree.Value.Tag {
 					case 1:
-						out.PermittedEmailDomains = append(out.PermittedEmailDomains, GeneralSubtreeString{Data: string(subtree.Value.Bytes), Max: subtree.Max, Min: subtree.Min})
+						out.PermittedEmailAddresses = append(out.PermittedEmailAddresses, GeneralSubtreeString{Data: string(subtree.Value.Bytes), Max: subtree.Max, Min: subtree.Min})
 					case 2:
-						out.PermittedDNSDomains = append(out.PermittedDNSDomains, GeneralSubtreeString{Data: string(subtree.Value.Bytes), Max: subtree.Max, Min: subtree.Min})
+						out.PermittedDNSNames = append(out.PermittedDNSNames, GeneralSubtreeString{Data: string(subtree.Value.Bytes), Max: subtree.Max, Min: subtree.Min})
 					case 3:
 						out.PermittedX400Addresses = append(out.PermittedX400Addresses, GeneralSubtreeRaw{Data: subtree.Value, Max: subtree.Max, Min: subtree.Min})
 					case 4:
@@ -1268,9 +1266,9 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				for _, subtree := range constraints.Excluded {
 					switch subtree.Value.Tag {
 					case 1:
-						out.ExcludedEmailDomains = append(out.ExcludedEmailDomains, GeneralSubtreeString{Data: string(subtree.Value.Bytes), Max: subtree.Max, Min: subtree.Min})
+						out.ExcludedEmailAddresses = append(out.ExcludedEmailAddresses, GeneralSubtreeString{Data: string(subtree.Value.Bytes), Max: subtree.Max, Min: subtree.Min})
 					case 2:
-						out.ExcludedDNSDomains = append(out.ExcludedDNSDomains, GeneralSubtreeString{Data: string(subtree.Value.Bytes), Max: subtree.Max, Min: subtree.Min})
+						out.ExcludedDNSNames = append(out.ExcludedDNSNames, GeneralSubtreeString{Data: string(subtree.Value.Bytes), Max: subtree.Max, Min: subtree.Min})
 					case 3:
 						out.ExcludedX400Addresses = append(out.ExcludedX400Addresses, GeneralSubtreeRaw{Data: subtree.Value, Max: subtree.Max, Min: subtree.Min})
 					case 4:
@@ -1743,27 +1741,27 @@ func buildExtensions(template *Certificate) (ret []pkix.Extension, err error) {
 		n++
 	}
 
-	if (len(template.PermittedEmailDomains) > 0 || len(template.PermittedDNSDomains) > 0 || len(template.PermittedDirectoryNames) > 0 ||
-		len(template.PermittedIPAddresses) > 0 || len(template.ExcludedEmailDomains) > 0 || len(template.ExcludedDNSDomains) > 0 ||
+	if (len(template.PermittedEmailAddresses) > 0 || len(template.PermittedDNSNames) > 0 || len(template.PermittedDirectoryNames) > 0 ||
+		len(template.PermittedIPAddresses) > 0 || len(template.ExcludedEmailAddresses) > 0 || len(template.ExcludedDNSNames) > 0 ||
 		len(template.ExcludedDirectoryNames) > 0 || len(template.ExcludedIPAddresses) > 0) &&
 		!oidInExtensions(oidExtensionNameConstraints, template.ExtraExtensions) {
 		ret[n].Id = oidExtensionNameConstraints
-		if template.NameConstraintsCritical || template.PermittedDNSDomainsCritical {
+		if template.NameConstraintsCritical {
 			ret[n].Critical = true
 		}
 
 		var out nameConstraints
 
-		for _, permitted := range template.PermittedEmailDomains {
+		for _, permitted := range template.PermittedEmailAddresses {
 			out.Permitted = append(out.Permitted, generalSubtree{Value: asn1.RawValue{Tag: 1, Class: 2, Bytes: []byte(permitted.Data)}})
 		}
-		for _, excluded := range template.ExcludedEmailDomains {
+		for _, excluded := range template.ExcludedEmailAddresses {
 			out.Excluded = append(out.Excluded, generalSubtree{Value: asn1.RawValue{Tag: 1, Class: 2, Bytes: []byte(excluded.Data)}})
 		}
-		for _, permitted := range template.PermittedDNSDomains {
+		for _, permitted := range template.PermittedDNSNames {
 			out.Permitted = append(out.Permitted, generalSubtree{Value: asn1.RawValue{Tag: 2, Class: 2, Bytes: []byte(permitted.Data)}})
 		}
-		for _, excluded := range template.ExcludedDNSDomains {
+		for _, excluded := range template.ExcludedDNSNames {
 			out.Excluded = append(out.Excluded, generalSubtree{Value: asn1.RawValue{Tag: 2, Class: 2, Bytes: []byte(excluded.Data)}})
 		}
 		for _, permitted := range template.PermittedDirectoryNames {
@@ -1903,8 +1901,8 @@ func signingParamsForPrivateKey(priv interface{}, requestedSigAlgo SignatureAlgo
 // following members of template are used: SerialNumber, Subject, NotBefore,
 // NotAfter, KeyUsage, ExtKeyUsage, UnknownExtKeyUsage, BasicConstraintsValid,
 // IsCA, MaxPathLen, SubjectKeyId, DNSNames, NameConstraintsCritical,
-// PermittedDNSDomains, ExcludedDNSDomains, PermittedEmailDomains,
-// ExcludedEmailDomains, PermittedIPAddresses, ExcludedIPAddresses,
+// PermittedDNSNames, ExcludedDNSNames, PermittedEmailAddresses,
+// ExcludedEmailAddresses, PermittedIPAddresses, ExcludedIPAddresses,
 // PermittedDirectoryNames, ExcludedDirectoryNames, SignatureAlgorithm.
 //
 // The certificate is signed by parent. If parent is equal to template then the
