@@ -51,6 +51,10 @@ const (
 	// IncompatibleUsage results when the certificate's key usage indicates
 	// that it may only be used for a different purpose.
 	IncompatibleUsage
+
+	// NeverValid results when the certificate could never have been valid due to
+	// some date-related issue, e.g. NotBefore > NotAfter.
+	NeverValid
 )
 
 // CertificateInvalidError results when an odd error occurs. Users of this
@@ -78,6 +82,8 @@ func (e CertificateInvalidError) Error() string {
 		return "x509: too many intermediates for path length constraint"
 	case IncompatibleUsage:
 		return "x509: certificate specifies an incompatible key usage"
+	case NeverValid:
+		return "x509: certificate will never be valid"
 	}
 	return "x509: unknown error"
 }
