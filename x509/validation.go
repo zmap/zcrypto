@@ -34,14 +34,15 @@ func (c *Certificate) ValidateWithStupidDetail(opts VerifyOptions) (chains [][]*
 	out := new(Validation)
 	out.Domain = domain
 
-	if chains, _, _, err = c.Verify(opts); err == nil {
+	if chains, _, _, err = c.Verify(opts); err != nil {
+		out.BrowserError = err.Error()
+	} else {
 		out.BrowserTrusted = true
 	}
 
 	if domain != "" {
 		if err = c.VerifyHostname(domain); err != nil {
 			out.MatchesDomain = false
-			out.BrowserError = err.Error()
 		} else {
 			out.MatchesDomain = true
 		}
