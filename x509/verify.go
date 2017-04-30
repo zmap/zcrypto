@@ -31,10 +31,6 @@ type VerifyOptions struct {
 // isValid performs validity checks on the c. It will never return a
 // date-related error.
 func (c *Certificate) isValid(certType CertificateType, currentChain []*Certificate, opts *VerifyOptions) error {
-	now := opts.CurrentTime
-	if now.IsZero() {
-		now = time.Now()
-	}
 
 	// KeyUsage status flags are ignored. From Engineering Security, Peter
 	// Gutmann: A European government CA marked its signing certificates as
