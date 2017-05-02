@@ -170,7 +170,7 @@ nextIntermediate:
 	for _, intermediateNum := range possibleIntermediates {
 		intermediate := opts.Intermediates.certs[intermediateNum]
 		for _, cert := range currentChain {
-			if cert.Equal(intermediate) {
+			if cert.SubjectEqual(intermediate) {
 				continue nextIntermediate
 			}
 		}
