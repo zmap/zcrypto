@@ -11,6 +11,8 @@ import (
 	"unicode/utf8"
 )
 
+const maxIntermediateCount = 10
+
 // VerifyOptions contains parameters for Certificate.Verify. It's a structure
 // because other PKIX verification APIs have ended up needing many options.
 type VerifyOptions struct {
@@ -58,6 +60,10 @@ func (c *Certificate) isValid(certType CertificateType, currentChain []*Certific
 		if numIntermediates > c.MaxPathLen {
 			return CertificateInvalidError{c, TooManyIntermediates}
 		}
+	}
+
+	if len(currentChain) > maxIntermediateCount {
+		return CertificateInvalidError{c, TooManyIntermediates}
 	}
 
 	return nil
@@ -154,31 +160,56 @@ func appendToFreshChain(chain []*Certificate, cert *Certificate) []*Certificate 
 	return n
 }
 
+// Returns true if a certificate with a matching subject is already in the given
+// chain.
+func (c *Certificate) inChain(chain []*Certificate) bool {
+	for _, cert := range chain {
+		if cert.Equal(c) {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *Certificate) buildChains(cache map[int][][]*Certificate, currentChain []*Certificate, opts *VerifyOptions) (chains [][]*Certificate, err error) {
+
+	// Find roots that signed c and have matching SKID/AKID and Subject/Issuer.
 	possibleRoots, failedRoot, rootErr := opts.Roots.findVerifiedParents(c)
+
+	// If any roots are parents of c, create new chain for each one of them.
 	for _, rootNum := range possibleRoots {
 		root := opts.Roots.certs[rootNum]
 		err = root.isValid(CertificateTypeRoot, currentChain, opts)
 		if err != nil {
 			continue
 		}
-		chains = append(chains, appendToFreshChain(currentChain, root))
+		if !root.inChain(currentChain) {
+			chains = append(chains, appendToFreshChain(currentChain, root))
+		}
 	}
 
+	// The root chains of length N+1 are now "done". Now we'll look for any
+	// intermediates that issue this certificate, meaning that any chain to a root
+	// through these intermediates is at least length N+2.
 	possibleIntermediates, failedIntermediate, intermediateErr := opts.Intermediates.findVerifiedParents(c)
-nextIntermediate:
+
 	for _, intermediateNum := range possibleIntermediates {
 		intermediate := opts.Intermediates.certs[intermediateNum]
-		for _, cert := range currentChain {
-			if cert.Equal(intermediate) {
-				continue nextIntermediate
-			}
+		if opts.Roots.Contains(intermediate) {
+			continue
+		}
+		if intermediate.inChain(currentChain) {
+			continue
 		}
 		err = intermediate.isValid(CertificateTypeIntermediate, currentChain, opts)
 		if err != nil {
 			continue
 		}
-		var childChains [][]*Certificate
+
+		// We don't want to add any certificate to chains that doesn't somehow get
+		// to a root. We don't know if all chains through the intermediates will end
+		// at a root, so we slice off the back half of the chain and try to build
+		// that part separately.
 		childChains, ok := cache[intermediateNum]
 		if !ok {
 			childChains, err = intermediate.buildChains(cache, appendToFreshChain(currentChain, intermediate), opts)
