@@ -487,6 +487,7 @@ type Certificate struct {
 
 	Signature          []byte
 	SignatureAlgorithm SignatureAlgorithm
+	SelfSigned         bool
 
 	SignatureAlgorithmOID asn1.ObjectIdentifier
 
@@ -1134,6 +1135,14 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 
 	out.Issuer.FillFromRDNSequence(&issuer)
 	out.Subject.FillFromRDNSequence(&subject)
+
+	// Check if self-signed
+	if bytes.Equal(out.RawSubject, out.RawIssuer) {
+		// Possibly self-signed, check the signature against itself.
+		if out.CheckSignature(out.SignatureAlgorithm, out.RawTBSCertificate, out.Signature) == nil {
+			out.SelfSigned = true
+		}
+	}
 
 	out.NotBefore = in.TBSCertificate.Validity.NotBefore
 	out.NotAfter = in.TBSCertificate.Validity.NotAfter
