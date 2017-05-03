@@ -119,6 +119,20 @@ func (s *CertPool) AppendCertsFromPEM(pemCerts []byte) (ok bool) {
 	return
 }
 
+// Contains returns true if c is in s.
+func (s *CertPool) Contains(c *Certificate) bool {
+	candidates, ok := s.byName[string(c.RawSubject)]
+	if !ok {
+		return false
+	}
+	for _, candidateNum := range candidates {
+		if s.certs[candidateNum].Equal(c) {
+			return true
+		}
+	}
+	return false
+}
+
 // Subjects returns a list of the DER-encoded subjects of
 // all of the certificates in the pool.
 func (s *CertPool) Subjects() (res [][]byte) {
@@ -127,4 +141,11 @@ func (s *CertPool) Subjects() (res [][]byte) {
 		res[i] = c.RawSubject
 	}
 	return
+}
+
+// Certificates returns a list of parsed certificates in the pool.
+func (s *CertPool) Certificates() []*Certificate {
+	out := make([]*Certificate, 0, len(s.certs))
+	out = append(out, s.certs...)
+	return out
 }
