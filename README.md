@@ -1,8 +1,10 @@
-#zcrypto
+ZCrypto
+=======
 
 [![Build Status](https://travis-ci.org/zmap/zcrypto.svg?branch=master)](https://travis-ci.org/zmap/zcrypto)
 
-This repo contains specialized versions of tls and x509. 
+ZCrypto contains specialized versions of tls and x509. It is written in Golang and is primarily based on [Golang's TLS library](https://github.com/golang/go/blob/master/src/crypto/tls)
+
 
 ## IMPORTANT!
 
@@ -10,8 +12,14 @@ This repo contains specialized versions of tls and x509.
 
 ZCrypto is a research library, designed to be used for data collection and analysis, as well as experimenting and prototyping. It should _not_ be used to provide security for production systems.
 
-#tls (formerly known as ztls)
-This is a research TLS library that contains the following modifications: Logging of messages sent by client and server during TLS handshake, Support for multiple TLS versions.
 
-This library is written in Golang and is primarily based on Golang's tls library located at
-https://github.com/golang/go/tree/master/src/crypto/tls.
+### zcrypto/tls (formerly known as ZTLS)
+A _research_ TLS library based on Golang standard library `crypto/tls` that contains that speaks old TLS versions, export ciphers, logs handshake messages, and is highly configurable. Many scary parts are exposed as public variables. It is primarily used for data collection, and is used by [ZGrab](https://github.com/zmap/zagrab). Uses `zcrypto/x509`.
+
+### zcrypto/x509
+
+A fork of the Golang stdlib `crypto/x509` that adds the ability to serialize certificates to JSON, and plays nice with CT.
+
+### zcrypto/ct
+
+A fork of the Google Certificate Transparency Golang library, designed to play nice with ZCrypto.
