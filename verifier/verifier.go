@@ -104,6 +104,7 @@ func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOpti
 	out.Roots = v.Roots
 	out.Intermediates = v.Intermediates
 	out.DNSName = opt.Name
+	out.KeyUsages = []x509.ExtKeyUsage{x509.ExtKeyUsageAny}
 	return
 }
 
