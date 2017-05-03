@@ -58,7 +58,7 @@ openssl req \
   -key $ROOT_KEY_PATH \
   -out $ROOT_REQ_PATH \
   -extensions root_extensions \
-  -config ca.cnf 
+  -config ca.cnf
 
 # Create the self-signed root from the request
 openssl ca \
@@ -74,13 +74,13 @@ openssl ca \
   -batch
 
 # Create the req for the intermediate certificate
-SUBJECT_NAME="root_subject" \
+SUBJECT_NAME="intermediate_subject" \
 openssl req \
   -new \
   -key $INTERMEDIATE_KEY_PATH \
   -out $INTERMEDIATE_REQ_PATH \
   -extensions intermediate_extensions \
-  -config ca.cnf 
+  -config ca.cnf
 
 # Sign the interemediate certificate
 openssl ca \
@@ -139,7 +139,7 @@ openssl ca \
   -extensions leaf_extensions \
   -startdate 180101010000Z \
   -enddate 190101010000Z \
-  -batch 
+  -batch
 
 echo 'const zcryptoRoot = `' >> $GO_TEST_FILE
 cat $ROOT_CERT_PATH >> $GO_TEST_FILE
@@ -156,4 +156,3 @@ echo '`' >> $GO_TEST_FILE
 echo 'const zcryptoValidBeforeIntermediate = `' >> $GO_TEST_FILE
 cat $LEAF_BEFORE_INTERMEDIATE_CERT_PATH >> $GO_TEST_FILE
 echo '`' >> $GO_TEST_FILE
-
