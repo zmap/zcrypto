@@ -1257,3 +1257,37 @@ func TestParseGeneralNamesAll(t *testing.T) {
 		t.Errorf("parseGeneralNames returned unexpected otherNames from sanAllSuported: %v", otherNames)
 	}
 }
+
+func TestTimeInValidityPeriod(t *testing.T) {
+	c, err := certificateFromPEM(zcryptoRoot)
+	if err != nil {
+		t.Fatalf("unable to parse PEM: %s", err)
+	}
+	tests := []struct {
+		unixTime int64
+		expected bool
+	}{
+		{
+			unixTime: 946684800, // 2000-01-01 00:00:00
+			expected: false,
+		},
+		{
+			unixTime: 0,
+			expected: false,
+		},
+		{
+			unixTime: 2208988800, // 2040-01-01 00:00:00
+			expected: false,
+		},
+		{
+			unixTime: 1735689600, // 2025-01-01 00:00:00
+			expected: true,
+		},
+	}
+	for idx, test := range tests {
+		timestamp := time.Unix(test.unixTime, 0)
+		if actual := c.TimeInValidityPeriod(timestamp); actual != test.expected {
+			t.Errorf("#%d: for time %d got %t, expected %v", idx, test.unixTime, actual, test.expected)
+		}
+	}
+}

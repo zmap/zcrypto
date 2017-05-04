@@ -833,6 +833,11 @@ func (c *Certificate) CheckCRLSignature(crl *pkix.CertificateList) (err error) {
 	return c.CheckSignature(algo, crl.TBSCertList.Raw, crl.SignatureValue.RightAlign())
 }
 
+// TimeInValidityPeriod returns true if NotBefore < t < NotAfter
+func (c *Certificate) TimeInValidityPeriod(t time.Time) bool {
+	return c.NotBefore.Before(t) && c.NotAfter.After(t)
+}
+
 type basicConstraints struct {
 	IsCA       bool `asn1:"optional"`
 	MaxPathLen int  `asn1:"optional,default:-1"`
