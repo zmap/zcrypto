@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/zmap/zgrab/ztools/keys"
 	"github.com/zmap/zcrypto/x509/pkix"
+	"github.com/zmap/zgrab/ztools/keys"
 )
 
 type auxKeyUsage struct {
@@ -324,9 +324,7 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	jc.Signature.SignatureAlgorithm = jc.SignatureAlgorithm
 	jc.Signature.Value = c.Signature
 	jc.Signature.Valid = c.validSignature
-	if c.Subject.CommonName == c.Issuer.CommonName {
-		jc.Signature.SelfSigned = true
-	}
+	jc.Signature.SelfSigned = c.SelfSigned
 	jc.FingerprintMD5 = c.FingerprintMD5
 	jc.FingerprintSHA1 = c.FingerprintSHA1
 	jc.FingerprintSHA256 = c.FingerprintSHA256
