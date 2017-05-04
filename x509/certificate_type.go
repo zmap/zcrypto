@@ -12,12 +12,13 @@ import "encoding/json"
 // leaf.
 type CertificateType int
 
-// CertificateType constants. Values should not be considered significant.
+// CertificateType constants. Values should not be considered significant aside
+// from CertificateTypeUnknown is the zero value.
 const (
-	CertificateTypeLeaf CertificateType = iota
-	CertificateTypeIntermediate
-	CertificateTypeRoot
-	CertificateTypeUnknown
+	CertificateTypeUnknown      CertificateType = 0
+	CertificateTypeLeaf         CertificateType = 1
+	CertificateTypeIntermediate CertificateType = 2
+	CertificateTypeRoot         CertificateType = 3
 )
 
 const (
