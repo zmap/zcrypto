@@ -55,6 +55,10 @@ const (
 	// NeverValid results when the certificate could never have been valid due to
 	// some date-related issue, e.g. NotBefore > NotAfter.
 	NeverValid
+
+	// IsSelfSigned results when the certificate is self-signed and not a trusted
+	// root.
+	IsSelfSigned
 )
 
 // CertificateInvalidError results when an odd error occurs. Users of this
