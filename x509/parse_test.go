@@ -1,0 +1,52 @@
+package x509
+
+import (
+	"encoding/pem"
+	"io/ioutil"
+	"testing"
+)
+
+const testdataPrefix = "testdata/"
+
+func TestDetectSelfSigned(t *testing.T) {
+	tests := []struct {
+		Filename string
+		Expected bool
+	}{
+		{
+			Filename: "self-signed.pem",
+			Expected: true,
+		},
+		{
+			Filename: "self-signed-invalid-sig.pem",
+			Expected: false,
+		},
+		{
+			Filename: "self-signed-invalid-name.pem",
+			Expected: false,
+		},
+		{
+			Filename: "dadrian.io.pem",
+			Expected: false,
+		},
+	}
+	for _, test := range tests {
+		path := testdataPrefix + test.Filename
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			t.Fatalf("could not open %s: %s", test.Filename, err)
+		}
+		p, _ := pem.Decode(b)
+		if p == nil {
+			t.Fatalf("bad pem %s", test.Filename)
+		}
+		c, err := ParseCertificate(p.Bytes)
+		if err != nil {
+			t.Fatalf("could not parse %s: %s", test.Filename, err)
+		}
+		if c.SelfSigned != test.Expected {
+			t.Errorf("expected %s to have SelfSigned = %t", test.Filename, test.Expected)
+			t.Fail()
+		}
+	}
+}
