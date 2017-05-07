@@ -27,6 +27,7 @@ type verifyTest struct {
 
 	errorCallback  func(*testing.T, int, error) bool
 	expectedChains [][]string
+	expiredChains  [][]string
 }
 
 var verifyTests = []verifyTest{
@@ -254,6 +255,43 @@ var verifyTests = []verifyTest{
 
 		errorCallback: expectNeverValid,
 	},
+	{
+		leaf:          zcryptoRoot,
+		intermediates: []string{zcryptoIntermediate},
+		roots:         []string{zcryptoRoot},
+		currentTime:   1527811200, // Friday 1st June 2018 12:00:00 AM,
+
+		expectedChains: [][]string{
+			{"ZCrypto Root Authority"},
+		},
+	},
+	{
+		leaf:          zcryptoRoot,
+		intermediates: []string{zcryptoIntermediate},
+		roots:         []string{zcryptoRoot},
+		currentTime:   1830297600, // Saturday 1st Jan 2028 12:00:00 AM,
+
+		expiredChains: [][]string{
+			{"ZCrypto Root Authority"},
+		},
+		errorCallback: expectExpired,
+	},
+	{
+		leaf:          zcryptoRoot,
+		intermediates: []string{comodoIntermediateSHA384, comodoRSAAuthority},
+		roots:         []string{addTrustRoot},
+		currentTime:   1527811200, // Friday 1st June 2018 12:00:00 AM,
+
+		errorCallback: expectCertificateInvalid(IsSelfSigned),
+	},
+	{
+		leaf:          zcryptoRoot,
+		intermediates: []string{zcryptoRoot, comodoRSAAuthority},
+		roots:         []string{addTrustRoot},
+		currentTime:   1527811200, // Friday 1st June 2018 12:00:00 AM,
+
+		errorCallback: expectCertificateInvalid(IsSelfSigned),
+	},
 }
 
 func expectHostnameError(t *testing.T, i int, err error) (ok bool) {
@@ -316,6 +354,26 @@ func expectHashError(t *testing.T, i int, err error) bool {
 	return true
 }
 
+func expectCertificateInvalid(reason InvalidReason) func(*testing.T, int, error) bool {
+	expectedReason := reason
+	return func(t *testing.T, i int, err error) bool {
+		if err == nil {
+			t.Errorf("#%d: no error when expectin CertificateInvalidError", i)
+			return false
+		}
+		invalidError, ok := err.(CertificateInvalidError)
+		if !ok {
+			t.Errorf("#%d: got an error that wasn't CertificateInvalidError", i)
+			return false
+		}
+		if invalidError.Reason != expectedReason {
+			t.Errorf("#%d: got invalid reason %v, expected %v", i, invalidError.Reason, expectedReason)
+			return false
+		}
+		return true
+	}
+}
+
 func certificateFromPEM(pemBytes string) (*Certificate, error) {
 	block, _ := pem.Decode([]byte(pemBytes))
 	if block == nil {
@@ -372,7 +430,7 @@ func testVerify(t *testing.T, useSystemRoots bool) {
 			opts.Roots = nil
 		}
 
-		chains, _, _, err := leaf.Verify(opts)
+		chains, expiredChains, _, err := leaf.Verify(opts)
 
 		if test.testSystemRootsError {
 			systemRoots = oldSystemRoots
@@ -389,6 +447,10 @@ func testVerify(t *testing.T, useSystemRoots bool) {
 
 		if len(chains) != len(test.expectedChains) {
 			t.Errorf("#%d: wanted %d chains, got %d", i, len(test.expectedChains), len(chains))
+		}
+
+		if test.expiredChains != nil && len(expiredChains) != len(test.expiredChains) {
+			t.Errorf("#%d: wanted %d expired chains, got %d", i, len(test.expiredChains), len(expiredChains))
 		}
 
 		// We check that each returned chain matches a chain from

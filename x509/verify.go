@@ -171,7 +171,22 @@ func (c *Certificate) inChain(chain []*Certificate) bool {
 	return false
 }
 
+// buildChains returns all chains of length < maxIntermediateCount. Chains begin
+// the certificate being validated (chain[0] = c), and end at a root. It
+// enforces that all intermediates can sign certificates, and checks signatures.
+// It does not enforce expiration.
 func (c *Certificate) buildChains(cache map[int][][]*Certificate, currentChain []*Certificate, opts *VerifyOptions) (chains [][]*Certificate, err error) {
+
+	// If the certificate being validated is a root, add the chain of length one
+	// containing just the root. Only do this on the first call to buildChains,
+	// when the len(currentChain) = 1.
+	if len(currentChain) == 1 && opts.Roots.Contains(c) {
+		chains = append(chains, appendToFreshChain(nil, c))
+	}
+
+	if len(chains) == 0 && c.SelfSigned {
+		err = CertificateInvalidError{c, IsSelfSigned}
+	}
 
 	// Find roots that signed c and have matching SKID/AKID and Subject/Issuer.
 	possibleRoots, failedRoot, rootErr := opts.Roots.findVerifiedParents(c)
