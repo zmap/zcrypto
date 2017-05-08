@@ -40,9 +40,9 @@ type VerificationResult struct {
 	// disclosure in Chrome.
 	Blacklisted bool
 
-	// Revoked is true if the certificate has been revoked and is listed in the
-	// revocation set that is part of the Verifier (e.g. in OneCRL).
-	Revoked bool
+	// InRevocationSet is true if the certificate has been revoked and is listed
+	// in the revocation set that is part of the Verifier (e.g. in OneCRL).
+	InRevocationSet bool
 
 	// ValiditionError will be non-nil when there was some sort of error during
 	// validation not involving a name mismatch, e.g. if a chain could not be
@@ -65,11 +65,33 @@ type VerificationResult struct {
 	// Never is a list of certificate chains that could never be valid due to
 	// date-related issues, but are otherwise valid.
 	Never [][]*x509.Certificate
+
+	// CertificateType is one of Leaf, Intermediate, or Root.
+	CertificateType x509.CertificateType
+
+	// VerifyTime is time used in verification, set in the VerificationOptions.
+	VerifyTime time.Time
+
+	// InValidityWindow is true if NotBefore < VerifyTime < NotAfter
+	InValidityWindow bool
 }
 
 // MatchesDomain returns true if NameError == nil and Name != "".
 func (res *VerificationResult) MatchesDomain() bool {
 	return res.NameError == nil && res.Name != ""
+}
+
+// HasTrustedChain returns true if len(current) > 0
+func (res *VerificationResult) HasTrustedChain() bool {
+	return len(res.Current) > 0
+}
+
+// HadTrustedChain returns true if at some point in time, the certificate had a
+// chain to a trusted root in this store.
+//
+// This is equivalent to checking if len(current) > 0 || len(expired) > 0
+func (res *VerificationResult) HadTrustedChain() bool {
+	return res.HasTrustedChain() || len(res.Expired) > 0
 }
 
 // VerifyProcedure is an interface to implement additional browser specific logic at
@@ -99,7 +121,6 @@ type Verifier struct {
 }
 
 func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOptions) {
-	opt.clean()
 	out.CurrentTime = opt.VerifyTime
 	out.Roots = v.Roots
 	out.Intermediates = v.Intermediates
@@ -113,20 +134,35 @@ func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOpti
 // checks if the Name in the VerificationOptions matches the name on the
 // certificate.
 func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *VerificationResult) {
+	opts.clean()
+	xopts := v.convertOptions(&opts)
+
 	res = new(VerificationResult)
 	res.Name = opts.Name
+	res.InValidityWindow = c.TimeInValidityPeriod(opts.VerifyTime)
 
-	if res.ValidationError == nil {
-		xopts := v.convertOptions(&opts)
+	// Don't pass DNSName to x509.Verify(), we'll check it ourselves by calling
+	// VerifyHostname() if necessary.
+	xopts.DNSName = ""
 
-		// Don't pass DNSName to x509.Verify(), we'll check it ourselves by calling
-		// VerifyHostname() if necessary.
-		xopts.DNSName = ""
+	res.Current, res.Expired, res.Never, res.ValidationError = c.Verify(xopts)
+	if len(opts.Name) > 0 {
+		res.NameError = c.VerifyHostname(opts.Name)
+	}
 
-		res.Current, res.Expired, res.Never, res.ValidationError = c.Verify(xopts)
-		if len(opts.Name) > 0 {
-			res.NameError = c.VerifyHostname(opts.Name)
-		}
+	// Determine certificate type.
+	if xopts.Roots.Contains(c) {
+		// A certificate is only a root if it's in the root store.
+		res.CertificateType = x509.CertificateTypeRoot
+	} else if c.IsCA && !c.SelfSigned {
+		// Intermediates can't be self-signed. We're ignoring validity here, which
+		// is fine, since type is separate from validity. If someone has a private
+		// or untrusted PKI, we're still going to mark their intermediates as
+		// intermediates.
+		res.CertificateType = x509.CertificateTypeIntermediate
+	} else {
+		// If a certificate is not a root or an intermediate, we'll call it a leaf.
+		res.CertificateType = x509.CertificateTypeLeaf
 	}
 
 	return
