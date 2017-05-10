@@ -57,17 +57,17 @@ type VerificationResult struct {
 	// of the certificate being verified.
 	Parents []*x509.Certificate
 
-	// Current is a list of validated certificate chains that are valid at
+	// CurrentChains is a list of validated certificate chains that are valid at
 	// ValidationTime, starting at the certificate being verified, and ending at a
 	// certificate in the root store.
 	CurrentChains [][]*x509.Certificate
 
-	// Expired is a list of certificate chains that were valid at some point,
-	// but not at ValidationTime.
+	// ExpiredChains is a list of certificate chains that were valid at some
+	// point, but not at ValidationTime.
 	ExpiredChains [][]*x509.Certificate
 
-	// Never is a list of certificate chains that could never be valid due to
-	// date-related issues, but are otherwise valid.
+	// NeverValidChains is a list of certificate chains that could never be valid
+	// due to date-related issues, but are otherwise valid.
 	NeverValidChains [][]*x509.Certificate
 
 	// CertificateType is one of Leaf, Intermediate, or Root.
