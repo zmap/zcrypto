@@ -84,6 +84,20 @@ func (c *ClientFingerprintConfiguration) CheckImplementedExtensions() error {
 	return nil
 }
 
+func (c *clientHelloMsg) WriteToConfig(config *Config) error {
+	config.NextProtos = c.alpnProtocols
+	config.CipherSuites = c.cipherSuites
+	config.MaxVersion = c.vers
+	config.ClientRandom = c.random
+	config.CurvePreferences = c.supportedCurves
+	config.HeartbeatEnabled = c.heartbeatEnabled
+	config.ExtendedRandom = c.extendedRandomEnabled
+	config.ForceSessionTicketExt = c.ticketSupported
+	config.ExtendedMasterSecret = c.extendedMasterSecret
+	config.SignedCertificateTimestampExt = c.sctEnabled
+	return nil
+}
+
 func (c *ClientFingerprintConfiguration) WriteToConfig(config *Config) error {
 	config.NextProtos = []string{}
 	config.CipherSuites = c.CipherSuites
@@ -285,6 +299,9 @@ func (c *Conn) clientHandshake() error {
 
 		if !hello.unmarshal(c.config.ExternalClientHello) {
 			return errors.New("could not read the ClientHello provided")
+		}
+		if err := hello.WriteToConfig(c.config); err != nil {
+			return err
 		}
 
 		// update the SNI with one name, whether or not the extension was already there
