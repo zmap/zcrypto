@@ -53,18 +53,22 @@ type VerificationResult struct {
 	// certificate and the name being verified against.
 	NameError error
 
+	// Parents is a set of currently valid certificates that are immediate parents
+	// of the certificate being verified.
+	Parents []*x509.Certificate
+
 	// Current is a list of validated certificate chains that are valid at
 	// ValidationTime, starting at the certificate being verified, and ending at a
 	// certificate in the root store.
-	Current [][]*x509.Certificate
+	CurrentChains [][]*x509.Certificate
 
 	// Expired is a list of certificate chains that were valid at some point,
 	// but not at ValidationTime.
-	Expired [][]*x509.Certificate
+	ExpiredChains [][]*x509.Certificate
 
 	// Never is a list of certificate chains that could never be valid due to
 	// date-related issues, but are otherwise valid.
-	Never [][]*x509.Certificate
+	NeverValidChains [][]*x509.Certificate
 
 	// CertificateType is one of Leaf, Intermediate, or Root.
 	CertificateType x509.CertificateType
@@ -72,8 +76,8 @@ type VerificationResult struct {
 	// VerifyTime is time used in verification, set in the VerificationOptions.
 	VerifyTime time.Time
 
-	// InValidityWindow is true if NotBefore < VerifyTime < NotAfter
-	InValidityWindow bool
+	// Expired is false if NotBefore < VerifyTime < NotAfter
+	Expired bool
 }
 
 // MatchesDomain returns true if NameError == nil and Name != "".
@@ -83,7 +87,7 @@ func (res *VerificationResult) MatchesDomain() bool {
 
 // HasTrustedChain returns true if len(current) > 0
 func (res *VerificationResult) HasTrustedChain() bool {
-	return len(res.Current) > 0
+	return len(res.CurrentChains) > 0
 }
 
 // HadTrustedChain returns true if at some point in time, the certificate had a
@@ -91,7 +95,7 @@ func (res *VerificationResult) HasTrustedChain() bool {
 //
 // This is equivalent to checking if len(current) > 0 || len(expired) > 0
 func (res *VerificationResult) HadTrustedChain() bool {
-	return res.HasTrustedChain() || len(res.Expired) > 0
+	return res.HasTrustedChain() || len(res.ExpiredChains) > 0
 }
 
 // VerifyProcedure is an interface to implement additional browser specific logic at
@@ -129,6 +133,27 @@ func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOpti
 	return
 }
 
+func parentsFromChains(chains [][]*x509.Certificate) (parents []*x509.Certificate) {
+	// parentSet is a map from FingerprintSHA256 to the index of the chain the
+	// parent was in. We use this to deduplicate parents.
+	parentSet := make(map[string]int)
+	for chainIdx, chain := range chains {
+		if len(chain) < 2 {
+			continue
+		}
+		parent := chain[1]
+		// We can overwrite safely. If a parent is in multiple chains, we don't
+		// actually care which chain we pull the parent from.
+		parentSet[string(parent.FingerprintSHA256)] = chainIdx
+	}
+	// Convert the map to a slice.
+	for _, chainIdx := range parentSet {
+		// The parents are always at index 1 in the chain.
+		parents = append(parents, chains[chainIdx][1])
+	}
+	return
+}
+
 // Verify checks if c chains back to a certificate in Roots, possibly via a
 // certificate in Intermediates, and returns all such chains. It additional
 // checks if the Name in the VerificationOptions matches the name on the
@@ -139,26 +164,26 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 
 	res = new(VerificationResult)
 	res.Name = opts.Name
-	res.InValidityWindow = c.TimeInValidityPeriod(opts.VerifyTime)
+	res.Expired = !c.TimeInValidityPeriod(opts.VerifyTime)
 
 	// Don't pass DNSName to x509.Verify(), we'll check it ourselves by calling
 	// VerifyHostname() if necessary.
 	xopts.DNSName = ""
 
-	res.Current, res.Expired, res.Never, res.ValidationError = c.Verify(xopts)
+	res.CurrentChains, res.ExpiredChains, res.NeverValidChains, res.ValidationError = c.Verify(xopts)
 	if len(opts.Name) > 0 {
 		res.NameError = c.VerifyHostname(opts.Name)
 	}
+	res.Parents = parentsFromChains(res.CurrentChains)
 
 	// Determine certificate type.
 	if xopts.Roots.Contains(c) {
 		// A certificate is only a root if it's in the root store.
 		res.CertificateType = x509.CertificateTypeRoot
-	} else if c.IsCA && !c.SelfSigned {
-		// Intermediates can't be self-signed. We're ignoring validity here, which
-		// is fine, since type is separate from validity. If someone has a private
-		// or untrusted PKI, we're still going to mark their intermediates as
-		// intermediates.
+	} else if c.IsCA && len(res.Parents) > 0 {
+		// We define an intermediate as any certificate that is not a root, but has
+		// IsCA = true and at least one parent. We're implicitly requiring validity
+		// here since Parents is calculated from the list of currently valid chains.
 		res.CertificateType = x509.CertificateTypeIntermediate
 	} else {
 		// If a certificate is not a root or an intermediate, we'll call it a leaf.
