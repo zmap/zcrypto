@@ -41,10 +41,17 @@ func (c *Certificate) ValidateWithStupidDetail(opts VerifyOptions) (chains [][]*
 	}
 
 	if domain != "" {
-		if err = c.VerifyHostname(domain); err != nil {
+		nameErr := c.VerifyHostname(domain)
+		if nameErr != nil {
 			out.MatchesDomain = false
 		} else {
 			out.MatchesDomain = true
+		}
+
+		// Make sure we return an error if either chain building or hostname
+		// verification fails.
+		if err == nil && nameErr != nil {
+			err = nameErr
 		}
 	}
 	validation = out
