@@ -149,3 +149,26 @@ func (s *CertPool) Certificates() []*Certificate {
 	out = append(out, s.certs...)
 	return out
 }
+
+// Size returns the number of unique certificates in the CertPool.
+func (s *CertPool) Size() int {
+	if s == nil {
+		return 0
+	}
+	return len(s.certs)
+}
+
+// Sum returns the union of two certificate pools as a new certificate pool.
+func (s *CertPool) Sum(other *CertPool) (sum *CertPool) {
+	sum = NewCertPool()
+	for _, c := range s.certs {
+		sum.AddCert(c)
+	}
+	if other == nil {
+		return
+	}
+	for _, c := range other.certs {
+		sum.AddCert(c)
+	}
+	return
+}

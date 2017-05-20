@@ -12,6 +12,26 @@
  * permissions and limitations under the License.
  */
 
+// ZIntermediate is a command line utility for verifying a set prospective
+// intermediate certificates against a root store. Given a set of root
+// certificates in PEM format, it can then read in a list of candidate
+// intermediates. Candidate certificates are verified against the root store,
+// and can optionally chain through any other candidate. All candidate
+// certificates will be stored in memory during validation.
+//
+// ZIntermediate returns any candidate certificate with a chain back to the root
+// store, and ignores date-related errors and extended key usage flags, meaning
+// ZIntermediate will return both expired intermediates and code-signing
+// certificates.
+//
+// While the candidate certificates can be any certificate, ZIntermediate
+// expects they will be intermediates. If a non-intermediate certificate (e.g. a
+// certificate without IsCA set to true) is input, ZIntermediate will not build
+// chains through it, but will output it as valid.
+//
+// Examples:
+// 	$ zintermediate --roots roots.pem candidates.csv > intermediates.pem
+//
 package main
 
 import (
