@@ -107,8 +107,9 @@ type VerifyProcedure interface {
 // VerificationOptions contains settings for Verifier.Verify().
 // VerificationOptions should be safely copyable.
 type VerificationOptions struct {
-	VerifyTime time.Time
-	Name       string
+	VerifyTime     time.Time
+	Name           string
+	PresentedChain *x509.CertPool
 }
 
 func (opt *VerificationOptions) clean() {
@@ -127,7 +128,11 @@ type Verifier struct {
 func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOptions) {
 	out.CurrentTime = opt.VerifyTime
 	out.Roots = v.Roots
-	out.Intermediates = v.Intermediates
+	if opt.PresentedChain != nil && opt.PresentedChain.Size() > 0 {
+		out.Intermediates = v.Intermediates.Sum(opt.PresentedChain)
+	} else {
+		out.Intermediates = v.Intermediates
+	}
 	out.DNSName = opt.Name
 	out.KeyUsages = []x509.ExtKeyUsage{x509.ExtKeyUsageAny}
 	return
