@@ -857,8 +857,6 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		cr = make([]byte, helloRandomLen+helloExtendedRandomLen)
 		copy(cr, hs.hello.random)
 		copy(cr[helloRandomLen:], hs.hello.extendedRandom)
-	} else {
-		cr = hs.hello.random
 	}
 
 	if hs.serverHello.extendedRandomEnabled {
@@ -868,8 +866,6 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		sr = make([]byte, serverRandomLen+serverExtendedRandomLen)
 		copy(sr, hs.serverHello.random)
 		copy(sr[serverRandomLen:], hs.serverHello.extendedRandom)
-	} else {
-		sr = hs.serverHello.random
 	}
 
 	hs.preMasterSecret = make([]byte, len(preMasterSecret))

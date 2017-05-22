@@ -211,7 +211,6 @@ func exportKeysFromMasterSecret30(version uint16, suite *cipherSuite, masterSecr
 	clientKey = keyMaterial[:keyLen]
 	keyMaterial = keyMaterial[keyLen:]
 	serverKey = keyMaterial[:keyLen]
-	keyMaterial = keyMaterial[keyLen:]
 	var exportSeed [tlsRandomLength * 2]byte
 	copy(exportSeed[0:len(serverRandom)], clientRandom)
 	copy(exportSeed[len(clientRandom):], serverRandom)
@@ -247,7 +246,6 @@ func exportKeysFromMasterSecretTLS(version uint16, suite *cipherSuite, masterSec
 	clientKey = keyMaterial[:keyLen]
 	keyMaterial = keyMaterial[keyLen:]
 	serverKey = keyMaterial[:keyLen]
-	keyMaterial = keyMaterial[keyLen:]
 	expandedKeyLen := suite.expandedKeyLen
 	finalKeyBlock := make([]byte, 2*expandedKeyLen)
 	var exportSeed [tlsRandomLength * 2]byte
