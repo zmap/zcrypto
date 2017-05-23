@@ -175,11 +175,19 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 	// VerifyHostname() if necessary.
 	xopts.DNSName = ""
 
+	// Build chains back to the roots. If we have a DNSName, verify the leaf
+	// certificate matches.
 	res.CurrentChains, res.ExpiredChains, res.NeverValidChains, res.ValidationError = c.Verify(xopts)
 	if len(opts.Name) > 0 {
 		res.NameError = c.VerifyHostname(opts.Name)
 	}
-	res.Parents = parentsFromChains(res.CurrentChains)
+
+	// Calculate the parent set across all chains.
+	var allChains [][]*x509.Certificate
+	allChains = append(allChains, res.CurrentChains...)
+	allChains = append(allChains, res.ExpiredChains...)
+	allChains = append(allChains, res.NeverValidChains...)
+	res.Parents = parentsFromChains(allChains)
 
 	// Determine certificate type.
 	if xopts.Roots.Contains(c) {
