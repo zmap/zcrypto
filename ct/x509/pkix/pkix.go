@@ -128,7 +128,7 @@ func (n Name) ToRDNSequence() (ret RDNSequence) {
 	ret = appendRDNs(ret, n.Organization, oidOrganization)
 	ret = appendRDNs(ret, n.StreetAddress, oidStreetAddress)
 	ret = appendRDNs(ret, n.Locality, oidLocality)
-	ret = appendRDNs(ret, n.Provice, oidProvince)
+	ret = appendRDNs(ret, n.Province, oidProvince)
 	ret = appendRDNs(ret, n.PostalCode, oidPostalCode)
 	ret = appendRDNs(ret, n.Country, oidCountry)
 	if len(n.SerialNumber) > 0 {
