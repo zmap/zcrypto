@@ -45,7 +45,7 @@ type CertificateExtensions struct {
 	AuthKeyID                      SubjAuthKeyId                    `json:"authority_key_id,omitempty"`
 	SubjectKeyID                   SubjAuthKeyId                    `json:"subject_key_id,omitempty"`
 	ExtendedKeyUsage               *ExtendedKeyUsageExtension       `json:"extended_key_usage,omitempty"`
-	CertificatePolicies            CertificatePoliciesData          `json:"certificate_policies,omitmepty"`
+	CertificatePolicies            CertificatePoliciesData          `json:"certificate_policies,omitempty"`
 	AuthorityInfoAccess            *AuthorityInfoAccess             `json:"authority_info_access,omitempty"`
 	IsPrecert                      IsPrecert                        `json:"ct_poison,omitempty"`
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp `json:"signed_certificate_timestamps,omitempty"`

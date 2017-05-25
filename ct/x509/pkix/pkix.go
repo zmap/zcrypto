@@ -121,16 +121,16 @@ func appendRDNs(in RDNSequence, values []string, oid asn1.ObjectIdentifier) RDNS
 }
 
 func (n Name) ToRDNSequence() (ret RDNSequence) {
-	ret = appendRDNs(ret, n.Country, oidCountry)
-	ret = appendRDNs(ret, n.Organization, oidOrganization)
-	ret = appendRDNs(ret, n.OrganizationalUnit, oidOrganizationalUnit)
-	ret = appendRDNs(ret, n.Locality, oidLocality)
-	ret = appendRDNs(ret, n.Province, oidProvince)
-	ret = appendRDNs(ret, n.StreetAddress, oidStreetAddress)
-	ret = appendRDNs(ret, n.PostalCode, oidPostalCode)
 	if len(n.CommonName) > 0 {
 		ret = appendRDNs(ret, []string{n.CommonName}, oidCommonName)
 	}
+	ret = appendRDNs(ret, n.OrganizationalUnit, oidOrganizationalUnit)
+	ret = appendRDNs(ret, n.Organization, oidOrganization)
+	ret = appendRDNs(ret, n.StreetAddress, oidStreetAddress)
+	ret = appendRDNs(ret, n.Locality, oidLocality)
+	ret = appendRDNs(ret, n.Province, oidProvince)
+	ret = appendRDNs(ret, n.PostalCode, oidPostalCode)
+	ret = appendRDNs(ret, n.Country, oidCountry)
 	if len(n.SerialNumber) > 0 {
 		ret = appendRDNs(ret, []string{n.SerialNumber}, oidSerialNumber)
 	}
