@@ -45,7 +45,7 @@ type CertificateExtensions struct {
 	AuthKeyID                      SubjAuthKeyId                    `json:"authority_key_id,omitempty"`
 	SubjectKeyID                   SubjAuthKeyId                    `json:"subject_key_id,omitempty"`
 	ExtendedKeyUsage               *ExtendedKeyUsageExtension       `json:"extended_key_usage,omitempty"`
-	CertificatePolicies            CertificatePoliciesData          `json:"certificate_policies,omitempty"`
+	CertificatePolicies            *CertificatePoliciesData         `json:"certificate_policies,omitempty"`
 	AuthorityInfoAccess            *AuthorityInfoAccess             `json:"authority_info_access,omitempty"`
 	IsPrecert                      IsPrecert                        `json:"ct_poison,omitempty"`
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp `json:"signed_certificate_timestamps,omitempty"`
@@ -645,6 +645,7 @@ func (c *Certificate) jsonifyExtensions() (*CertificateExtensions, UnknownCertif
 			exts.ExtendedKeyUsage.Known = c.ExtKeyUsage
 			exts.ExtendedKeyUsage.Unknown = c.UnknownExtKeyUsage
 		} else if e.Id.Equal(oidExtCertificatePolicy) {
+			exts.CertificatePolicies = new(CertificatePoliciesData)
 			exts.CertificatePolicies.PolicyIdentifiers = c.PolicyIdentifiers
 			exts.CertificatePolicies.NoticeRefNumbers = c.NoticeRefNumbers
 			exts.CertificatePolicies.NoticeRefOrganization = c.ParsedNoticeRefOrganization
