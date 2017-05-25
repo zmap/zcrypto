@@ -129,6 +129,37 @@ func appendRDNs(in RDNSequence, values []string, oid asn1.ObjectIdentifier) RDNS
 	return append(in, s)
 }
 
+// String returns an RDNSequence as comma seperated list of
+// AttributeTypeAndValues in canonical form.
+func (seq RDNSequence) String() string {
+	out := make([]string, 0, len(seq))
+	// An RDNSequence is effectively an [][]AttributeTypeAndValue
+	for _, atvSet := range seq {
+		for _, atv := range atvSet {
+			// Convert each individual AttributeTypeAndValue to X=Y
+			attrParts := make([]string, 0, 2)
+			oidString := atv.Type.String()
+			oidName, ok := oidDotNotationToNames[oidString]
+			if ok {
+				attrParts = append(attrParts, oidName.ShortName)
+			} else {
+				attrParts = append(attrParts, oidString)
+			}
+			switch value := atv.Value.(type) {
+			case string:
+				attrParts = append(attrParts, value)
+			case []byte:
+				attrParts = append(attrParts, string(value))
+			default:
+				continue
+			}
+			attrString := strings.Join(attrParts, "=")
+			out = append(out, attrString)
+		}
+	}
+	return strings.Join(out, ", ")
+}
+
 func (n Name) ToRDNSequence() (ret RDNSequence) {
 	if len(n.CommonName) > 0 {
 		ret = appendRDNs(ret, []string{n.CommonName}, oidCommonName)
@@ -148,30 +179,10 @@ func (n Name) ToRDNSequence() (ret RDNSequence) {
 	return ret
 }
 
+// String returns a canonical representation of a DistinguishedName
 func (n *Name) String() string {
-	parts := make([]string, 0, 8)
-	for _, name := range n.Names {
-		oidString := name.Type.String()
-		attrParts := make([]string, 0, 2)
-		oidName, ok := oidDotNotationToNames[oidString]
-		if ok {
-			attrParts = append(attrParts, oidName.ShortName)
-		} else {
-			attrParts = append(attrParts, oidString)
-		}
-		switch value := name.Value.(type) {
-		case string:
-			attrParts = append(attrParts, value)
-		case []byte:
-			attrParts = append(attrParts, string(value))
-		default:
-			continue
-		}
-		attrString := strings.Join(attrParts, "=")
-		parts = append(parts, attrString)
-	}
-	joined := strings.Join(parts, ", ")
-	return joined
+	seq := n.ToRDNSequence()
+	return seq.String()
 }
 
 // CertificateList represents the ASN.1 structure of the same name. See RFC
