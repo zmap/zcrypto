@@ -645,6 +645,7 @@ func (c *Certificate) jsonifyExtensions() (*CertificateExtensions, UnknownCertif
 			exts.ExtendedKeyUsage.Known = c.ExtKeyUsage
 			exts.ExtendedKeyUsage.Unknown = c.UnknownExtKeyUsage
 		} else if e.Id.Equal(oidExtCertificatePolicy) {
+			exts.CertificatePolicies = new(CertificatePoliciesData)
 			exts.CertificatePolicies.PolicyIdentifiers = c.PolicyIdentifiers
 			exts.CertificatePolicies.NoticeRefNumbers = c.NoticeRefNumbers
 			exts.CertificatePolicies.NoticeRefOrganization = c.ParsedNoticeRefOrganization
