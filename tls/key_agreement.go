@@ -137,7 +137,6 @@ func (ka *rsaKeyAgreement) processServerKeyExchange(config *Config, clientHello 
 		return errServerKeyExchange
 	}
 	rawExponent := k[0:exponentLength]
-	k = k[exponentLength:]
 	exponent := 0
 	for _, b := range rawExponent {
 		exponent <<= 8

@@ -80,7 +80,7 @@ func readVarBytes(r io.Reader, numLenBytes int) ([]byte, error) {
 		return nil, err
 	}
 	data := make([]byte, l)
-	if n, err := io.ReadFull(r, data);  err != nil {
+	if n, err := io.ReadFull(r, data); err != nil {
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
 			return nil, fmt.Errorf("short read: expected %d but got %d", l, n)
 		}
@@ -145,6 +145,9 @@ func ReadTimestampedEntryInto(r io.Reader, t *TimestampedEntry) error {
 		return fmt.Errorf("unknown EntryType: %d", t.EntryType)
 	}
 	t.Extensions, err = readVarBytes(r, ExtensionsLengthBytes)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

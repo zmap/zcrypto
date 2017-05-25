@@ -353,7 +353,7 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 			IPAddresses:    []net.IP{net.IPv4(127, 0, 0, 1).To4(), net.ParseIP("2001:4860:0:2001::68")},
 
 			PolicyIdentifiers: []asn1.ObjectIdentifier{[]int{1, 2, 3}, []int{2, 23, 140, 1, 1}},
-			PermittedDNSNames: []GeneralSubtreeString{GeneralSubtreeString{Data: ".example.com"}, GeneralSubtreeString{Data: "example.com"}},
+			PermittedDNSNames: []GeneralSubtreeString{{Data: ".example.com"}, {Data: "example.com"}},
 
 			CRLDistributionPoints: []string{"http://crl1.example.com/ca1.crl", "http://crl2.example.com/ca1.crl"},
 
@@ -1069,7 +1069,7 @@ func TestParseGeneralNamesOtherName(t *testing.T) {
 			t.Errorf("unexpected extra bytes in otherName")
 		}
 	}
-	for i, _ := range otherInts {
+	for i := range otherInts {
 		if otherInts[i] != expectedInts[i] {
 			t.Errorf("otherName contained unexpected value %v, expected %v", otherInts[i], expectedInts[i])
 		}
@@ -1112,7 +1112,7 @@ func TestParseGeneralNamesDirectoryName(t *testing.T) {
 	massiveName.Names = append(massiveName.Names, pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{2, 5, 4, 3}, Value: "gov.us"})              //CommonName
 
 	var expectedNames [3]pkix.Name = [3]pkix.Name{shortName, massiveName, shortName}
-	for i, _ := range directoryNames {
+	for i := range directoryNames {
 		if !reflect.DeepEqual(directoryNames[i], expectedNames[i]) {
 			t.Errorf("directoryName contained unexpected value %v, expected %v", directoryNames[i], expectedNames[i])
 		}
@@ -1139,7 +1139,7 @@ func TestParseGeneralNamesUniformResourceIdentifier(t *testing.T) {
 	}
 
 	var expectedNames [3]string = [3]string{"http://gov.us/index.html", "http://gov.us/home/", "http://gov.us/home/capitol/"}
-	for i, _ := range URIs {
+	for i := range URIs {
 		if URIs[i] != expectedNames[i] {
 			t.Errorf("uniformResourceIdentifier contained unexpected value %v, expected %v", URIs[i], expectedNames[i])
 		}
@@ -1165,8 +1165,8 @@ func TestParseGeneralNamesRegisteredID(t *testing.T) {
 		t.Errorf("parseGeneralNames returned unexpected # of registeredIDs in sanManyRegisteredID: %v (expected 3)", len(registeredIDs))
 	}
 
-	var expectedNames [3]asn1.ObjectIdentifier = [3]asn1.ObjectIdentifier{asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 13, 1}, asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11483, 42}, asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 13, 3}}
-	for i, _ := range registeredIDs {
+	var expectedNames [3]asn1.ObjectIdentifier = [3]asn1.ObjectIdentifier{{1, 3, 6, 1, 5, 5, 7, 13, 1}, {1, 3, 6, 1, 4, 1, 11483, 42}, {1, 3, 6, 1, 5, 5, 7, 13, 3}}
+	for i := range registeredIDs {
 		if !registeredIDs[i].Equal(expectedNames[i]) {
 			t.Errorf("registeredID contained unexpected value %v, expected %v", registeredIDs[i], expectedNames[i])
 		}
@@ -1202,7 +1202,7 @@ func TestParseGeneralNamesEDIPartyName(t *testing.T) {
 	expectedNames[3] = pkix.EDIPartyName{NameAssigner: "universe", PartyName: "Supreme Legislature"}
 	expectedNames[4] = pkix.EDIPartyName{NameAssigner: "universe", PartyName: "Supreme Executive"}
 
-	for i, _ := range ediPartyNames {
+	for i := range ediPartyNames {
 		if !reflect.DeepEqual(ediPartyNames[i], expectedNames[i]) {
 			t.Errorf("ediPartyName contained unexpected value %v, expected %v", ediPartyNames[i], expectedNames[i])
 		}

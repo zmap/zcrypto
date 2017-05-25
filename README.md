@@ -2,6 +2,7 @@ ZCrypto
 =======
 
 [![Build Status](https://travis-ci.org/zmap/zcrypto.svg?branch=master)](https://travis-ci.org/zmap/zcrypto)
+[![Go Report Card](https://goreportcard.com/badge/github.com/zmap/zcrypto)](https://goreportcard.com/report/github.com/zmap/zcrypto)
 
 ZCrypto contains specialized versions of tls and x509. It is written in Golang and is primarily based on [Golang's TLS library](https://github.com/golang/go/blob/master/src/crypto/tls)
 

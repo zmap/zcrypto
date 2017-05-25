@@ -1209,7 +1209,7 @@ type ConfigJSON struct {
 	MaxVersion                     TLSVersion                      `json:"max_tls_version,omitempty"`
 	CurvePreferences               []CurveID                       `json:"curve_preferences,omitempty"`
 	ExplicitCurvePreferences       bool                            `json:"explicit_curve_preferences"`
-	ForceSuites                    bool                            `json:"force_cipher_suites"1`
+	ForceSuites                    bool                            `json:"force_cipher_suites"`
 	ExportRSAKey                   *rsa.PrivateKey                 `json:"export_rsa_key,omitempty"`
 	HeartbeatEnabled               bool                            `json:"heartbeat_enabled"`
 	ClientDSAEnabled               bool                            `json:"client_dsa_enabled"`

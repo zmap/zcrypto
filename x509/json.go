@@ -345,7 +345,7 @@ func purgeNameDuplicates(names []string) (out []string) {
 	}
 
 	out = make([]string, 0, len(hashset))
-	for key, _ := range hashset {
+	for key := range hashset {
 		out = append(out, key)
 	}
 	return
@@ -373,7 +373,7 @@ func orMask(ip net.IP, mask net.IPMask) net.IP {
 		return nil
 	}
 	out := make([]byte, len(ip))
-	for idx, _ := range ip {
+	for idx := range ip {
 		out[idx] = ip[idx] | mask[idx]
 	}
 	return out
@@ -384,7 +384,7 @@ func invertMask(mask net.IPMask) net.IPMask {
 		return nil
 	}
 	out := make([]byte, len(mask))
-	for idx, _ := range mask {
+	for idx := range mask {
 		out[idx] = ^mask[idx]
 	}
 	return out
