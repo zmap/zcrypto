@@ -209,7 +209,7 @@ func (c *Certificate) buildChains(cache map[int][][]*Certificate, currentChain [
 		if err != nil {
 			continue
 		}
-		if !root.subjectAndSPKIInChain(currentChain) {
+		if !root.inChain(currentChain) {
 			chains = append(chains, appendToFreshChain(currentChain, root))
 		}
 	}
