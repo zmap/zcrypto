@@ -5,6 +5,7 @@
 package x509
 
 import (
+	"bytes"
 	"net"
 	"strings"
 	"time"
@@ -160,8 +161,18 @@ func appendToFreshChain(chain []*Certificate, cert *Certificate) []*Certificate 
 	return n
 }
 
-// Returns true if a certificate with a matching subject is already in the given
-// chain.
+// Returns true if a certificate with a matching (Name, SPKI) is already in the
+// given chain.
+func (c *Certificate) subjectAndSPKIInChain(chain []*Certificate) bool {
+	for _, cert := range chain {
+		if bytes.Equal(c.RawSubject, cert.RawSubject) && bytes.Equal(c.RawSubjectPublicKeyInfo, cert.RawSubjectPublicKeyInfo) {
+			return true
+		}
+	}
+	return false
+}
+
+// Returns true if an identical certificate is already in the given chain.
 func (c *Certificate) inChain(chain []*Certificate) bool {
 	for _, cert := range chain {
 		if cert.Equal(c) {
@@ -213,7 +224,7 @@ func (c *Certificate) buildChains(cache map[int][][]*Certificate, currentChain [
 		if opts.Roots.Contains(intermediate) {
 			continue
 		}
-		if intermediate.inChain(currentChain) {
+		if intermediate.subjectAndSPKIInChain(currentChain) {
 			continue
 		}
 		err = intermediate.isValid(CertificateTypeIntermediate, currentChain, opts)
