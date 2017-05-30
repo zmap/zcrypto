@@ -1511,6 +1511,26 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 	return out, nil
 }
 
+// START CT CHANGES
+
+// ParseTBSCertificate parses a single TBSCertificate from the given ASN.1 DER data.
+// The parsed data is returned in a Certificate struct for ease of access.
+func ParseTBSCertificate(asn1Data []byte) (*Certificate, error) {
+	var tbsCert tbsCertificate
+	rest, err := asn1.Unmarshal(asn1Data, &tbsCert)
+	if err != nil {
+		return nil, err
+	}
+	if len(rest) > 0 {
+		return nil, asn1.SyntaxError{Msg: "trailing data"}
+	}
+	return parseCertificate(&certificate{
+		Raw:            tbsCert.Raw,
+		TBSCertificate: tbsCert})
+}
+
+// END CT CHANGES
+
 // ParseCertificate parses a single certificate from the given ASN.1 DER data.
 func ParseCertificate(asn1Data []byte) (*Certificate, error) {
 	var cert certificate
