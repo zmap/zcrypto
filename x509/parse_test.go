@@ -33,6 +33,10 @@ func TestDetectSelfSigned(t *testing.T) {
 			Filename: "dadrian.io.pem",
 			Expected: false,
 		},
+		{
+			Filename: "self-signed-md5-rsa.pem",
+			Expected: true,
+		},
 	}
 	for _, test := range tests {
 		path := testdataPrefix + test.Filename
