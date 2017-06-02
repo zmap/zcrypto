@@ -764,6 +764,8 @@ func (c *Certificate) CheckSignature(algo SignatureAlgorithm, signed, signature 
 	var hashType crypto.Hash
 
 	switch algo {
+	case MD5WithRSA:
+		hashType = crypto.MD5
 	case SHA1WithRSA, DSAWithSHA1, ECDSAWithSHA1:
 		hashType = crypto.SHA1
 	case SHA256WithRSA, DSAWithSHA256, ECDSAWithSHA256:
@@ -1144,7 +1146,7 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 	// Check if self-signed
 	if bytes.Equal(out.RawSubject, out.RawIssuer) {
 		// Possibly self-signed, check the signature against itself.
-		if out.CheckSignature(out.SignatureAlgorithm, out.RawTBSCertificate, out.Signature) == nil {
+		if err := out.CheckSignature(out.SignatureAlgorithm, out.RawTBSCertificate, out.Signature); err == nil {
 			out.SelfSigned = true
 		}
 	}
