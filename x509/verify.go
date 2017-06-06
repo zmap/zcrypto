@@ -135,7 +135,7 @@ func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never [][]*C
 		return
 	}
 
-	current, expired, never = checkExpirations(chains, opts.CurrentTime)
+	current, expired, never = FilterByDate(chains, opts.CurrentTime)
 	if len(current) == 0 {
 		if len(expired) > 0 {
 			err = CertificateInvalidError{c, Expired}
@@ -307,7 +307,7 @@ func later(a, b time.Time) time.Time {
 // check expirations divides chains into a set of disjoint chains, containing
 // current chains valid now, expired chains that were valid at some point, and
 // the set of chains that were never valid.
-func checkExpirations(chains [][]*Certificate, now time.Time) (current, expired, never [][]*Certificate) {
+func FilterByDate(chains [][]*Certificate, now time.Time) (current, expired, never [][]*Certificate) {
 	for _, chain := range chains {
 		if len(chain) == 0 {
 			continue
