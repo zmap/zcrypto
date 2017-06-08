@@ -58,3 +58,25 @@ func TestDetectSelfSigned(t *testing.T) {
 		}
 	}
 }
+
+func TestParseEmailInDN(t *testing.T) {
+	const expectedEmail = "ca-winshuttle@dfn.de"
+	b, err := ioutil.ReadFile(testdataPrefix + "email-in-subject.pem")
+	if err != nil {
+		t.Fatalf("could not open file: %s", err)
+	}
+	p, _ := pem.Decode(b)
+	if p == nil {
+		t.Fatalf("bad pem")
+	}
+	c, err := ParseCertificate(p.Bytes)
+	if err != nil {
+		t.Fatalf("could not parse: %s", err)
+	}
+	if len(c.Subject.EmailAddress) != 1 {
+		t.Error("did not parse email address")
+	}
+	if email := c.Subject.EmailAddress[0]; email != expectedEmail {
+		t.Errorf("mismatched email address, expected %s, got %s", expectedEmail, email)
+	}
+}

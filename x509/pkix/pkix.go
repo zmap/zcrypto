@@ -52,6 +52,7 @@ type Name struct {
 	Country, Organization, OrganizationalUnit  []string
 	Locality, Province                         []string
 	StreetAddress, PostalCode, DomainComponent []string
+	EmailAddress                               []string
 	SerialNumber, CommonName                   string
 
 	Names      []AttributeTypeAndValue
@@ -94,6 +95,9 @@ func (n *Name) FillFromRDNSequence(rdns *RDNSequence) {
 			}
 		} else if t.Equal(oidDomainComponent) {
 			n.DomainComponent = append(n.DomainComponent, value)
+		} else if t.Equal(oidDNEmailAddress) {
+			// Deprecated, see RFC 5280 Section 4.1.2.6
+			n.EmailAddress = append(n.EmailAddress, value)
 		}
 	}
 }
@@ -109,6 +113,7 @@ var (
 	oidStreetAddress      = []int{2, 5, 4, 9}
 	oidPostalCode         = []int{2, 5, 4, 17}
 	oidDomainComponent    = []int{0, 9, 2342, 19200300, 100, 1, 25}
+	oidDNEmailAddress     = []int{1, 2, 840, 113549, 1, 9, 1}
 )
 
 // appendRDNs appends a relativeDistinguishedNameSET to the given RDNSequence
