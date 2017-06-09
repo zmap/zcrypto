@@ -95,7 +95,7 @@ func (res *VerificationResult) HasTrustedChain() bool {
 //
 // This is equivalent to checking if len(current) > 0 || len(expired) > 0
 func (res *VerificationResult) HadTrustedChain() bool {
-	return res.HasTrustedChain() || len(res.ExpiredChains) > 0
+	return res.HasTrustedChain() || len(res.ExpiredChains) > 0 || len(res.Parents) > 0
 }
 
 // VerifyProcedure is an interface to implement additional browser specific logic at
@@ -138,11 +138,17 @@ func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOpti
 	return
 }
 
-func parentsFromChains(chains [][]*x509.Certificate) (parents []*x509.Certificate) {
+func parentsFromChains(c *x509.Certificate, chains [][]*x509.Certificate) (parents []*x509.Certificate) {
+	// Draw parents from the set of chains valid at the time of expiration of the
+	// leaf certificate
+	verifyTime := c.NotAfter
+	verifyTime = verifyTime.Add(-time.Second)
+	candidates, _, _ := x509.FilterByDate(chains, verifyTime)
+
 	// parentSet is a map from FingerprintSHA256 to the index of the chain the
 	// parent was in. We use this to deduplicate parents.
 	parentSet := make(map[string]int)
-	for chainIdx, chain := range chains {
+	for chainIdx, chain := range candidates {
 		if len(chain) < 2 {
 			continue
 		}
@@ -187,7 +193,7 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 	allChains = append(allChains, res.CurrentChains...)
 	allChains = append(allChains, res.ExpiredChains...)
 	allChains = append(allChains, res.NeverValidChains...)
-	res.Parents = parentsFromChains(allChains)
+	res.Parents = parentsFromChains(c, allChains)
 
 	// Determine certificate type.
 	if xopts.Roots.Contains(c) {
@@ -196,7 +202,8 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 	} else if c.IsCA && len(res.Parents) > 0 {
 		// We define an intermediate as any certificate that is not a root, but has
 		// IsCA = true and at least one parent. We're implicitly requiring validity
-		// here since Parents is calculated from the list of currently valid chains.
+		// here since Parents is calculated from the list of valid chains at the
+		// time of expiration.
 		res.CertificateType = x509.CertificateTypeIntermediate
 	} else {
 		// If a certificate is not a root or an intermediate, we'll call it a leaf.
