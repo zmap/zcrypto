@@ -7,244 +7,144 @@ package pkix
 import (
 	"encoding/asn1"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 )
 
-type jsonName struct {
-	CommonName         []string
-	SerialNumber       []string
-	Country            []string
-	Locality           []string
-	Province           []string
-	StreetAddress      []string
-	Organization       []string
-	OrganizationalUnit []string
-	PostalCode         []string
-	DomainComponent    []string //technically deprecated, but yolo
-	UnknownAttributes  []AttributeTypeAndValue
+type auxAttributeTypeAndValue struct {
+	Type  string `json:"type,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
-func (jn *jsonName) MarshalJSON() ([]byte, error) {
-	enc := make(map[string]interface{})
-	if len(jn.CommonName) > 0 {
-		enc["common_name"] = jn.CommonName
+// MarshalJSON implements the json.Marshaler interface.
+func (a *AttributeTypeAndValue) MarshalJSON() ([]byte, error) {
+	aux := auxAttributeTypeAndValue{}
+	aux.Type = a.Type.String()
+	if s, ok := a.Value.(string); ok {
+		aux.Value = s
 	}
-	if len(jn.SerialNumber) > 0 {
-		enc["serial_number"] = jn.SerialNumber
-	}
-	if len(jn.Country) > 0 {
-		enc["country"] = jn.Country
-	}
-	if len(jn.Locality) > 0 {
-		enc["locality"] = jn.Locality
-	}
-	if len(jn.Province) > 0 {
-		enc["province"] = jn.Province
-	}
-	if len(jn.StreetAddress) > 0 {
-		enc["street_address"] = jn.StreetAddress
-	}
-	if len(jn.Organization) > 0 {
-		enc["organization"] = jn.Organization
-	}
-	if len(jn.OrganizationalUnit) > 0 {
-		enc["organizational_unit"] = jn.OrganizationalUnit
-	}
-	if len(jn.PostalCode) > 0 {
-		enc["postal_code"] = jn.PostalCode
-	}
-	if len(jn.DomainComponent) > 0 {
-		enc["domain_component"] = jn.DomainComponent
-	}
-	for _, a := range jn.UnknownAttributes {
-		enc[a.Type.String()] = a.Value
-	}
-	return json.Marshal(enc)
+	return json.Marshal(&aux)
 }
 
-func convertToStrArray(i interface{}) []string {
-
-	var strArray []string
-
-	arr, _ := i.([]interface{})
-	for _, val := range arr {
-		if str, ok := val.(string); ok {
-			strArray = append(strArray, str)
-		}
-	}
-
-	return strArray
-}
-
-func (jn *jsonName) UnmarshalJSON(b []byte) error {
-	nameMap := make(map[string]interface{})
-
-	if err := json.Unmarshal(b, &nameMap); err != nil {
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (a *AttributeTypeAndValue) UnmarshalJSON(b []byte) error {
+	aux := auxAttributeTypeAndValue{}
+	if err := json.Unmarshal(b, &aux); err != nil {
 		return err
 	}
-
-	for key, val := range nameMap {
-		switch key {
-		case "common_name":
-			jn.CommonName = convertToStrArray(val)
-		case "serial_number":
-			jn.SerialNumber = convertToStrArray(val)
-		case "country":
-			jn.Country = convertToStrArray(val)
-		case "locality":
-			jn.Locality = convertToStrArray(val)
-		case "province":
-			jn.Province = convertToStrArray(val)
-		case "street_address":
-			jn.StreetAddress = convertToStrArray(val)
-		case "organization":
-			jn.Organization = convertToStrArray(val)
-		case "organizational_unit":
-			jn.OrganizationalUnit = convertToStrArray(val)
-		case "postal_code":
-			jn.PostalCode = convertToStrArray(val)
-		case "domain_component":
-			jn.DomainComponent = convertToStrArray(val)
-		default:
-			attributeType := asn1.ObjectIdentifier{}
-			valStr, okStr := val.(string)
-			if !okStr {
-				return fmt.Errorf("Expected string value for field %s, got %T", key, val)
+	a.Type = nil
+	if len(aux.Type) > 0 {
+		parts := strings.Split(aux.Type, ".")
+		for _, part := range parts {
+			i, err := strconv.Atoi(part)
+			if err != nil {
+				return err
 			}
-
-			for _, oidString := range strings.Split(valStr, ".") {
-				oidInt, err := strconv.Atoi(oidString)
-				if err != nil {
-					return err
-				}
-				attributeType = append(attributeType, oidInt)
-			}
-
-			atv := AttributeTypeAndValue{
-				Type:  attributeType,
-				Value: val,
-			}
-
-			jn.UnknownAttributes = append(jn.UnknownAttributes, atv)
+			a.Type = append(a.Type, i)
 		}
-
 	}
-
+	a.Value = aux.Value
 	return nil
 }
 
-type jsonAttributeTypeAndValue struct {
-	Type  string      `json:"type"`
-	Value interface{} `json:"value"`
+type auxOtherName struct {
+	ID    string `json:"id,omitempty"`
+	Value []byte `json:"value,omitempty"`
 }
 
-func (a *AttributeTypeAndValue) MarshalJSON() ([]byte, error) {
-	var enc jsonAttributeTypeAndValue
-	enc.Type = a.Type.String()
-	enc.Value = a.Value
-	return json.Marshal(&enc)
-}
-
-type jsonExtension struct {
-	Id       string `json:"id"`
-	Critical bool   `json:"critical"`
-	Value    []byte `json:"value"`
-}
-
-func (e *Extension) MarshalJSON() ([]byte, error) {
-	ext := jsonExtension{
-		Id:       e.Id.String(),
-		Critical: e.Critical,
-		Value:    e.Value,
-	}
-	return json.Marshal(ext)
-}
-
-type jsonOtherName struct {
-	Id    string `json:"id"`
-	Value []byte `json:"value"`
-}
-
+// MarshalJSON implements the json.Marshaler interface.
 func (o *OtherName) MarshalJSON() ([]byte, error) {
-	oName := jsonOtherName{
-		Id:    o.Typeid.String(),
+	aux := auxOtherName{
+		ID:    o.TypeID.String(),
 		Value: o.Value.Bytes,
 	}
-	return json.Marshal(oName)
+	return json.Marshal(&aux)
 }
 
-const (
-	asn1ClassUniversal       = 0
-	asn1ClassApplication     = 1
-	asn1ClassContextSpecific = 2
-	asn1ClassPrivate         = 3
-)
-
+// UnmarshalJSON implements the json.Unmarshaler interface.
 func (o *OtherName) UnmarshalJSON(b []byte) (err error) {
-	var oName jsonOtherName
-
-	if err = json.Unmarshal(b, &oName); err != nil {
+	aux := auxOtherName{}
+	if err = json.Unmarshal(b, &aux); err != nil {
 		return
 	}
 
-	arcs := strings.Split(oName.Id, ".")
-	oid := make(asn1.ObjectIdentifier, len(arcs))
-
-	for i, s := range arcs {
-		var tmp int64
-		tmp, err = strconv.ParseInt(s, 10, 32)
-		if err != nil {
-			return
-		}
-		oid[i] = int(tmp)
+	// Turn dot-notation back into an OID
+	if len(aux.ID) == 0 {
+		return errors.New("empty type ID")
 	}
-	o.Typeid = oid
+	parts := strings.Split(aux.ID, ".")
+	o.TypeID = nil
+	for _, part := range parts {
+		i, err := strconv.Atoi(part)
+		if err != nil {
+			return err
+		}
+		o.TypeID = append(o.TypeID, i)
+	}
 
+	// Build the ASN.1 value
 	o.Value = asn1.RawValue{
-		Tag: 0,
-		//TODO: change to asn1.ClassContextSpecific for next major release (i.e. 1.6)
-		Class:      asn1ClassContextSpecific,
+		Tag:        0,
+		Class:      asn1.ClassContextSpecific,
 		IsCompound: true,
-		Bytes:      oName.Value,
+		Bytes:      aux.Value,
 	}
 	o.Value.FullBytes, err = asn1.Marshal(o.Value)
 	return
 }
 
+type auxName struct {
+	CommonName         []string `json:"common_name,omitempty"`
+	SerialNumber       []string `json:"serial_number,omitempty"`
+	Country            []string `json:"country,omitempty"`
+	Locality           []string `json:"locality,omitempty"`
+	Province           []string `json:"province,omitempty"`
+	StreetAddress      []string `json:"street_address,omitempty"`
+	Organization       []string `json:"organization,omitempty"`
+	OrganizationalUnit []string `json:"organizational_unit,omitempty"`
+	PostalCode         []string `json:"postal_code,omitempty"`
+	DomainComponent    []string `json:"domain_component,omitempty"`
+
+	UnknownAttributes []AttributeTypeAndValue `json:"unknown_attributes,omitempty"`
+}
+
+// MarshalJSON implements the json.Marshaler interface.
 func (n *Name) MarshalJSON() ([]byte, error) {
-	var enc jsonName
+	aux := auxName{}
 	attrs := n.ToRDNSequence()
 	for _, attrSet := range attrs {
 		for _, a := range attrSet {
-			s, _ := a.Value.(string)
+			s, ok := a.Value.(string)
+			if !ok {
+				continue
+			}
 			if a.Type.Equal(oidCommonName) {
-				enc.CommonName = append(enc.CommonName, s)
+				aux.CommonName = append(aux.CommonName, s)
 			} else if a.Type.Equal(oidSerialNumber) {
-				enc.SerialNumber = append(enc.SerialNumber, s)
+				aux.SerialNumber = append(aux.SerialNumber, s)
 			} else if a.Type.Equal(oidCountry) {
-				enc.Country = append(enc.Country, s)
+				aux.Country = append(aux.Country, s)
 			} else if a.Type.Equal(oidLocality) {
-				enc.Locality = append(enc.Locality, s)
+				aux.Locality = append(aux.Locality, s)
 			} else if a.Type.Equal(oidProvince) {
-				enc.Province = append(enc.Province, s)
+				aux.Province = append(aux.Province, s)
 			} else if a.Type.Equal(oidStreetAddress) {
-				enc.StreetAddress = append(enc.StreetAddress, s)
+				aux.StreetAddress = append(aux.StreetAddress, s)
 			} else if a.Type.Equal(oidOrganization) {
-				enc.Organization = append(enc.Organization, s)
+				aux.Organization = append(aux.Organization, s)
 			} else if a.Type.Equal(oidOrganizationalUnit) {
-				enc.OrganizationalUnit = append(enc.OrganizationalUnit, s)
+				aux.OrganizationalUnit = append(aux.OrganizationalUnit, s)
 			} else if a.Type.Equal(oidPostalCode) {
-				enc.PostalCode = append(enc.PostalCode, s)
+				aux.PostalCode = append(aux.PostalCode, s)
 			} else if a.Type.Equal(oidDomainComponent) {
-				enc.DomainComponent = append(enc.DomainComponent, s)
+				aux.DomainComponent = append(aux.DomainComponent, s)
 			} else {
-				enc.UnknownAttributes = append(enc.UnknownAttributes, a)
+				aux.UnknownAttributes = append(aux.UnknownAttributes, a)
 			}
 		}
 	}
-	return json.Marshal(&enc)
+	return json.Marshal(&aux)
 }
 
 func appendATV(names []AttributeTypeAndValue, fieldVals []string, asn1Id asn1.ObjectIdentifier) []AttributeTypeAndValue {
@@ -259,54 +159,49 @@ func appendATV(names []AttributeTypeAndValue, fieldVals []string, asn1Id asn1.Ob
 	return names
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface.
 func (n *Name) UnmarshalJSON(b []byte) error {
-	var jName jsonName
-
-	if err := jName.UnmarshalJSON(b); err != nil {
+	aux := auxName{}
+	if err := json.Unmarshal(b, &aux); err != nil {
 		return err
 	}
 
-	// add everything to names
-	n.Names = appendATV(n.Names, jName.Country, oidCountry)
-	n.Names = appendATV(n.Names, jName.Organization, oidOrganization)
-	n.Names = appendATV(n.Names, jName.OrganizationalUnit, oidOrganizationalUnit)
-	n.Names = appendATV(n.Names, jName.Locality, oidLocality)
-	n.Names = appendATV(n.Names, jName.Province, oidProvince)
-	n.Names = appendATV(n.Names, jName.StreetAddress, oidStreetAddress)
-	n.Names = appendATV(n.Names, jName.PostalCode, oidPostalCode)
-	n.Names = appendATV(n.Names, jName.DomainComponent, oidDomainComponent)
+	// Populate Names as []AttributeTypeAndValue
+	n.Names = appendATV(n.Names, aux.Country, oidCountry)
+	n.Names = appendATV(n.Names, aux.Organization, oidOrganization)
+	n.Names = appendATV(n.Names, aux.OrganizationalUnit, oidOrganizationalUnit)
+	n.Names = appendATV(n.Names, aux.Locality, oidLocality)
+	n.Names = appendATV(n.Names, aux.Province, oidProvince)
+	n.Names = appendATV(n.Names, aux.StreetAddress, oidStreetAddress)
+	n.Names = appendATV(n.Names, aux.PostalCode, oidPostalCode)
+	n.Names = appendATV(n.Names, aux.DomainComponent, oidDomainComponent)
+	n.Names = appendATV(n.Names, aux.CommonName, oidCommonName)
+	n.Names = appendATV(n.Names, aux.SerialNumber, oidSerialNumber)
 
-	// populate specific fields
-	n.Country = jName.Country
-	n.Organization = jName.Organization
-	n.OrganizationalUnit = jName.OrganizationalUnit
-	n.Locality = jName.Locality
-	n.Province = jName.Province
-	n.StreetAddress = jName.StreetAddress
-	n.PostalCode = jName.PostalCode
-	n.DomainComponent = jName.DomainComponent
+	// Populate specific fields as []string
+	n.Country = aux.Country
+	n.Organization = aux.Organization
+	n.OrganizationalUnit = aux.OrganizationalUnit
+	n.Locality = aux.Locality
+	n.Province = aux.Province
+	n.StreetAddress = aux.StreetAddress
+	n.PostalCode = aux.PostalCode
+	n.DomainComponent = aux.DomainComponent
 
-	// add first commonNames and serialNumbers to struct and Names
-	if len(jName.CommonName) > 0 {
-		n.CommonName = jName.CommonName[0]
-		n.Names = append(n.Names, AttributeTypeAndValue{Type: oidCommonName, Value: jName.CommonName[0]})
+	// CommonName and SerialNumber are not arrays.
+	if len(aux.CommonName) > 0 {
+		n.CommonName = aux.CommonName[0]
 	}
-	if len(jName.SerialNumber) > 0 {
-		n.SerialNumber = jName.SerialNumber[0]
-		n.Names = append(n.Names, AttributeTypeAndValue{Type: oidSerialNumber, Value: jName.SerialNumber[0]})
-	}
-
-	// add extra commonNames and serialNumbers to extraNames
-	if len(jName.CommonName) > 1 {
-		for _, val := range jName.CommonName[1:] {
-			n.ExtraNames = append(n.ExtraNames, AttributeTypeAndValue{Type: oidCommonName, Value: val})
-		}
+	if len(aux.SerialNumber) > 0 {
+		n.SerialNumber = aux.SerialNumber[0]
 	}
 
-	if len(jName.SerialNumber) > 1 {
-		for _, val := range jName.SerialNumber[1:] {
-			n.ExtraNames = append(n.ExtraNames, AttributeTypeAndValue{Type: oidSerialNumber, Value: val})
-		}
+	// Add "extra" commonNames and serialNumbers to ExtraNames.
+	if len(aux.CommonName) > 1 {
+		n.ExtraNames = appendATV(n.ExtraNames, aux.CommonName[1:], oidCommonName)
+	}
+	if len(aux.SerialNumber) > 1 {
+		n.ExtraNames = appendATV(n.ExtraNames, aux.SerialNumber[1:], oidSerialNumber)
 	}
 
 	return nil

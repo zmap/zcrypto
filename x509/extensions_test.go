@@ -74,7 +74,7 @@ func (s *ExtensionsSuite) TestEncodeDecodeIAN(c *C) {
 		c.Assert(jsonExtensions.IssuerAltName.IPAddresses[0].String(), Equals, ian.IPAddresses[0].String())
 
 		c.Assert(jsonExtensions.IssuerAltName.OtherNames, HasLen, len(ian.OtherNames))
-		c.Assert(jsonExtensions.IssuerAltName.OtherNames[0].Typeid, DeepEquals, ian.OtherNames[0].Typeid)
+		c.Assert(jsonExtensions.IssuerAltName.OtherNames[0].TypeID, DeepEquals, ian.OtherNames[0].TypeID)
 		c.Assert(jsonExtensions.IssuerAltName.OtherNames[0].Value.Tag, DeepEquals, ian.OtherNames[0].Value.Tag)
 		c.Assert(jsonExtensions.IssuerAltName.OtherNames[0].Value.Class, DeepEquals, ian.OtherNames[0].Value.Class)
 		c.Assert(jsonExtensions.IssuerAltName.OtherNames[0].Value.Bytes, DeepEquals, ian.OtherNames[0].Value.Bytes)
@@ -107,7 +107,7 @@ func (s *ExtensionsSuite) TestEncodeDecodeSAN(c *C) {
 		c.Assert(jsonExtensions.SubjectAltName.IPAddresses[0].String(), Equals, san.IPAddresses[0].String())
 		// OtherNames.FullBytes is lost (should be able to reconstruct from RawValue fields)
 		c.Assert(jsonExtensions.SubjectAltName.OtherNames, HasLen, len(san.OtherNames))
-		c.Assert(jsonExtensions.SubjectAltName.OtherNames[0].Typeid, DeepEquals, san.OtherNames[0].Typeid)
+		c.Assert(jsonExtensions.SubjectAltName.OtherNames[0].TypeID, DeepEquals, san.OtherNames[0].TypeID)
 		c.Assert(jsonExtensions.SubjectAltName.OtherNames[0].Value.Tag, DeepEquals, san.OtherNames[0].Value.Tag)
 		c.Assert(jsonExtensions.SubjectAltName.OtherNames[0].Value.Class, DeepEquals, san.OtherNames[0].Value.Class)
 		c.Assert(jsonExtensions.SubjectAltName.OtherNames[0].Value.Bytes, DeepEquals, san.OtherNames[0].Value.Bytes)
