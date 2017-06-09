@@ -49,13 +49,13 @@ type Extension struct {
 // Name represents an X.509 distinguished name. This only includes the common
 // elements of a DN.  Additional elements in the name are ignored.
 type Name struct {
-	Country, Organization, OrganizationalUnit  []string `json:"omitempty"`
-	Locality, Province                         []string `json:"omitempty"`
-	StreetAddress, PostalCode, DomainComponent []string `json:"omitempty"`
-	SerialNumber, CommonName                   string   `json:"omitempty"`
+	Country, Organization, OrganizationalUnit  []string
+	Locality, Province                         []string
+	StreetAddress, PostalCode, DomainComponent []string
+	SerialNumber, CommonName                   string
 
-	Names      []AttributeTypeAndValue `json:"omitempty"`
-	ExtraNames []AttributeTypeAndValue `json:"omitempty"`
+	Names      []AttributeTypeAndValue
+	ExtraNames []AttributeTypeAndValue
 }
 
 func (n *Name) FillFromRDNSequence(rdns *RDNSequence) {
@@ -223,7 +223,7 @@ type RevokedCertificate struct {
 // OtherName represents the ASN.1 structure of the same name. See RFC
 // 5280, section 4.2.1.6.
 type OtherName struct {
-	Typeid asn1.ObjectIdentifier
+	TypeID asn1.ObjectIdentifier
 	Value  asn1.RawValue `asn1:"explicit"`
 }
 
