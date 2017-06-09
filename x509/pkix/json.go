@@ -167,8 +167,6 @@ func (n *Name) UnmarshalJSON(b []byte) error {
 	}
 
 	// Populate Names as []AttributeTypeAndValue
-	n.Names = appendATV(n.Names, aux.CommonName, oidCommonName)
-	n.Names = appendATV(n.Names, aux.SerialNumber, oidSerialNumber)
 	n.Names = appendATV(n.Names, aux.Country, oidCountry)
 	n.Names = appendATV(n.Names, aux.Organization, oidOrganization)
 	n.Names = appendATV(n.Names, aux.OrganizationalUnit, oidOrganizationalUnit)
@@ -177,6 +175,8 @@ func (n *Name) UnmarshalJSON(b []byte) error {
 	n.Names = appendATV(n.Names, aux.StreetAddress, oidStreetAddress)
 	n.Names = appendATV(n.Names, aux.PostalCode, oidPostalCode)
 	n.Names = appendATV(n.Names, aux.DomainComponent, oidDomainComponent)
+	n.Names = appendATV(n.Names, aux.CommonName, oidCommonName)
+	n.Names = appendATV(n.Names, aux.SerialNumber, oidSerialNumber)
 
 	// Populate specific fields as []string
 	n.Country = aux.Country
