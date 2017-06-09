@@ -106,7 +106,7 @@ type auxName struct {
 	PostalCode         []string `json:"postal_code,omitempty"`
 	DomainComponent    []string `json:"domain_component,omitempty"`
 
-	UnknownAttributes []AttributeTypeAndValue `json:"unknown_attributes,omitempty"`
+	UnknownAttributes []AttributeTypeAndValue `json:"-,omitempty"`
 }
 
 // MarshalJSON implements the json.Marshaler interface.
