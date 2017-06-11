@@ -54,7 +54,8 @@ type VerificationResult struct {
 	NameError error
 
 	// Parents is a set of currently valid certificates that are immediate parents
-	// of the certificate being verified.
+	// of the certificate being verified, and are part of a chain that is valid at
+	// the time the certificate being verified expires.
 	Parents []*x509.Certificate
 
 	// CurrentChains is a list of validated certificate chains that are valid at
@@ -69,6 +70,10 @@ type VerificationResult struct {
 	// NeverValidChains is a list of certificate chains that could never be valid
 	// due to date-related issues, but are otherwise valid.
 	NeverValidChains [][]*x509.Certificate
+
+	// ValidAtExpirationChains is a list of certificate chains that were valid at
+	// the time of expiration of the certificate being validated.
+	ValidAtExpirationChains [][]*x509.Certificate
 
 	// CertificateType is one of Leaf, Intermediate, or Root.
 	CertificateType x509.CertificateType
@@ -93,9 +98,9 @@ func (res *VerificationResult) HasTrustedChain() bool {
 // HadTrustedChain returns true if at some point in time, the certificate had a
 // chain to a trusted root in this store.
 //
-// This is equivalent to checking if len(current) > 0 || len(expired) > 0
+// This is equivalent to checking if len(Current) > 0 || len(ValidAtExpired) > 0
 func (res *VerificationResult) HadTrustedChain() bool {
-	return res.HasTrustedChain() || len(res.ExpiredChains) > 0 || len(res.Parents) > 0
+	return res.HasTrustedChain() || len(res.ValidAtExpirationChains) > 0
 }
 
 // VerifyProcedure is an interface to implement additional browser specific logic at
@@ -138,17 +143,11 @@ func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOpti
 	return
 }
 
-func parentsFromChains(c *x509.Certificate, chains [][]*x509.Certificate) (parents []*x509.Certificate) {
-	// Draw parents from the set of chains valid at the time of expiration of the
-	// leaf certificate
-	verifyTime := c.NotAfter
-	verifyTime = verifyTime.Add(-time.Second)
-	candidates, _, _ := x509.FilterByDate(chains, verifyTime)
-
+func parentsFromChains(chains [][]*x509.Certificate) (parents []*x509.Certificate) {
 	// parentSet is a map from FingerprintSHA256 to the index of the chain the
 	// parent was in. We use this to deduplicate parents.
 	parentSet := make(map[string]int)
-	for chainIdx, chain := range candidates {
+	for chainIdx, chain := range chains {
 		if len(chain) < 2 {
 			continue
 		}
@@ -188,22 +187,24 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 		res.NameError = c.VerifyHostname(opts.Name)
 	}
 
-	// Calculate the parent set across all chains.
 	var allChains [][]*x509.Certificate
 	allChains = append(allChains, res.CurrentChains...)
 	allChains = append(allChains, res.ExpiredChains...)
 	allChains = append(allChains, res.NeverValidChains...)
-	res.Parents = parentsFromChains(c, allChains)
+
+	expirationTime := c.NotAfter.Add(-time.Second)
+	res.ValidAtExpirationChains, _, _ = x509.FilterByDate(allChains, expirationTime)
+
+	// Calculate the parents at the time of expiration.
+	res.Parents = parentsFromChains(res.ValidAtExpirationChains)
 
 	// Determine certificate type.
 	if xopts.Roots.Contains(c) {
 		// A certificate is only a root if it's in the root store.
 		res.CertificateType = x509.CertificateTypeRoot
-	} else if c.IsCA && len(res.Parents) > 0 {
+	} else if c.IsCA && len(res.ValidAtExpirationChains) > 0 {
 		// We define an intermediate as any certificate that is not a root, but has
-		// IsCA = true and at least one parent. We're implicitly requiring validity
-		// here since Parents is calculated from the list of valid chains at the
-		// time of expiration.
+		// IsCA = true and at least one chain valid at the time it expires.
 		res.CertificateType = x509.CertificateTypeIntermediate
 	} else {
 		// If a certificate is not a root or an intermediate, we'll call it a leaf.
