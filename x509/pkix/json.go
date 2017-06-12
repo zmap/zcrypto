@@ -105,6 +105,7 @@ type auxName struct {
 	OrganizationalUnit []string `json:"organizational_unit,omitempty"`
 	PostalCode         []string `json:"postal_code,omitempty"`
 	DomainComponent    []string `json:"domain_component,omitempty"`
+	EmailAddress       []string `json:"email_address,omitempty"`
 
 	UnknownAttributes []AttributeTypeAndValue `json:"-,omitempty"`
 }
@@ -139,6 +140,8 @@ func (n *Name) MarshalJSON() ([]byte, error) {
 				aux.PostalCode = append(aux.PostalCode, s)
 			} else if a.Type.Equal(oidDomainComponent) {
 				aux.DomainComponent = append(aux.DomainComponent, s)
+			} else if a.Type.Equal(oidDNEmailAddress) {
+				aux.EmailAddress = append(aux.EmailAddress, s)
 			} else {
 				aux.UnknownAttributes = append(aux.UnknownAttributes, a)
 			}
@@ -175,6 +178,8 @@ func (n *Name) UnmarshalJSON(b []byte) error {
 	n.Names = appendATV(n.Names, aux.StreetAddress, oidStreetAddress)
 	n.Names = appendATV(n.Names, aux.PostalCode, oidPostalCode)
 	n.Names = appendATV(n.Names, aux.DomainComponent, oidDomainComponent)
+	n.Names = appendATV(n.Names, aux.EmailAddress, oidDNEmailAddress)
+
 	n.Names = appendATV(n.Names, aux.CommonName, oidCommonName)
 	n.Names = appendATV(n.Names, aux.SerialNumber, oidSerialNumber)
 
