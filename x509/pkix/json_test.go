@@ -53,6 +53,39 @@ func TestAttributeTypeValueJSON(t *testing.T) {
 	}
 }
 
+func TestExtensionJSON(t *testing.T) {
+	tests := []struct {
+		ext      Extension
+		expected string
+	}{
+		{
+			ext: Extension{
+				Id:       asn1.ObjectIdentifier{1, 2, 3, 4, 5},
+				Critical: false,
+				Value:    []byte{6, 7, 8, 9, 0},
+			},
+			expected: `{"id":"1.2.3.4.5","critical":false,"value":"BgcICQA="}`,
+		},
+	}
+	for i, test := range tests {
+		b, err := json.Marshal(&test.ext)
+		if err != nil {
+			t.Errorf("%d: failed to marshal: %s", i, err)
+			continue
+		}
+		if s := string(b); s != test.expected {
+			t.Errorf("%d: expected %s, got %s", i, test.expected, s)
+		}
+		parsed := Extension{}
+		if err := json.Unmarshal(b, &parsed); err != nil {
+			t.Errorf("%d: could not unmarshal: %s", i, err)
+		}
+		if !test.ext.Id.Equal(parsed.Id) {
+			t.Errorf("%d: unmarshaled Id mismatch, expected %v, got %v", i, test.ext.Id, parsed.Id)
+		}
+	}
+}
+
 func TestNameJSON(t *testing.T) {
 	tests := []struct {
 		name     Name
