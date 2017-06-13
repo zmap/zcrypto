@@ -94,6 +94,42 @@ func (o *OtherName) UnmarshalJSON(b []byte) (err error) {
 	return
 }
 
+type auxExtension struct {
+	ID       string `json:"id,omitempty"`
+	Critical bool   `json:"critical"`
+	Value    []byte `json:"value,omitempty"`
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (ext *Extension) MarshalJSON() ([]byte, error) {
+	aux := auxExtension{
+		ID:       ext.Id.String(),
+		Critical: ext.Critical,
+		Value:    ext.Value,
+	}
+	return json.Marshal(&aux)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (ext *Extension) UnmarshalJSON(b []byte) (err error) {
+	aux := auxExtension{}
+	if err = json.Unmarshal(b, &aux); err != nil {
+		return
+	}
+
+	parts := strings.Split(aux.ID, ".")
+	for _, part := range parts {
+		i, err := strconv.Atoi(part)
+		if err != nil {
+			return err
+		}
+		ext.Id = append(ext.Id, i)
+	}
+	ext.Critical = aux.Critical
+	ext.Value = aux.Value
+	return
+}
+
 type auxName struct {
 	CommonName         []string `json:"common_name,omitempty"`
 	SerialNumber       []string `json:"serial_number,omitempty"`
