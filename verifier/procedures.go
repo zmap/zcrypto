@@ -28,3 +28,7 @@ type VerifyProcedureApple struct{}
 
 // VerifyProcedureJava implements the VerifyProcedure interface for Java.
 type VerifyProcedureJava struct{}
+
+// VerifyProcedureGoogleCTPrimary implements the VerifyProcedure interface for
+// the primary Google CT servers.
+type VerifyProcedureGoogleCTPrimary struct{}

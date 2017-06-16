@@ -21,14 +21,18 @@ var (
 	// NSS is a Verifier mimicking the validation used in Firefox.
 	NSS Verifier
 
-	// Microsoft is a Verifier mimicing the validation in Windows 10 SChannel.
+	// Microsoft is a Verifier mimicking the validation in Windows 10 SChannel.
 	Microsoft Verifier
 
-	// Apple is a Verifier mimicing the validation in OS X Sierra SecureTransport.
+	// Apple is a Verifier mimicking the validation in OS X Sierra SecureTransport.
 	Apple Verifier
 
-	// Java is a Verifier mimicing the validation in Java 8 javax.net.ssl.
+	// Java is a Verifier mimicking the validation in Java 8 javax.net.ssl.
 	Java Verifier
+
+	//. GoogleCTPrimary is a Verifier mimicking the validation for the primary
+	//Google CT servers (e.g. Pilot).
+	GoogleCTPrimary Verifier
 )
 
 // InitializeNSS sets up the built-in NSS Verifier.
@@ -57,4 +61,11 @@ func InitializeJava(roots, intermediates *x509.CertPool) {
 	Java.Roots = roots
 	Java.Intermediates = intermediates
 	Java.VerifyProcedure = &VerifyProcedureJava{}
+}
+
+// InitializeGoogleCTPrimary sets up the built-in Google CT Primary verifier.
+func InitializeGoogleCTPrimary(roots, intermediates *x509.CertPool) {
+	GoogleCTPrimary.Roots = roots
+	Java.Intermediates = intermediates
+	Java.VerifyProcedure = &VerifyProcedureGoogleCTPrimary{}
 }
