@@ -66,6 +66,6 @@ func InitializeJava(roots, intermediates *x509.CertPool) {
 // InitializeGoogleCTPrimary sets up the built-in Google CT Primary verifier.
 func InitializeGoogleCTPrimary(roots, intermediates *x509.CertPool) {
 	GoogleCTPrimary.Roots = roots
-	Java.Intermediates = intermediates
-	Java.VerifyProcedure = &VerifyProcedureGoogleCTPrimary{}
+	GoogleCTPrimary.Intermediates = intermediates
+	GoogleCTPrimary.VerifyProcedure = &VerifyProcedureGoogleCTPrimary{}
 }
