@@ -195,8 +195,12 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 	expirationTime := c.NotAfter.Add(-time.Second)
 	res.ValidAtExpirationChains, _, _ = x509.FilterByDate(allChains, expirationTime)
 
-	// Calculate the parents at the time of expiration.
-	res.Parents = parentsFromChains(res.ValidAtExpirationChains)
+	// Calculate the parents at the time of expiration for expired certs.
+	if res.Expired {
+		res.Parents = parentsFromChains(res.ValidAtExpirationChains)
+	} else {
+		res.Parents = parentsFromChains(res.CurrentChains)
+	}
 
 	// Determine certificate type.
 	if xopts.Roots.Contains(c) {
