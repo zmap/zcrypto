@@ -210,9 +210,13 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 		// We define an intermediate as any certificate that is not a root, but has
 		// IsCA = true and at least one chain valid at the time it expires.
 		res.CertificateType = x509.CertificateTypeIntermediate
-	} else {
-		// If a certificate is not a root or an intermediate, we'll call it a leaf.
+	} else if len(res.Parents) > 0 {
+		// If a certificate is not a root or an intermediate, but has a parent,
+		// we'll call it a leaf.
 		res.CertificateType = x509.CertificateTypeLeaf
+	} else {
+		// Default to Unknown
+		res.CertificateType = x509.CertificateTypeUnknown
 	}
 
 	return
