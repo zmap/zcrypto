@@ -127,6 +127,16 @@ func (s *CertPool) Contains(c *Certificate) bool {
 	return ok
 }
 
+// Covers returns true if all certs in pool are in s.
+func (s *CertPool) Covers(pool *CertPool) bool {
+	for _, c := range pool.certs {
+		if !s.Contains(c) {
+			return false
+		}
+	}
+	return true
+}
+
 // Subjects returns a list of the DER-encoded subjects of
 // all of the certificates in the pool.
 func (s *CertPool) Subjects() (res [][]byte) {
