@@ -35,6 +35,7 @@ func makeRandomCertsForPool(n int) []*Certificate {
 }
 
 func doBench(b *testing.B, certs []*Certificate) {
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		pool := NewCertPool()
 		for _, c := range certs {
