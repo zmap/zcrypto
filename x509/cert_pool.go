@@ -123,12 +123,18 @@ func (s *CertPool) AppendCertsFromPEM(pemCerts []byte) (ok bool) {
 
 // Contains returns true if c is in s.
 func (s *CertPool) Contains(c *Certificate) bool {
+	if s == nil {
+		return false
+	}
 	_, ok := s.bySHA256[string(c.FingerprintSHA256)]
 	return ok
 }
 
 // Covers returns true if all certs in pool are in s.
 func (s *CertPool) Covers(pool *CertPool) bool {
+	if pool == nil {
+		return true
+	}
 	for _, c := range pool.certs {
 		if !s.Contains(c) {
 			return false
