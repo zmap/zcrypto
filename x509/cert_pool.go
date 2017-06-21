@@ -14,6 +14,7 @@ import (
 type CertPool struct {
 	bySubjectKeyId map[string][]int
 	byName         map[string][]int
+	bySHA256       map[string]int
 	certs          []*Certificate
 }
 
@@ -22,6 +23,7 @@ func NewCertPool() *CertPool {
 	return &CertPool{
 		bySubjectKeyId: make(map[string][]int),
 		byName:         make(map[string][]int),
+		bySHA256:       make(map[string]int),
 	}
 }
 
@@ -72,10 +74,9 @@ func (s *CertPool) AddCert(cert *Certificate) {
 	}
 
 	// Check that the certificate isn't being added twice.
-	for _, c := range s.certs {
-		if c.Equal(cert) {
-			return
-		}
+	sha256fp := string(cert.FingerprintSHA256)
+	if _, ok := s.bySHA256[sha256fp]; ok {
+		return
 	}
 
 	n := len(s.certs)
@@ -87,6 +88,7 @@ func (s *CertPool) AddCert(cert *Certificate) {
 	}
 	name := string(cert.RawSubject)
 	s.byName[name] = append(s.byName[name], n)
+	s.bySHA256[sha256fp] = n
 }
 
 // AppendCertsFromPEM attempts to parse a series of PEM encoded certificates.
@@ -121,16 +123,8 @@ func (s *CertPool) AppendCertsFromPEM(pemCerts []byte) (ok bool) {
 
 // Contains returns true if c is in s.
 func (s *CertPool) Contains(c *Certificate) bool {
-	candidates, ok := s.byName[string(c.RawSubject)]
-	if !ok {
-		return false
-	}
-	for _, candidateNum := range candidates {
-		if s.certs[candidateNum].Equal(c) {
-			return true
-		}
-	}
-	return false
+	_, ok := s.bySHA256[string(c.FingerprintSHA256)]
+	return ok
 }
 
 // Subjects returns a list of the DER-encoded subjects of
@@ -161,14 +155,15 @@ func (s *CertPool) Size() int {
 // Sum returns the union of two certificate pools as a new certificate pool.
 func (s *CertPool) Sum(other *CertPool) (sum *CertPool) {
 	sum = NewCertPool()
-	for _, c := range s.certs {
-		sum.AddCert(c)
+	if s != nil {
+		for _, c := range s.certs {
+			sum.AddCert(c)
+		}
 	}
-	if other == nil {
-		return
-	}
-	for _, c := range other.certs {
-		sum.AddCert(c)
+	if other != nil {
+		for _, c := range other.certs {
+			sum.AddCert(c)
+		}
 	}
 	return
 }
