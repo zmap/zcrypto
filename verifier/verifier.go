@@ -206,9 +206,9 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 	if xopts.Roots.Contains(c) {
 		// A certificate is only a root if it's in the root store.
 		res.CertificateType = x509.CertificateTypeRoot
-	} else if c.IsCA && len(res.ValidAtExpirationChains) > 0 {
+	} else if c.IsCA && len(res.Parents) > 0 {
 		// We define an intermediate as any certificate that is not a root, but has
-		// IsCA = true and at least one chain valid at the time it expires.
+		// IsCA = true and at least one parent.
 		res.CertificateType = x509.CertificateTypeIntermediate
 	} else if len(res.Parents) > 0 {
 		// If a certificate is not a root or an intermediate, but has a parent,
