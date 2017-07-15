@@ -200,6 +200,7 @@ func (n Name) ToRDNSequence() (ret RDNSequence) {
 	return ret
 }
 
+// String returns a canonical representation of a DistinguishedName
 func (n *Name) String() string {
 	seq := n.ToRDNSequence()
 	return seq.String()
