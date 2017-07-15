@@ -142,6 +142,10 @@ type auxName struct {
 	PostalCode         []string `json:"postal_code,omitempty"`
 	DomainComponent    []string `json:"domain_component,omitempty"`
 	EmailAddress       []string `json:"email_address,omitempty"`
+	// EV
+	JurisdictionCountry  []string `json:"jurisdiction_country,omitempty"`
+	JurisdictionLocality []string `json:"jurisdiction_locality,omitempty"`
+	JurisdictionProvince []string `json:"jurisdiction_province,omitempty"`
 
 	UnknownAttributes []AttributeTypeAndValue `json:"-,omitempty"`
 }
@@ -178,6 +182,13 @@ func (n *Name) MarshalJSON() ([]byte, error) {
 				aux.DomainComponent = append(aux.DomainComponent, s)
 			} else if a.Type.Equal(oidDNEmailAddress) {
 				aux.EmailAddress = append(aux.EmailAddress, s)
+				// EV
+			} else if a.Type.Equal(oidJurisdictionCountry) {
+				aux.JurisdictionCountry = append(aux.JurisdictionCountry, s)
+			} else if a.Type.Equal(oidJurisdictionLocality) {
+				aux.JurisdictionLocality = append(aux.JurisdictionLocality, s)
+			} else if a.Type.Equal(oidJurisdictionProvince) {
+				aux.JurisdictionProvince = append(aux.JurisdictionProvince, s)
 			} else {
 				aux.UnknownAttributes = append(aux.UnknownAttributes, a)
 			}
@@ -215,6 +226,10 @@ func (n *Name) UnmarshalJSON(b []byte) error {
 	n.Names = appendATV(n.Names, aux.PostalCode, oidPostalCode)
 	n.Names = appendATV(n.Names, aux.DomainComponent, oidDomainComponent)
 	n.Names = appendATV(n.Names, aux.EmailAddress, oidDNEmailAddress)
+	// EV
+	n.Names = appendATV(n.Names, aux.JurisdictionCountry, oidJurisdictionCountry)
+	n.Names = appendATV(n.Names, aux.JurisdictionLocality, oidJurisdictionLocality)
+	n.Names = appendATV(n.Names, aux.JurisdictionProvince, oidJurisdictionProvince)
 
 	n.Names = appendATV(n.Names, aux.CommonName, oidCommonName)
 	n.Names = appendATV(n.Names, aux.SerialNumber, oidSerialNumber)
@@ -228,6 +243,10 @@ func (n *Name) UnmarshalJSON(b []byte) error {
 	n.StreetAddress = aux.StreetAddress
 	n.PostalCode = aux.PostalCode
 	n.DomainComponent = aux.DomainComponent
+	// EV
+	n.JurisdictionCountry = aux.JurisdictionCountry
+	n.JurisdictionLocality = aux.JurisdictionLocality
+	n.JurisdictionProvince = aux.JurisdictionProvince
 
 	// CommonName and SerialNumber are not arrays.
 	if len(aux.CommonName) > 0 {

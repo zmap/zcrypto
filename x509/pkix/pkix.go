@@ -54,6 +54,8 @@ type Name struct {
 	StreetAddress, PostalCode, DomainComponent []string
 	EmailAddress                               []string
 	SerialNumber, CommonName                   string
+	// EV Components
+	JurisdictionLocality, JurisdictionProvince, JurisdictionCountry []string
 
 	Names      []AttributeTypeAndValue
 	ExtraNames []AttributeTypeAndValue
@@ -98,6 +100,12 @@ func (n *Name) FillFromRDNSequence(rdns *RDNSequence) {
 		} else if t.Equal(oidDNEmailAddress) {
 			// Deprecated, see RFC 5280 Section 4.1.2.6
 			n.EmailAddress = append(n.EmailAddress, value)
+		} else if t.Equal(oidJurisdictionLocality) {
+			n.JurisdictionLocality = append(n.JurisdictionLocality, value)
+		} else if t.Equal(oidJurisdictionProvince) {
+			n.JurisdictionProvince = append(n.JurisdictionProvince, value)
+		} else if t.Equal(oidJurisdictionCountry) {
+			n.JurisdictionCountry = append(n.JurisdictionCountry, value)
 		}
 	}
 }
@@ -114,6 +122,10 @@ var (
 	oidPostalCode         = []int{2, 5, 4, 17}
 	oidDomainComponent    = []int{0, 9, 2342, 19200300, 100, 1, 25}
 	oidDNEmailAddress     = []int{1, 2, 840, 113549, 1, 9, 1}
+
+	oidJurisdictionLocality = []int{1, 3, 6, 1, 4, 1, 311, 60, 2, 1, 1}
+	oidJurisdictionProvince = []int{1, 3, 6, 1, 4, 1, 311, 60, 2, 1, 2}
+	oidJurisdictionCountry  = []int{1, 3, 6, 1, 4, 1, 311, 60, 2, 1, 3}
 )
 
 // appendRDNs appends a relativeDistinguishedNameSET to the given RDNSequence
@@ -134,49 +146,23 @@ func appendRDNs(in RDNSequence, values []string, oid asn1.ObjectIdentifier) RDNS
 	return append(in, s)
 }
 
-// String returns an RDNSequence as comma seperated list of
-// AttributeTypeAndValues in canonical form.
-func (seq RDNSequence) String() string {
-	out := make([]string, 0, len(seq))
-	// An RDNSequence is effectively an [][]AttributeTypeAndValue
-	for _, atvSet := range seq {
-		for _, atv := range atvSet {
-			// Convert each individual AttributeTypeAndValue to X=Y
-			attrParts := make([]string, 0, 2)
-			oidString := atv.Type.String()
-			oidName, ok := oidDotNotationToNames[oidString]
-			if ok {
-				attrParts = append(attrParts, oidName.ShortName)
-			} else {
-				attrParts = append(attrParts, oidString)
-			}
-			switch value := atv.Value.(type) {
-			case string:
-				attrParts = append(attrParts, value)
-			case []byte:
-				attrParts = append(attrParts, string(value))
-			default:
-				continue
-			}
-			attrString := strings.Join(attrParts, "=")
-			out = append(out, attrString)
-		}
-	}
-	return strings.Join(out, ", ")
-}
-
 func (n Name) ToRDNSequence() (ret RDNSequence) {
+	ret = appendRDNs(ret, n.Country, oidCountry)
+	ret = appendRDNs(ret, n.Organization, oidOrganization)
+	ret = appendRDNs(ret, n.OrganizationalUnit, oidOrganizationalUnit)
+	ret = appendRDNs(ret, n.Locality, oidLocality)
+	ret = appendRDNs(ret, n.Province, oidProvince)
+	ret = appendRDNs(ret, n.StreetAddress, oidStreetAddress)
+	ret = appendRDNs(ret, n.PostalCode, oidPostalCode)
+	ret = appendRDNs(ret, n.DomainComponent, oidDomainComponent)
+	// EV Components
+	ret = appendRDNs(ret, n.JurisdictionLocality, oidJurisdictionLocality)
+	ret = appendRDNs(ret, n.JurisdictionProvince, oidJurisdictionProvince)
+	ret = appendRDNs(ret, n.JurisdictionCountry, oidJurisdictionCountry)
+
 	if len(n.CommonName) > 0 {
 		ret = appendRDNs(ret, []string{n.CommonName}, oidCommonName)
 	}
-	ret = appendRDNs(ret, n.OrganizationalUnit, oidOrganizationalUnit)
-	ret = appendRDNs(ret, n.Organization, oidOrganization)
-	ret = appendRDNs(ret, n.StreetAddress, oidStreetAddress)
-	ret = appendRDNs(ret, n.Locality, oidLocality)
-	ret = appendRDNs(ret, n.Province, oidProvince)
-	ret = appendRDNs(ret, n.PostalCode, oidPostalCode)
-	ret = appendRDNs(ret, n.Country, oidCountry)
-	ret = appendRDNs(ret, n.DomainComponent, oidDomainComponent)
 	if len(n.SerialNumber) > 0 {
 		ret = appendRDNs(ret, []string{n.SerialNumber}, oidSerialNumber)
 	}
@@ -184,10 +170,30 @@ func (n Name) ToRDNSequence() (ret RDNSequence) {
 	return ret
 }
 
-// String returns a canonical representation of a DistinguishedName
 func (n *Name) String() string {
-	seq := n.ToRDNSequence()
-	return seq.String()
+	parts := make([]string, 0, 8)
+	for _, name := range n.Names {
+		oidString := name.Type.String()
+		attrParts := make([]string, 0, 2)
+		oidName, ok := oidDotNotationToNames[oidString]
+		if ok {
+			attrParts = append(attrParts, oidName.ShortName)
+		} else {
+			attrParts = append(attrParts, oidString)
+		}
+		switch value := name.Value.(type) {
+		case string:
+			attrParts = append(attrParts, value)
+		case []byte:
+			attrParts = append(attrParts, string(value))
+		default:
+			continue
+		}
+		attrString := strings.Join(attrParts, "=")
+		parts = append(parts, attrString)
+	}
+	joined := strings.Join(parts, ", ")
+	return joined
 }
 
 // CertificateList represents the ASN.1 structure of the same name. See RFC
