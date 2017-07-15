@@ -183,12 +183,12 @@ func (n Name) ToRDNSequence() (ret RDNSequence) {
 	}
 	ret = appendRDNs(ret, n.OrganizationalUnit, oidOrganizationalUnit)
 	ret = appendRDNs(ret, n.Organization, oidOrganization)
+	ret = appendRDNs(ret, n.StreetAddress, oidStreetAddress)
 	ret = appendRDNs(ret, n.Locality, oidLocality)
 	ret = appendRDNs(ret, n.Province, oidProvince)
-	ret = appendRDNs(ret, n.StreetAddress, oidStreetAddress)
 	ret = appendRDNs(ret, n.PostalCode, oidPostalCode)
-	ret = appendRDNs(ret, n.DomainComponent, oidDomainComponent)
 	ret = appendRDNs(ret, n.Country, oidCountry)
+	ret = appendRDNs(ret, n.DomainComponent, oidDomainComponent)
 	// EV Components
 	ret = appendRDNs(ret, n.JurisdictionLocality, oidJurisdictionLocality)
 	ret = appendRDNs(ret, n.JurisdictionProvince, oidJurisdictionProvince)
