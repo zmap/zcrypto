@@ -621,6 +621,15 @@ type Certificate struct {
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp
 }
 
+// SubjectAndKey represents a (subjecty, subject public key info) tuple.
+type SubjectAndKey struct {
+	RawSubject              []byte
+	RawSubjectPublicKeyInfo []byte
+	Fingerprint             CertificateFingerprint
+	PublicKey               interface{}
+	PublicKeyAlgorithm      PublicKeyAlgorithm
+}
+
 type NoticeNumber []int
 
 type GeneralSubtreeString struct {
@@ -675,6 +684,17 @@ func (ConstraintViolationError) Error() string {
 // Equal returns true if the two certificates have byte-equal Raw values.
 func (c *Certificate) Equal(other *Certificate) bool {
 	return bytes.Equal(c.Raw, other.Raw)
+}
+
+// SubjectAndKey returns a SubjectAndKey for this certificate.
+func (c *Certificate) SubjectAndKey() *SubjectAndKey {
+	return &SubjectAndKey{
+		RawSubject:              c.RawSubject,
+		RawSubjectPublicKeyInfo: c.RawSubjectPublicKeyInfo,
+		Fingerprint:             c.SPKISubjectFingerprint,
+		PublicKey:               c.PublicKey,
+		PublicKeyAlgorithm:      c.PublicKeyAlgorithm,
+	}
 }
 
 // Entrust have a broken root certificate (CN=Entrust.net Certification
@@ -758,9 +778,7 @@ func (c *Certificate) CheckSignatureFrom(parent *Certificate) (err error) {
 	return parent.CheckSignature(c.SignatureAlgorithm, c.RawTBSCertificate, c.Signature)
 }
 
-// CheckSignature verifies that signature is a valid signature over signed from
-// c's public key.
-func (c *Certificate) CheckSignature(algo SignatureAlgorithm, signed, signature []byte) (err error) {
+func checkSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signed, signature []byte) (err error) {
 	var hashType crypto.Hash
 
 	switch algo {
@@ -786,7 +804,7 @@ func (c *Certificate) CheckSignature(algo SignatureAlgorithm, signed, signature 
 	h.Write(signed)
 	digest := h.Sum(nil)
 
-	switch pub := c.PublicKey.(type) {
+	switch pub := publicKey.(type) {
 	case *rsa.PublicKey:
 		return rsa.VerifyPKCS1v15(pub, hashType, digest, signature)
 	case *dsa.PublicKey:
@@ -827,6 +845,12 @@ func (c *Certificate) CheckSignature(algo SignatureAlgorithm, signed, signature 
 		return
 	}
 	return ErrUnsupportedAlgorithm
+}
+
+// CheckSignature verifies that signature is a valid signature over signed from
+// c's public key.
+func (c *Certificate) CheckSignature(algo SignatureAlgorithm, signed, signature []byte) (err error) {
+	return checkSignatureFromKey(c.PublicKey, algo, signed, signature)
 }
 
 // CheckCRLSignature checks that the signature in crl is from c.
