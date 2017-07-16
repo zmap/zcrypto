@@ -54,6 +54,8 @@ type Name struct {
 	StreetAddress, PostalCode, DomainComponent []string
 	EmailAddress                               []string
 	SerialNumber, CommonName                   string
+	// EV Components
+	JurisdictionLocality, JurisdictionProvince, JurisdictionCountry []string
 
 	Names      []AttributeTypeAndValue
 	ExtraNames []AttributeTypeAndValue
@@ -98,6 +100,12 @@ func (n *Name) FillFromRDNSequence(rdns *RDNSequence) {
 		} else if t.Equal(oidDNEmailAddress) {
 			// Deprecated, see RFC 5280 Section 4.1.2.6
 			n.EmailAddress = append(n.EmailAddress, value)
+		} else if t.Equal(oidJurisdictionLocality) {
+			n.JurisdictionLocality = append(n.JurisdictionLocality, value)
+		} else if t.Equal(oidJurisdictionProvince) {
+			n.JurisdictionProvince = append(n.JurisdictionProvince, value)
+		} else if t.Equal(oidJurisdictionCountry) {
+			n.JurisdictionCountry = append(n.JurisdictionCountry, value)
 		}
 	}
 }
@@ -114,6 +122,10 @@ var (
 	oidPostalCode         = []int{2, 5, 4, 17}
 	oidDomainComponent    = []int{0, 9, 2342, 19200300, 100, 1, 25}
 	oidDNEmailAddress     = []int{1, 2, 840, 113549, 1, 9, 1}
+	// EV
+	oidJurisdictionLocality = []int{1, 3, 6, 1, 4, 1, 311, 60, 2, 1, 1}
+	oidJurisdictionProvince = []int{1, 3, 6, 1, 4, 1, 311, 60, 2, 1, 2}
+	oidJurisdictionCountry  = []int{1, 3, 6, 1, 4, 1, 311, 60, 2, 1, 3}
 )
 
 // appendRDNs appends a relativeDistinguishedNameSET to the given RDNSequence
@@ -177,6 +189,10 @@ func (n Name) ToRDNSequence() (ret RDNSequence) {
 	ret = appendRDNs(ret, n.PostalCode, oidPostalCode)
 	ret = appendRDNs(ret, n.Country, oidCountry)
 	ret = appendRDNs(ret, n.DomainComponent, oidDomainComponent)
+	// EV Components
+	ret = appendRDNs(ret, n.JurisdictionLocality, oidJurisdictionLocality)
+	ret = appendRDNs(ret, n.JurisdictionProvince, oidJurisdictionProvince)
+	ret = appendRDNs(ret, n.JurisdictionCountry, oidJurisdictionCountry)
 	if len(n.SerialNumber) > 0 {
 		ret = appendRDNs(ret, []string{n.SerialNumber}, oidSerialNumber)
 	}
