@@ -1,4 +1,5 @@
 *.swp
 *.idea
 *.iml
+*.test
 ct/client/main/main
