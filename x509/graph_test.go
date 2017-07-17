@@ -25,19 +25,19 @@ type graphTest struct {
 var graphTests = []graphTest{
 	{
 		name:          "one-certificate",
-		certificates:  []string{data.PEMDoDRootCA3SignedByDoDInteropCA2},
+		certificates:  []string{data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655},
 		expectedNodes: []string{data.HexSPKISubjectFingerprintDoDRootCA3},
 		expectedEdges: []edgeIdx{{-1, 0, 0}},
 	},
 	{
 		name:          "child-parent",
-		certificates:  []string{data.PEMDoDRootCA3SignedByDoDInteropCA2, data.PEMDoDInteropCA2SignedByFederalBridgeCA2016},
+		certificates:  []string{data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655, data.PEMDoDInteropCA2SignedByFederalBridgeCA2016},
 		expectedNodes: []string{data.HexSPKISubjectFingerprintDoDRootCA3, data.HexSPKISubjectFingerprintDoDInteropCA2},
 		expectedEdges: []edgeIdx{{1, 0, 0}, {-1, 1, 1}},
 	},
 	{
 		name:          "parent-child",
-		certificates:  []string{data.PEMDoDInteropCA2SignedByFederalBridgeCA2016, data.PEMDoDRootCA3SignedByDoDInteropCA2},
+		certificates:  []string{data.PEMDoDInteropCA2SignedByFederalBridgeCA2016, data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655},
 		expectedNodes: []string{data.HexSPKISubjectFingerprintDoDRootCA3, data.HexSPKISubjectFingerprintDoDInteropCA2},
 		expectedEdges: []edgeIdx{{1, 0, 1}, {-1, 1, 0}},
 	},
@@ -47,10 +47,83 @@ var graphTests = []graphTest{
 		expectedNodes: []string{data.HexSPKISubjectFingerprintDoDInteropCA2, data.HexSPKISubjectFingerprintDAdrianIO},
 		expectedEdges: []edgeIdx{{-1, 0, 0}, {-1, 1, 1}},
 	},
+	{
+		name:          "self-signed",
+		certificates:  []string{data.PEMDoDRootCA3SelfSigned},
+		expectedNodes: []string{data.HexSPKISubjectFingerprintDoDRootCA3},
+		expectedEdges: []edgeIdx{{0, 0, 0}},
+	},
+	{
+		name:          "dod-root-ca-3-no-issuers",
+		certificates:  []string{data.PEMDoDRootCA3SelfSigned, data.PEMDoDRootCA3SignedByCCEBInteropRootCA2, data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655, data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748},
+		expectedNodes: []string{data.HexSPKISubjectFingerprintDoDRootCA3},
+		expectedEdges: []edgeIdx{{0, 0, 0}, {-1, 0, 1}, {-1, 0, 2}, {-1, 0, 3}},
+	},
+	{
+		name: "dod-root-ca-3-interop-issued-by-bridge-16",
+		certificates: []string{
+			data.PEMDoDRootCA3SelfSigned,
+			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2016, // issuer (idx=4)
+		},
+		expectedNodes: []string{
+			data.HexSPKISubjectFingerprintDoDRootCA3,
+			data.HexSPKISubjectFingerprintDoDInteropCA2,
+		},
+		expectedEdges: []edgeIdx{{0, 0, 0}, {-1, 0, 1}, {1, 0, 2}, {1, 0, 3}, {-1, 1, 4}},
+	},
+	{
+		name: "dod-root-ca-3-interop-issued-by-bridge-16-reversed",
+		certificates: []string{
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2016, // issuer (idx=0)
+			data.PEMDoDRootCA3SelfSigned,
+			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
+		},
+		expectedNodes: []string{
+			data.HexSPKISubjectFingerprintDoDRootCA3,
+			data.HexSPKISubjectFingerprintDoDInteropCA2,
+		},
+		expectedEdges: []edgeIdx{{0, 0, 1}, {-1, 0, 2}, {1, 0, 3}, {1, 0, 4}, {-1, 1, 0}},
+	},
+	{
+		name: "dod-root-ca-3-interop-ca-2",
+		certificates: []string{
+			data.PEMDoDRootCA3SelfSigned,
+			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2016, // issuer (idx=4),
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial906,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8225,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8844,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644, // (idx=9)
+		},
+		expectedNodes: []string{
+			data.HexSPKISubjectFingerprintDoDRootCA3,
+			data.HexSPKISubjectFingerprintDoDInteropCA2,
+		},
+		expectedEdges: []edgeIdx{
+			{0, 0, 0},
+			{-1, 0, 1},
+			{1, 0, 2},
+			{1, 0, 3},
+			{-1, 1, 4},
+			{-1, 1, 5},
+			{-1, 1, 6},
+			{-1, 1, 7},
+			{-1, 1, 8},
+			{-1, 1, 9},
+		},
+	},
 }
 
 func TestGraphAddOneCert(t *testing.T) {
-	c, _ := certificateFromPEM(data.PEMDoDRootCA3SignedByDoDInteropCA2)
+	c, _ := certificateFromPEM(data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655)
 	g := NewGraph()
 	g.AddCert(c)
 	nodes := g.Nodes()
