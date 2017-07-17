@@ -59,9 +59,17 @@ type Name struct {
 
 	Names      []AttributeTypeAndValue
 	ExtraNames []AttributeTypeAndValue
+
+	// OriginalRDNS is saved if the name is populated using FillFromRDNSequence.
+	// Additionally, if OriginalRDNS is non-nil, the String and ToRDNSequence
+	// methods will simply use this.
+	OriginalRDNS RDNSequence
 }
 
+// FillFromRDNSequence populates n based on the AttributeTypeAndValueSETs in the
+// RDNSequence. It save the sequence as OriginalRDNS.
 func (n *Name) FillFromRDNSequence(rdns *RDNSequence) {
+	n.OriginalRDNS = *rdns
 	for _, rdn := range *rdns {
 		if len(rdn) == 0 {
 			continue
@@ -177,7 +185,12 @@ func (seq RDNSequence) String() string {
 	return strings.Join(out, ", ")
 }
 
+// ToRDNSequence returns OriginalRDNS is populated. Otherwise, it builds an
+// RDNSequence in canonical order.
 func (n Name) ToRDNSequence() (ret RDNSequence) {
+	if n.OriginalRDNS != nil {
+		return n.OriginalRDNS
+	}
 	if len(n.CommonName) > 0 {
 		ret = appendRDNs(ret, []string{n.CommonName}, oidCommonName)
 	}
