@@ -41,6 +41,7 @@ type GraphEdge struct {
 	Certificate *Certificate
 	issuer      *GraphNode // this might not always be filled out
 	child       *GraphNode
+	root        bool
 }
 
 // A GraphEdgeSet represents a set of edges. Edges are deduplicated by
@@ -211,6 +212,13 @@ func (g *Graph) AddCert(c *Certificate) {
 		delete(g.missingIssuerNode, string(c.RawSubject))
 	}
 
+}
+
+// AddRoot adges an edge for certificate c, and marks it as a root.
+func (g *Graph) AddRoot(c *Certificate) {
+	g.AddCert(c)
+	edge := g.edges.FindEdge(c.FingerprintSHA256)
+	edge.root = true
 }
 
 // NewGraphEdgeSet initializes an empty GraphEdgeSet.

@@ -22,6 +22,10 @@ const HexSPKISubjectFingerprintDoDRootCA3 = "e90ccfd162ae66b7d6e9771abf6c461837c
 // Fingerprint for the DoD Interoperability CA 2.
 const HexSPKISubjectFingerprintDoDInteropCA2 = "a55a05216a8f75908ceec798c466e892cd5b505767d057b2204daa111de0c809"
 
+// HexSPKISubjectFingerprintFederalBridgeCA2013 is the hex of the SPKI Subject
+// Fingerprint of the Federal Bridge CA 2013.
+const HexSPKISubjectFingerprintFederalBridgeCA2013 = "219718a39232361f3e20d793a57d73897c59baecfd1c358aedcab87b5ab396d8"
+
 // PEMDoDRootCA3SelfSigned is the "DoD Root CA 3" self-signed certificate.
 const PEMDoDRootCA3SelfSigned string = `Certificate:
     Data:
@@ -1243,3 +1247,411 @@ wdo=
 // HexHashPEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644 is the hex
 // SHA256 fingerprint for PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644.
 const HexHashPEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644 = "f72ccd4b250e9e53ebf1d8d400322c21456afb255be1a23d8053eaa8763d3c80"
+
+// PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524 is the certificate for
+// the Federal Bridge CA 2013 signed by the Federal Common Policy CA with serial
+// numbewr 5524.
+const PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524 = `
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 5524 (0x1594)
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=US, O=U.S. Government, OU=FPKI, CN=Federal Common Policy CA
+        Validity
+            Not Before: Oct 21 17:12:58 2013 GMT
+            Not After : Oct 21 17:12:58 2016 GMT
+        Subject: C=US, O=U.S. Government, OU=FPKI, CN=Federal Bridge CA 2013
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (2048 bit)
+                Modulus (2048 bit):
+                    00:9c:e8:17:25:c2:59:ef:34:a5:c5:44:3b:00:35:
+                    ec:31:40:a5:7a:02:d2:3e:19:14:9b:25:89:cd:4a:
+                    8c:3b:e6:5e:6a:da:1c:6b:dd:0c:03:2a:45:84:29:
+                    9d:4f:2e:ff:b0:a0:6c:02:c6:5a:a7:78:67:a5:77:
+                    bb:c6:98:f8:b1:7e:e2:94:bb:fa:11:4f:63:38:1c:
+                    1e:7c:08:0c:9e:f6:2a:15:63:22:62:14:12:e7:9f:
+                    d4:ea:50:2e:d4:7e:3e:64:25:e4:2e:1c:1b:b8:ed:
+                    5f:65:b4:f3:00:15:4f:0d:24:92:2c:71:50:22:3c:
+                    eb:11:69:b3:2c:38:f3:e0:73:a1:98:26:75:a6:2d:
+                    56:a9:05:af:9b:c9:38:8c:66:c0:c8:08:3b:43:3c:
+                    83:dd:2a:52:ab:08:21:7e:cd:4f:ef:45:69:70:0c:
+                    7c:b5:fe:1b:51:4e:09:28:2c:07:2b:4a:79:8c:41:
+                    45:c4:53:0b:cd:e5:d4:a6:bb:93:33:d8:37:96:c3:
+                    b0:2b:5b:c5:c5:e6:49:5c:41:5b:75:a3:02:db:15:
+                    9e:73:d0:a6:cc:e4:c8:9a:1a:c7:01:07:93:b0:df:
+                    eb:b8:fd:7f:dc:ab:18:94:92:8b:8d:f4:0c:29:09:
+                    50:4f:5b:71:e1:da:50:5e:a3:bf:df:dc:a4:8a:f0:
+                    07:4b
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+            X509v3 Certificate Policies:
+                Policy: 2.16.840.1.101.3.2.1.3.6
+                Policy: 2.16.840.1.101.3.2.1.3.7
+                Policy: 2.16.840.1.101.3.2.1.3.8
+                Policy: 2.16.840.1.101.3.2.1.3.13
+                Policy: 2.16.840.1.101.3.2.1.3.16
+                Policy: 2.16.840.1.101.3.2.1.3.1
+                Policy: 2.16.840.1.101.3.2.1.3.2
+                Policy: 2.16.840.1.101.3.2.1.3.14
+                Policy: 2.16.840.1.101.3.2.1.3.15
+                Policy: 2.16.840.1.101.3.2.1.3.17
+                Policy: 2.16.840.1.101.3.2.1.3.18
+                Policy: 2.16.840.1.101.3.2.1.3.19
+                Policy: 2.16.840.1.101.3.2.1.3.20
+                Policy: 2.16.840.1.101.3.2.1.3.21
+                Policy: 2.16.840.1.101.3.2.1.3.22
+                Policy: 2.16.840.1.101.3.2.1.3.23
+                Policy: 2.16.840.1.101.3.2.1.3.24
+                Policy: 2.16.840.1.101.3.2.1.3.25
+                Policy: 2.16.840.1.101.3.2.1.3.26
+                Policy: 2.16.840.1.101.3.2.1.3.27
+                Policy: 2.16.840.1.101.3.2.1.3.36
+
+            Authority Information Access:
+                CA Issuers - URI:http://http.fpki.gov/fcpca/caCertsIssuedTofcpca.p7c
+
+            X509v3 Policy Mappings:
+                2.16.840.1.101.3.2.1.3.6:2.16.840.1.101.3.2.1.3.3, 2.16.840.1.101.3.2.1.3.7:2.16.840.1.101.3.2.1.3.12, 2.16.840.1.101.3.2.1.3.16:2.16.840.1.101.3.2.1.3.4, 2.16.840.1.101.3.2.1.3.8:2.16.840.1.101.3.2.1.3.37, 2.16.840.1.101.3.2.1.3.36:2.16.840.1.101.3.2.1.3.38
+            Subject Information Access:
+                CA Repository - URI:http://http.fpki.gov/bridge/caCertsIssuedByfbca2013.p7c
+
+            X509v3 Key Usage: critical
+                Certificate Sign, CRL Sign
+            X509v3 Authority Key Identifier:
+                keyid:AD:0C:7A:75:5C:E5:F3:98:C4:79:98:0E:AC:28:FD:97:F4:E7:02:FC
+
+            X509v3 CRL Distribution Points:
+                URI:http://http.fpki.gov/fcpca/fcpca.crl
+
+            X509v3 Subject Key Identifier:
+                BB:CE:74:71:83:34:4E:59:32:45:15:5F:40:60:60:DC:2B:B0:B4:E4
+    Signature Algorithm: sha256WithRSAEncryption
+        c7:50:ad:8a:75:35:28:65:8c:18:1c:e7:ed:89:35:17:f9:e3:
+        c6:61:94:e2:2b:89:ba:3a:91:19:13:09:36:34:84:8c:f8:b6:
+        d5:5c:ad:6b:2a:5b:ff:77:11:2f:6a:e9:be:1c:74:c3:b0:7c:
+        35:dc:e8:c7:c4:d9:0b:8a:88:8b:ac:20:fc:96:db:37:d4:38:
+        96:5e:c0:b5:12:f1:88:2a:2d:9c:2d:5c:a2:25:59:4e:7b:bb:
+        31:c8:6b:5c:7c:57:77:a6:9c:0a:6f:a6:8b:4f:af:6b:b0:51:
+        6e:e9:23:b1:bb:6f:06:eb:82:5d:e4:81:cf:63:7e:6d:5c:f1:
+        0c:86:cd:d4:f2:50:59:74:39:18:7a:99:1d:a1:7f:31:03:49:
+        f7:6d:06:69:6d:b4:6a:49:4d:dc:5c:e7:64:54:59:a2:5b:39:
+        27:86:7d:ec:73:71:65:98:60:80:3d:b8:0d:b0:be:61:7b:d2:
+        d3:ae:f7:c3:80:72:a7:47:00:2e:98:fb:9c:b6:9f:34:df:99:
+        14:b2:c4:80:65:bf:7b:8c:95:9f:b7:89:68:fb:7b:22:2c:c9:
+        32:55:75:f1:f0:22:d1:d0:f6:00:44:a9:f6:9c:00:58:d9:18:
+        9b:b8:03:ee:b0:e3:f6:3f:8f:a9:53:22:16:2b:d4:e8:16:69:
+        52:ea:b3:5a
+-----BEGIN CERTIFICATE-----
+MIIGNzCCBR+gAwIBAgICFZQwDQYJKoZIhvcNAQELBQAwWTELMAkGA1UEBhMCVVMx
+GDAWBgNVBAoTD1UuUy4gR292ZXJubWVudDENMAsGA1UECxMERlBLSTEhMB8GA1UE
+AxMYRmVkZXJhbCBDb21tb24gUG9saWN5IENBMB4XDTEzMTAyMTE3MTI1OFoXDTE2
+MTAyMTE3MTI1OFowVzELMAkGA1UEBhMCVVMxGDAWBgNVBAoTD1UuUy4gR292ZXJu
+bWVudDENMAsGA1UECxMERlBLSTEfMB0GA1UEAxMWRmVkZXJhbCBCcmlkZ2UgQ0Eg
+MjAxMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJzoFyXCWe80pcVE
+OwA17DFApXoC0j4ZFJslic1KjDvmXmraHGvdDAMqRYQpnU8u/7CgbALGWqd4Z6V3
+u8aY+LF+4pS7+hFPYzgcHnwIDJ72KhVjImIUEuef1OpQLtR+PmQl5C4cG7jtX2W0
+8wAVTw0kkixxUCI86xFpsyw48+BzoZgmdaYtVqkFr5vJOIxmwMgIO0M8g90qUqsI
+IX7NT+9FaXAMfLX+G1FOCSgsBytKeYxBRcRTC83l1Ka7kzPYN5bDsCtbxcXmSVxB
+W3WjAtsVnnPQpszkyJoaxwEHk7Df67j9f9yrGJSSi430DCkJUE9bceHaUF6jv9/c
+pIrwB0sCAwEAAaOCAwkwggMFMA8GA1UdEwEB/wQFMAMBAf8wggEzBgNVHSAEggEq
+MIIBJjAMBgpghkgBZQMCAQMGMAwGCmCGSAFlAwIBAwcwDAYKYIZIAWUDAgEDCDAM
+BgpghkgBZQMCAQMNMAwGCmCGSAFlAwIBAxAwDAYKYIZIAWUDAgEDATAMBgpghkgB
+ZQMCAQMCMAwGCmCGSAFlAwIBAw4wDAYKYIZIAWUDAgEDDzAMBgpghkgBZQMCAQMR
+MAwGCmCGSAFlAwIBAxIwDAYKYIZIAWUDAgEDEzAMBgpghkgBZQMCAQMUMAwGCmCG
+SAFlAwIBAxUwDAYKYIZIAWUDAgEDFjAMBgpghkgBZQMCAQMXMAwGCmCGSAFlAwIB
+AxgwDAYKYIZIAWUDAgEDGTAMBgpghkgBZQMCAQMaMAwGCmCGSAFlAwIBAxswDAYK
+YIZIAWUDAgEDJDBPBggrBgEFBQcBAQRDMEEwPwYIKwYBBQUHMAKGM2h0dHA6Ly9o
+dHRwLmZwa2kuZ292L2ZjcGNhL2NhQ2VydHNJc3N1ZWRUb2ZjcGNhLnA3YzCBjQYD
+VR0hBIGFMIGCMBgGCmCGSAFlAwIBAwYGCmCGSAFlAwIBAwMwGAYKYIZIAWUDAgED
+BwYKYIZIAWUDAgEDDDAYBgpghkgBZQMCAQMQBgpghkgBZQMCAQMEMBgGCmCGSAFl
+AwIBAwgGCmCGSAFlAwIBAyUwGAYKYIZIAWUDAgEDJAYKYIZIAWUDAgEDJjBTBggr
+BgEFBQcBCwRHMEUwQwYIKwYBBQUHMAWGN2h0dHA6Ly9odHRwLmZwa2kuZ292L2Jy
+aWRnZS9jYUNlcnRzSXNzdWVkQnlmYmNhMjAxMy5wN2MwDgYDVR0PAQH/BAQDAgEG
+MB8GA1UdIwQYMBaAFK0MenVc5fOYxHmYDqwo/Zf05wL8MDUGA1UdHwQuMCwwKqAo
+oCaGJGh0dHA6Ly9odHRwLmZwa2kuZ292L2ZjcGNhL2ZjcGNhLmNybDAdBgNVHQ4E
+FgQUu850cYM0TlkyRRVfQGBg3CuwtOQwDQYJKoZIhvcNAQELBQADggEBAMdQrYp1
+NShljBgc5+2JNRf548ZhlOIribo6kRkTCTY0hIz4ttVcrWsqW/93ES9q6b4cdMOw
+fDXc6MfE2QuKiIusIPyW2zfUOJZewLUS8YgqLZwtXKIlWU57uzHIa1x8V3emnApv
+potPr2uwUW7pI7G7bwbrgl3kgc9jfm1c8QyGzdTyUFl0ORh6mR2hfzEDSfdtBmlt
+tGpJTdxc52RUWaJbOSeGfexzcWWYYIA9uA2wvmF70tOu98OAcqdHAC6Y+5y2nzTf
+mRSyxIBlv3uMlZ+3iWj7eyIsyTJVdfHwItHQ9gBEqfacAFjZGJu4A+6w4/Y/j6lT
+IhYr1OgWaVLqs1o=
+-----END CERTIFICATE-----
+`
+
+// HexHashPEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524 is the hex
+// SHA256 fingerprint of PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524.
+const HexHashPEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524 = "ae014e287fb3709f7d57c29065cdc0d37499e52f83f5ffbe83b883698a2c03f6"
+
+// PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424 is the certificate
+// for the Federal Bridge CA 2013 signed by the Federal Common Policy CA with
+// the serial number 11424.
+const PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424 = `
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 11424 (0x2ca0)
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=US, O=U.S. Government, OU=FPKI, CN=Federal Common Policy CA
+        Validity
+            Not Before: Jun 24 15:45:07 2015 GMT
+            Not After : Jun 24 15:45:07 2018 GMT
+        Subject: C=US, O=U.S. Government, OU=FPKI, CN=Federal Bridge CA 2013
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (2048 bit)
+                Modulus (2048 bit):
+                    00:9c:e8:17:25:c2:59:ef:34:a5:c5:44:3b:00:35:
+                    ec:31:40:a5:7a:02:d2:3e:19:14:9b:25:89:cd:4a:
+                    8c:3b:e6:5e:6a:da:1c:6b:dd:0c:03:2a:45:84:29:
+                    9d:4f:2e:ff:b0:a0:6c:02:c6:5a:a7:78:67:a5:77:
+                    bb:c6:98:f8:b1:7e:e2:94:bb:fa:11:4f:63:38:1c:
+                    1e:7c:08:0c:9e:f6:2a:15:63:22:62:14:12:e7:9f:
+                    d4:ea:50:2e:d4:7e:3e:64:25:e4:2e:1c:1b:b8:ed:
+                    5f:65:b4:f3:00:15:4f:0d:24:92:2c:71:50:22:3c:
+                    eb:11:69:b3:2c:38:f3:e0:73:a1:98:26:75:a6:2d:
+                    56:a9:05:af:9b:c9:38:8c:66:c0:c8:08:3b:43:3c:
+                    83:dd:2a:52:ab:08:21:7e:cd:4f:ef:45:69:70:0c:
+                    7c:b5:fe:1b:51:4e:09:28:2c:07:2b:4a:79:8c:41:
+                    45:c4:53:0b:cd:e5:d4:a6:bb:93:33:d8:37:96:c3:
+                    b0:2b:5b:c5:c5:e6:49:5c:41:5b:75:a3:02:db:15:
+                    9e:73:d0:a6:cc:e4:c8:9a:1a:c7:01:07:93:b0:df:
+                    eb:b8:fd:7f:dc:ab:18:94:92:8b:8d:f4:0c:29:09:
+                    50:4f:5b:71:e1:da:50:5e:a3:bf:df:dc:a4:8a:f0:
+                    07:4b
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+            Authority Information Access:
+                CA Issuers - URI:http://http.fpki.gov/fcpca/caCertsIssuedTofcpca.p7c
+
+            X509v3 Policy Mappings:
+                2.16.840.1.101.3.2.1.3.6:2.16.840.1.101.3.2.1.3.3, 2.16.840.1.101.3.2.1.3.7:2.16.840.1.101.3.2.1.3.12, 2.16.840.1.101.3.2.1.3.8:2.16.840.1.101.3.2.1.3.37, 2.16.840.1.101.3.2.1.3.16:2.16.840.1.101.3.2.1.3.4, 2.16.840.1.101.3.2.1.3.36:2.16.840.1.101.3.2.1.3.38
+            X509v3 Certificate Policies:
+                Policy: 2.16.840.1.101.3.2.1.3.1
+                Policy: 2.16.840.1.101.3.2.1.3.2
+                Policy: 2.16.840.1.101.3.2.1.3.3
+                Policy: 2.16.840.1.101.3.2.1.3.12
+                Policy: 2.16.840.1.101.3.2.1.3.14
+                Policy: 2.16.840.1.101.3.2.1.3.15
+                Policy: 2.16.840.1.101.3.2.1.3.37
+                Policy: 2.16.840.1.101.3.2.1.3.38
+                Policy: 2.16.840.1.101.3.2.1.3.4
+                Policy: 2.16.840.1.101.3.2.1.3.18
+                Policy: 2.16.840.1.101.3.2.1.3.19
+                Policy: 2.16.840.1.101.3.2.1.3.20
+                Policy: 2.16.840.1.101.3.2.1.3.6
+                Policy: 2.16.840.1.101.3.2.1.3.7
+                Policy: 2.16.840.1.101.3.2.1.3.8
+                Policy: 2.16.840.1.101.3.2.1.3.36
+                Policy: 2.16.840.1.101.3.2.1.3.13
+                Policy: 2.16.840.1.101.3.2.1.3.16
+                Policy: 2.16.840.1.101.3.2.1.3.17
+                Policy: 2.16.840.1.101.3.2.1.3.40
+                Policy: 2.16.840.1.101.3.2.1.3.41
+                Policy: 2.16.840.1.101.3.2.1.3.39
+
+            Subject Information Access:
+                CA Repository - URI:http://http.fpki.gov/bridge/caCertsIssuedByfbca2013.p7c
+
+            X509v3 Policy Constraints: critical
+                Inhibit Policy Mapping:2
+            X509v3 Inhibit Any Policy: critical
+                0
+            X509v3 Key Usage: critical
+                Certificate Sign, CRL Sign
+            X509v3 Authority Key Identifier:
+                keyid:AD:0C:7A:75:5C:E5:F3:98:C4:79:98:0E:AC:28:FD:97:F4:E7:02:FC
+
+            X509v3 CRL Distribution Points:
+                URI:http://http.fpki.gov/fcpca/fcpca.crl
+
+            X509v3 Subject Key Identifier:
+                BB:CE:74:71:83:34:4E:59:32:45:15:5F:40:60:60:DC:2B:B0:B4:E4
+    Signature Algorithm: sha256WithRSAEncryption
+        c0:1e:6d:27:f0:79:47:52:46:84:c8:88:5d:2e:9c:a6:76:fd:
+        fc:f9:85:d2:79:3c:06:21:fb:cc:fd:27:39:bc:a3:1a:91:64:
+        57:a8:5e:80:71:b0:43:66:9d:2a:f8:11:47:ba:0c:7e:58:5f:
+        b7:51:8f:23:b9:dd:13:ef:18:f2:89:f4:51:37:59:81:4a:c4:
+        70:ad:47:ec:8b:1a:53:71:e7:2f:49:66:c6:ef:84:1b:2c:f3:
+        43:5d:3c:11:7b:41:20:5b:8e:5a:72:d5:01:84:f6:32:f5:01:
+        f1:3a:c8:7e:8f:f4:fa:d0:c5:78:d6:bf:a3:84:1c:18:66:c8:
+        4d:bc:33:fd:df:4d:ce:78:b2:52:1b:46:88:72:67:4d:6d:72:
+        5b:bb:e1:57:2d:cf:3e:0a:4d:07:37:70:94:b2:23:bb:da:d5:
+        be:6f:87:52:f6:57:53:a8:6b:33:3b:60:d9:b0:84:0e:b0:4a:
+        59:4f:6b:ac:b7:4c:95:be:37:b1:d3:39:83:c8:b3:8d:eb:dc:
+        38:65:cf:16:33:66:ae:72:92:8f:0d:68:e4:d2:5d:72:73:30:
+        08:a5:4c:74:5a:dc:1f:9b:4b:71:60:9c:d3:5e:50:bf:2e:6d:
+        ce:b2:5b:e6:c6:ed:c9:7c:8b:01:d1:db:b1:cd:a7:a1:62:6e:
+        d4:67:5e:31
+-----BEGIN CERTIFICATE-----
+MIIGZTCCBU2gAwIBAgICLKAwDQYJKoZIhvcNAQELBQAwWTELMAkGA1UEBhMCVVMx
+GDAWBgNVBAoTD1UuUy4gR292ZXJubWVudDENMAsGA1UECxMERlBLSTEhMB8GA1UE
+AxMYRmVkZXJhbCBDb21tb24gUG9saWN5IENBMB4XDTE1MDYyNDE1NDUwN1oXDTE4
+MDYyNDE1NDUwN1owVzELMAkGA1UEBhMCVVMxGDAWBgNVBAoTD1UuUy4gR292ZXJu
+bWVudDENMAsGA1UECxMERlBLSTEfMB0GA1UEAxMWRmVkZXJhbCBCcmlkZ2UgQ0Eg
+MjAxMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJzoFyXCWe80pcVE
+OwA17DFApXoC0j4ZFJslic1KjDvmXmraHGvdDAMqRYQpnU8u/7CgbALGWqd4Z6V3
+u8aY+LF+4pS7+hFPYzgcHnwIDJ72KhVjImIUEuef1OpQLtR+PmQl5C4cG7jtX2W0
+8wAVTw0kkixxUCI86xFpsyw48+BzoZgmdaYtVqkFr5vJOIxmwMgIO0M8g90qUqsI
+IX7NT+9FaXAMfLX+G1FOCSgsBytKeYxBRcRTC83l1Ka7kzPYN5bDsCtbxcXmSVxB
+W3WjAtsVnnPQpszkyJoaxwEHk7Df67j9f9yrGJSSi430DCkJUE9bceHaUF6jv9/c
+pIrwB0sCAwEAAaOCAzcwggMzMA8GA1UdEwEB/wQFMAMBAf8wTwYIKwYBBQUHAQEE
+QzBBMD8GCCsGAQUFBzAChjNodHRwOi8vaHR0cC5mcGtpLmdvdi9mY3BjYS9jYUNl
+cnRzSXNzdWVkVG9mY3BjYS5wN2MwgY0GA1UdIQSBhTCBgjAYBgpghkgBZQMCAQMG
+BgpghkgBZQMCAQMDMBgGCmCGSAFlAwIBAwcGCmCGSAFlAwIBAwwwGAYKYIZIAWUD
+AgEDCAYKYIZIAWUDAgEDJTAYBgpghkgBZQMCAQMQBgpghkgBZQMCAQMEMBgGCmCG
+SAFlAwIBAyQGCmCGSAFlAwIBAyYwggFBBgNVHSAEggE4MIIBNDAMBgpghkgBZQMC
+AQMBMAwGCmCGSAFlAwIBAwIwDAYKYIZIAWUDAgEDAzAMBgpghkgBZQMCAQMMMAwG
+CmCGSAFlAwIBAw4wDAYKYIZIAWUDAgEDDzAMBgpghkgBZQMCAQMlMAwGCmCGSAFl
+AwIBAyYwDAYKYIZIAWUDAgEDBDAMBgpghkgBZQMCAQMSMAwGCmCGSAFlAwIBAxMw
+DAYKYIZIAWUDAgEDFDAMBgpghkgBZQMCAQMGMAwGCmCGSAFlAwIBAwcwDAYKYIZI
+AWUDAgEDCDAMBgpghkgBZQMCAQMkMAwGCmCGSAFlAwIBAw0wDAYKYIZIAWUDAgED
+EDAMBgpghkgBZQMCAQMRMAwGCmCGSAFlAwIBAygwDAYKYIZIAWUDAgEDKTAMBgpg
+hkgBZQMCAQMnMFMGCCsGAQUFBwELBEcwRTBDBggrBgEFBQcwBYY3aHR0cDovL2h0
+dHAuZnBraS5nb3YvYnJpZGdlL2NhQ2VydHNJc3N1ZWRCeWZiY2EyMDEzLnA3YzAP
+BgNVHSQBAf8EBTADgQECMA0GA1UdNgEB/wQDAgEAMA4GA1UdDwEB/wQEAwIBBjAf
+BgNVHSMEGDAWgBStDHp1XOXzmMR5mA6sKP2X9OcC/DA1BgNVHR8ELjAsMCqgKKAm
+hiRodHRwOi8vaHR0cC5mcGtpLmdvdi9mY3BjYS9mY3BjYS5jcmwwHQYDVR0OBBYE
+FLvOdHGDNE5ZMkUVX0BgYNwrsLTkMA0GCSqGSIb3DQEBCwUAA4IBAQDAHm0n8HlH
+UkaEyIhdLpymdv38+YXSeTwGIfvM/Sc5vKMakWRXqF6AcbBDZp0q+BFHugx+WF+3
+UY8jud0T7xjyifRRN1mBSsRwrUfsixpTcecvSWbG74QbLPNDXTwRe0EgW45actUB
+hPYy9QHxOsh+j/T60MV41r+jhBwYZshNvDP9303OeLJSG0aIcmdNbXJbu+FXLc8+
+Ck0HN3CUsiO72tW+b4dS9ldTqGszO2DZsIQOsEpZT2ust0yVvjex0zmDyLON69w4
+Zc8WM2aucpKPDWjk0l1yczAIpUx0Wtwfm0txYJzTXlC/Lm3Oslvmxu3JfIsB0dux
+zaehYm7UZ14x
+-----END CERTIFICATE-----
+`
+
+// HexHashPEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424 is the hex
+// SHA256 fingerprint of
+// PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424.
+const HexHashPEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424 = "8ed99089806b1005d6a6417c50f182325b670b9d87b17f3fd7aefc360a300e91"
+
+// PEMFederalBridgeCA2013SignedByIdenTrust is the certificate for the Federal
+// Bridge CA 2013 signed by IdenTrust ACES CA 1.
+const PEMFederalBridgeCA2013SignedByIdenTrust = `
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            7f:00:00:01:00:00:01:4a:f3:fc:79:ab:00:00:00:02
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=US, O=IdenTrust, OU=IdenTrust Public Sector, CN=IdenTrust ACES CA 1
+        Validity
+            Not Before: Jan 16 18:23:37 2015 GMT
+            Not After : Jan 14 18:23:37 2018 GMT
+        Subject: C=US, O=U.S. Government, OU=FPKI, CN=Federal Bridge CA 2013
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (2048 bit)
+                Modulus (2048 bit):
+                    00:9c:e8:17:25:c2:59:ef:34:a5:c5:44:3b:00:35:
+                    ec:31:40:a5:7a:02:d2:3e:19:14:9b:25:89:cd:4a:
+                    8c:3b:e6:5e:6a:da:1c:6b:dd:0c:03:2a:45:84:29:
+                    9d:4f:2e:ff:b0:a0:6c:02:c6:5a:a7:78:67:a5:77:
+                    bb:c6:98:f8:b1:7e:e2:94:bb:fa:11:4f:63:38:1c:
+                    1e:7c:08:0c:9e:f6:2a:15:63:22:62:14:12:e7:9f:
+                    d4:ea:50:2e:d4:7e:3e:64:25:e4:2e:1c:1b:b8:ed:
+                    5f:65:b4:f3:00:15:4f:0d:24:92:2c:71:50:22:3c:
+                    eb:11:69:b3:2c:38:f3:e0:73:a1:98:26:75:a6:2d:
+                    56:a9:05:af:9b:c9:38:8c:66:c0:c8:08:3b:43:3c:
+                    83:dd:2a:52:ab:08:21:7e:cd:4f:ef:45:69:70:0c:
+                    7c:b5:fe:1b:51:4e:09:28:2c:07:2b:4a:79:8c:41:
+                    45:c4:53:0b:cd:e5:d4:a6:bb:93:33:d8:37:96:c3:
+                    b0:2b:5b:c5:c5:e6:49:5c:41:5b:75:a3:02:db:15:
+                    9e:73:d0:a6:cc:e4:c8:9a:1a:c7:01:07:93:b0:df:
+                    eb:b8:fd:7f:dc:ab:18:94:92:8b:8d:f4:0c:29:09:
+                    50:4f:5b:71:e1:da:50:5e:a3:bf:df:dc:a4:8a:f0:
+                    07:4b
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Key Usage: critical
+                Certificate Sign, CRL Sign
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+            X509v3 Inhibit Any Policy: critical
+                0
+            X509v3 Policy Mappings:
+                2.16.840.1.101.3.2.1.1.2:2.16.840.1.101.3.2.1.3.2, 2.16.840.1.101.3.2.1.1.3:2.16.840.1.101.3.2.1.3.3, 2.16.840.1.101.3.2.1.1.5:2.16.840.1.101.3.2.1.3.3, 2.16.840.1.101.3.2.1.1.6:2.16.840.1.101.3.2.1.3.3, 2.16.840.1.101.3.2.1.1.7:2.16.840.1.101.3.2.1.3.3
+            X509v3 Certificate Policies:
+                Policy: 2.16.840.1.101.3.2.1.1.2
+                Policy: 2.16.840.1.101.3.2.1.1.3
+                Policy: 2.16.840.1.101.3.2.1.1.5
+                Policy: 2.16.840.1.101.3.2.1.1.6
+                Policy: 2.16.840.1.101.3.2.1.1.7
+
+            X509v3 Subject Key Identifier:
+                BB:CE:74:71:83:34:4E:59:32:45:15:5F:40:60:60:DC:2B:B0:B4:E4
+            X509v3 CRL Distribution Points:
+                URI:http://crl.identrust.com/acespublicsector1.crl
+
+            Subject Information Access:
+                CA Repository - URI:http://http.fpki.gov/bridge/caCertsIssuedByfbca2013.p7c
+
+            Authority Information Access:
+                CA Issuers - URI:http://apps.identrust.com/roots/acespublicsector1.p7c
+                OCSP - URI:https://aces.ocsp.identrust.com
+
+            X509v3 Authority Key Identifier:
+                keyid:E6:33:09:63:89:B5:66:1A:4F:D5:B3:CC:0F:AB:FB:B5:0C:C7:F3:47
+
+    Signature Algorithm: sha256WithRSAEncryption
+        6c:c3:71:b3:ed:4e:73:c3:b7:16:83:05:81:bb:17:bb:eb:34:
+        a3:af:a2:f3:18:8d:3e:65:5b:3c:44:ec:a2:c5:58:ed:1b:6d:
+        e9:38:4d:d9:30:b8:bb:57:73:df:3f:64:3c:be:b4:8d:7b:9d:
+        13:c7:93:85:b9:86:c2:82:ff:7a:e5:03:12:f0:9a:84:31:06:
+        b9:4a:5c:8e:e9:3e:42:d7:35:d0:17:9e:d2:8b:89:bc:cd:84:
+        d4:73:e0:ed:0c:b9:c9:1c:9e:56:05:79:af:f2:8e:a1:f5:a0:
+        9e:b0:02:75:80:6a:ac:ac:97:9c:5c:76:af:f0:3f:ab:1f:6f:
+        7d:cb:ea:78:b3:42:91:8e:19:5e:e0:f8:2d:20:2e:66:3f:7f:
+        80:b7:44:88:ab:3a:29:c3:59:c7:5b:d2:9a:18:e3:33:2f:39:
+        47:41:db:d3:c7:4e:12:b3:4b:2b:ef:58:c1:d4:3d:11:f1:7b:
+        e5:5f:8b:43:c6:92:34:78:1e:f8:42:fe:75:cb:52:89:41:34:
+        e0:73:80:12:90:2c:94:2a:26:3e:44:36:72:26:73:c0:5c:c0:
+        88:d0:5f:1f:04:de:3f:9a:66:03:56:b3:d8:73:fd:5a:45:19:
+        de:99:6b:66:96:43:f3:4a:4a:66:30:32:21:c5:66:45:17:0d:
+        ce:5b:7c:63
+-----BEGIN CERTIFICATE-----
+MIIFrzCCBJegAwIBAgIQfwAAAQAAAUrz/HmrAAAAAjANBgkqhkiG9w0BAQsFADBh
+MQswCQYDVQQGEwJVUzESMBAGA1UEChMJSWRlblRydXN0MSAwHgYDVQQLExdJZGVu
+VHJ1c3QgUHVibGljIFNlY3RvcjEcMBoGA1UEAxMTSWRlblRydXN0IEFDRVMgQ0Eg
+MTAeFw0xNTAxMTYxODIzMzdaFw0xODAxMTQxODIzMzdaMFcxCzAJBgNVBAYTAlVT
+MRgwFgYDVQQKEw9VLlMuIEdvdmVybm1lbnQxDTALBgNVBAsTBEZQS0kxHzAdBgNV
+BAMTFkZlZGVyYWwgQnJpZGdlIENBIDIwMTMwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+DwAwggEKAoIBAQCc6BclwlnvNKXFRDsANewxQKV6AtI+GRSbJYnNSow75l5q2hxr
+3QwDKkWEKZ1PLv+woGwCxlqneGeld7vGmPixfuKUu/oRT2M4HB58CAye9ioVYyJi
+FBLnn9TqUC7Ufj5kJeQuHBu47V9ltPMAFU8NJJIscVAiPOsRabMsOPPgc6GYJnWm
+LVapBa+byTiMZsDICDtDPIPdKlKrCCF+zU/vRWlwDHy1/htRTgkoLAcrSnmMQUXE
+UwvN5dSmu5Mz2DeWw7ArW8XF5klcQVt1owLbFZ5z0KbM5MiaGscBB5Ow3+u4/X/c
+qxiUkouN9AwpCVBPW3Hh2lBeo7/f3KSK8AdLAgMBAAGjggJrMIICZzAOBgNVHQ8B
+Af8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zANBgNVHTYBAf8EAwIBADCBjQYDVR0h
+BIGFMIGCMBgGCmCGSAFlAwIBAQIGCmCGSAFlAwIBAwIwGAYKYIZIAWUDAgEBAwYK
+YIZIAWUDAgEDAzAYBgpghkgBZQMCAQEFBgpghkgBZQMCAQMDMBgGCmCGSAFlAwIB
+AQYGCmCGSAFlAwIBAwMwGAYKYIZIAWUDAgEBBwYKYIZIAWUDAgEDAzBPBgNVHSAE
+SDBGMAwGCmCGSAFlAwIBAQIwDAYKYIZIAWUDAgEBAzAMBgpghkgBZQMCAQEFMAwG
+CmCGSAFlAwIBAQYwDAYKYIZIAWUDAgEBBzAdBgNVHQ4EFgQUu850cYM0TlkyRRVf
+QGBg3CuwtOQwPwYDVR0fBDgwNjA0oDKgMIYuaHR0cDovL2NybC5pZGVudHJ1c3Qu
+Y29tL2FjZXNwdWJsaWNzZWN0b3IxLmNybDBTBggrBgEFBQcBCwRHMEUwQwYIKwYB
+BQUHMAWGN2h0dHA6Ly9odHRwLmZwa2kuZ292L2JyaWRnZS9jYUNlcnRzSXNzdWVk
+QnlmYmNhMjAxMy5wN2MwfgYIKwYBBQUHAQEEcjBwMEEGCCsGAQUFBzAChjVodHRw
+Oi8vYXBwcy5pZGVudHJ1c3QuY29tL3Jvb3RzL2FjZXNwdWJsaWNzZWN0b3IxLnA3
+YzArBggrBgEFBQcwAYYfaHR0cHM6Ly9hY2VzLm9jc3AuaWRlbnRydXN0LmNvbTAf
+BgNVHSMEGDAWgBTmMwljibVmGk/Vs8wPq/u1DMfzRzANBgkqhkiG9w0BAQsFAAOC
+AQEAbMNxs+1Oc8O3FoMFgbsXu+s0o6+i8xiNPmVbPETsosVY7Rtt6ThN2TC4u1dz
+3z9kPL60jXudE8eThbmGwoL/euUDEvCahDEGuUpcjuk+Qtc10Bee0ouJvM2E1HPg
+7Qy5yRyeVgV5r/KOofWgnrACdYBqrKyXnFx2r/A/qx9vfcvqeLNCkY4ZXuD4LSAu
+Zj9/gLdEiKs6KcNZx1vSmhjjMy85R0Hb08dOErNLK+9YwdQ9EfF75V+LQ8aSNHge
++EL+dctSiUE04HOAEpAslComPkQ2ciZzwFzAiNBfHwTeP5pmA1az2HP9WkUZ3plr
+ZpZD80pKZjAyIcVmRRcNzlt8Yw==
+-----END CERTIFICATE-----
+`
+
+// HexHashPEMFederalBridgeCA2013SignedByIdenTrust is the hex SHA256 fingerprint
+// of PEMFederalBridgeCA2013SignedByIdenTrust.
+const HexHashPEMFederalBridgeCA2013SignedByIdenTrust = "a2d96559f2237d3962a5d879e0327f9610097f83fe3e6f4e8d9fa567e88efca4"

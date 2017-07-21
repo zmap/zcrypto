@@ -120,6 +120,60 @@ var graphTests = []graphTest{
 			{-1, 1, 9},
 		},
 	},
+	{
+		name: "bridge-ca-13",
+		certificates: []string{
+			data.PEMFederalBridgeCA2013SignedByIdenTrust,
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524,
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424,
+		},
+		expectedNodes: []string{
+			data.HexSPKISubjectFingerprintFederalBridgeCA2013,
+		},
+		expectedEdges: []edgeIdx{
+			{-1, 0, 0},
+			{-1, 0, 1},
+			{-1, 0, 2},
+		},
+	},
+	{
+		name: "bridge-ca-13-dod-root-ca-3-dod-interop-join",
+		certificates: []string{
+			data.PEMFederalBridgeCA2013SignedByIdenTrust,
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524,
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424,
+			data.PEMDoDRootCA3SelfSigned, // idx=3
+			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2016, // idx=7
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial906,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8225,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8844,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644, // idx=12
+		},
+		expectedNodes: []string{
+			data.HexSPKISubjectFingerprintDoDRootCA3,
+			data.HexSPKISubjectFingerprintDoDInteropCA2,
+			data.HexSPKISubjectFingerprintFederalBridgeCA2013,
+		},
+		expectedEdges: []edgeIdx{
+			{-1, 2, 0},
+			{-1, 2, 1},
+			{-1, 2, 2},
+			{0, 0, 3},
+			{-1, 0, 4},
+			{1, 0, 5},
+			{1, 0, 6},
+			{-1, 1, 7},
+			{-1, 1, 8},
+			{2, 1, 9},
+			{2, 1, 10},
+			{2, 1, 11},
+			{2, 1, 12},
+		},
+	},
 }
 
 func TestGraphAddOneCert(t *testing.T) {
