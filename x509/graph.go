@@ -14,11 +14,6 @@ func (sk *SubjectAndKey) subjectAndKeyFingerprint() subjectAndKeyFingerprint {
 // This is used a key in maps.
 type subjectAndKeyFingerprint string
 
-// CertificateChain is a slice of certificates. The 0'th element is the leaf,
-// and the last element is a root. Successive elements have a child-parent
-// relationship.
-type CertificateChain []*Certificate
-
 // Graph represents signing relationships between SubjectAndKey tuples. A node
 // in the graph is a SubjectAndKey. An edge in the graph is a certificate issued
 // by the direct predecessor (tail) to the direct successor (head).
@@ -34,6 +29,7 @@ type Graph struct {
 type GraphNode struct {
 	SubjectAndKey           *SubjectAndKey
 	childrenBySubjectAndKey map[subjectAndKeyFingerprint]*GraphEdgeSet
+	parentsBySubjectAndKey  map[subjectAndKeyFingerprint]*GraphEdgeSet
 }
 
 // A GraphEdge is a certificate that joins two SubjectAndKeys.
@@ -111,6 +107,7 @@ func (g *Graph) AddCert(c *Certificate) {
 		node = new(GraphNode)
 		node.SubjectAndKey = sk
 		node.childrenBySubjectAndKey = make(map[subjectAndKeyFingerprint]*GraphEdgeSet)
+		node.parentsBySubjectAndKey = make(map[subjectAndKeyFingerprint]*GraphEdgeSet)
 		g.nodes = append(g.nodes, node)
 		g.nodesBySubjectAndKey[skfp] = node
 
@@ -146,6 +143,15 @@ func (g *Graph) AddCert(c *Certificate) {
 		// it prexists, the graph is corrupted.
 		edge.issuer = potentialIssuerNode
 		edgeSet.addOrPanic(edge)
+
+		// Update the parents of this node
+		parentSkpf := potentialIssuerNode.SubjectAndKey.subjectAndKeyFingerprint()
+		parentSet := node.parentsBySubjectAndKey[parentSkpf]
+		if parentSet == nil {
+			parentSet = NewGraphEdgeSet()
+			node.parentsBySubjectAndKey[parentSkpf] = parentSet
+		}
+		parentSet.addOrPanic(edge)
 
 		// A certificate can only be one edge. We found it already, so break out of
 		// the loop.
@@ -198,6 +204,15 @@ func (g *Graph) AddCert(c *Certificate) {
 		}
 		edgeSet.addOrPanic(candidateEdge)
 
+		// Set the parents of the node
+		parentSkpf := node.SubjectAndKey.subjectAndKeyFingerprint()
+		parentSet := candidateEdge.child.parentsBySubjectAndKey[parentSkpf]
+		if parentSet == nil {
+			parentSet = NewGraphEdgeSet()
+			candidateEdge.child.parentsBySubjectAndKey[parentSkpf] = parentSet
+		}
+		parentSet.addOrPanic(candidateEdge)
+
 		// Record the edge as fixed so we can remove it from the missingIssuerNode
 		// map.
 		fixedUpEdges = append(fixedUpEdges, candidateEdge)
@@ -211,7 +226,6 @@ func (g *Graph) AddCert(c *Certificate) {
 		potentialOutgoingEdges = nil
 		delete(g.missingIssuerNode, string(c.RawSubject))
 	}
-
 }
 
 // AddRoot adges an edge for certificate c, and marks it as a root.

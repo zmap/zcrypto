@@ -174,6 +174,21 @@ var graphTests = []graphTest{
 			{2, 1, 12},
 		},
 	},
+	{
+		name: "bridge-ca-2016-loop-with-interop",
+		certificates: []string{
+			data.PEMFederalBridgeCA2016SignedByDodInteropCA2,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2016,
+		},
+		expectedNodes: []string{
+			data.HexSPKISubjectFingerprintFederalBridgeCA2016,
+			data.HexSPKISubjectFingerprintDoDInteropCA2,
+		},
+		expectedEdges: []edgeIdx{
+			{1, 0, 0},
+			{0, 1, 1},
+		},
+	},
 }
 
 func TestGraphAddOneCert(t *testing.T) {
