@@ -1791,6 +1791,134 @@ ZpZD80pKZjAyIcVmRRcNzlt8Yw==
 // of PEMFederalBridgeCA2013SignedByIdenTrust.
 const HexHashPEMFederalBridgeCA2013SignedByIdenTrust = "a2d96559f2237d3962a5d879e0327f9610097f83fe3e6f4e8d9fa567e88efca4"
 
+// PEMFederalBridgeCA2013SignedByDoDInteropCA2 is the certificate for the
+// Federal Bridge CA 2013 signed by the DoD Interoperability Root CA 2.
+const PEMFederalBridgeCA2013SignedByDoDInteropCA2 = `
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 302 (0x12e)
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=US, O=U.S. Government, OU=DoD, OU=PKI, CN=DoD Interoperability Root CA 2
+        Validity
+            Not Before: Apr 16 13:41:32 2014 GMT
+            Not After : Apr 16 13:41:32 2017 GMT
+        Subject: C=US, O=U.S. Government, OU=FPKI, CN=Federal Bridge CA 2013
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (2048 bit)
+                Modulus (2048 bit):
+                    00:9c:e8:17:25:c2:59:ef:34:a5:c5:44:3b:00:35:
+                    ec:31:40:a5:7a:02:d2:3e:19:14:9b:25:89:cd:4a:
+                    8c:3b:e6:5e:6a:da:1c:6b:dd:0c:03:2a:45:84:29:
+                    9d:4f:2e:ff:b0:a0:6c:02:c6:5a:a7:78:67:a5:77:
+                    bb:c6:98:f8:b1:7e:e2:94:bb:fa:11:4f:63:38:1c:
+                    1e:7c:08:0c:9e:f6:2a:15:63:22:62:14:12:e7:9f:
+                    d4:ea:50:2e:d4:7e:3e:64:25:e4:2e:1c:1b:b8:ed:
+                    5f:65:b4:f3:00:15:4f:0d:24:92:2c:71:50:22:3c:
+                    eb:11:69:b3:2c:38:f3:e0:73:a1:98:26:75:a6:2d:
+                    56:a9:05:af:9b:c9:38:8c:66:c0:c8:08:3b:43:3c:
+                    83:dd:2a:52:ab:08:21:7e:cd:4f:ef:45:69:70:0c:
+                    7c:b5:fe:1b:51:4e:09:28:2c:07:2b:4a:79:8c:41:
+                    45:c4:53:0b:cd:e5:d4:a6:bb:93:33:d8:37:96:c3:
+                    b0:2b:5b:c5:c5:e6:49:5c:41:5b:75:a3:02:db:15:
+                    9e:73:d0:a6:cc:e4:c8:9a:1a:c7:01:07:93:b0:df:
+                    eb:b8:fd:7f:dc:ab:18:94:92:8b:8d:f4:0c:29:09:
+                    50:4f:5b:71:e1:da:50:5e:a3:bf:df:dc:a4:8a:f0:
+                    07:4b
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Authority Key Identifier:
+                keyid:FF:F8:AE:13:8B:92:2B:79:92:41:A3:76:5C:2C:81:9E:9A:C5:9C:78
+
+            X509v3 Subject Key Identifier:
+                BB:CE:74:71:83:34:4E:59:32:45:15:5F:40:60:60:DC:2B:B0:B4:E4
+            X509v3 Key Usage: critical
+                Certificate Sign, CRL Sign
+            X509v3 Certificate Policies:
+                Policy: 2.16.840.1.101.2.1.11.36
+                Policy: 2.16.840.1.101.2.1.11.42
+                Policy: 2.16.840.1.101.3.2.1.3.13
+                Policy: 2.16.840.1.101.3.2.1.3.17
+                Policy: 2.16.840.1.101.3.2.1.3.39
+                Policy: 2.16.840.1.101.3.2.1.3.18
+                Policy: 2.16.840.1.101.3.2.1.3.19
+                Policy: 2.16.840.1.101.3.2.1.3.20
+
+            X509v3 Policy Mappings:
+                2.16.840.1.101.2.1.11.36:2.16.840.1.101.3.2.1.3.38, 2.16.840.1.101.2.1.11.42:2.16.840.1.101.3.2.1.3.12, 2.16.840.1.101.2.1.11.42:2.16.840.1.101.3.2.1.3.4
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+            X509v3 Name Constraints: critical
+                Excluded:
+                  DirName: C = US, O = U.S. Government, OU = DoD
+
+            X509v3 Policy Constraints: critical
+                Require Explicit Policy:0
+            X509v3 CRL Distribution Points:
+                URI:http://crl.disa.mil/crl/DODINTEROPERABILITYROOTCA2.crl
+
+            Authority Information Access:
+                CA Issuers - URI:http://crl.disa.mil/issuedto/DODINTEROPERABILITYROOTCA2_IT.p7c
+
+            Subject Information Access:
+                CA Repository - URI:http://http.fpki.gov/bridge/caCertsIssuedByfbca2013.p7c
+
+    Signature Algorithm: sha256WithRSAEncryption
+        68:6d:52:24:9d:4c:98:71:ca:aa:3c:72:42:69:76:db:93:11:
+        28:6c:12:7c:93:cb:89:28:c4:b0:b9:a6:8d:58:8f:16:e2:aa:
+        82:a3:d7:cb:55:cf:b7:b8:5a:c6:01:3e:39:e8:19:4e:e5:ce:
+        fc:a6:29:a8:f7:72:c0:9c:48:32:a2:dd:d0:e2:c8:a3:ac:1e:
+        65:f8:66:79:68:55:ab:7a:02:42:d5:88:57:87:05:a5:60:0c:
+        05:d7:0d:ce:eb:e3:25:cf:19:8b:a0:19:ba:48:04:41:14:21:
+        c1:c8:f7:16:de:1b:c5:45:c6:e5:26:a2:e2:5e:2d:13:35:2f:
+        2a:99:37:8d:7f:0f:dc:ba:97:61:92:af:51:2e:a9:be:de:bd:
+        82:1a:c3:f6:27:53:b5:f5:52:8b:70:39:2d:c8:1e:80:36:db:
+        49:d2:c8:0b:f9:8b:f4:02:8e:1b:bc:00:88:e5:db:db:2d:59:
+        17:b4:8f:b0:0b:10:c7:f8:c7:ed:e2:01:1b:a4:50:69:23:5f:
+        6e:94:79:81:1c:28:27:dd:f3:a9:b5:dd:62:c1:80:fe:e9:12:
+        31:28:d9:66:47:f5:9a:46:7c:ad:b0:c1:8c:15:9f:b6:51:b5:
+        17:34:41:f0:2d:28:0e:a8:94:ca:a2:83:42:2a:d8:dc:b0:fd:
+        59:80:09:7d
+-----BEGIN CERTIFICATE-----
+MIIFyzCCBLOgAwIBAgICAS4wDQYJKoZIhvcNAQELBQAwbDELMAkGA1UEBhMCVVMx
+GDAWBgNVBAoTD1UuUy4gR292ZXJubWVudDEMMAoGA1UECxMDRG9EMQwwCgYDVQQL
+EwNQS0kxJzAlBgNVBAMTHkRvRCBJbnRlcm9wZXJhYmlsaXR5IFJvb3QgQ0EgMjAe
+Fw0xNDA0MTYxMzQxMzJaFw0xNzA0MTYxMzQxMzJaMFcxCzAJBgNVBAYTAlVTMRgw
+FgYDVQQKEw9VLlMuIEdvdmVybm1lbnQxDTALBgNVBAsTBEZQS0kxHzAdBgNVBAMT
+FkZlZGVyYWwgQnJpZGdlIENBIDIwMTMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
+ggEKAoIBAQCc6BclwlnvNKXFRDsANewxQKV6AtI+GRSbJYnNSow75l5q2hxr3QwD
+KkWEKZ1PLv+woGwCxlqneGeld7vGmPixfuKUu/oRT2M4HB58CAye9ioVYyJiFBLn
+n9TqUC7Ufj5kJeQuHBu47V9ltPMAFU8NJJIscVAiPOsRabMsOPPgc6GYJnWmLVap
+Ba+byTiMZsDICDtDPIPdKlKrCCF+zU/vRWlwDHy1/htRTgkoLAcrSnmMQUXEUwvN
+5dSmu5Mz2DeWw7ArW8XF5klcQVt1owLbFZ5z0KbM5MiaGscBB5Ow3+u4/X/cqxiU
+kouN9AwpCVBPW3Hh2lBeo7/f3KSK8AdLAgMBAAGjggKKMIIChjAfBgNVHSMEGDAW
+gBT/+K4Ti5IreZJBo3ZcLIGemsWceDAdBgNVHQ4EFgQUu850cYM0TlkyRRVfQGBg
+3CuwtOQwDgYDVR0PAQH/BAQDAgEGMHcGA1UdIARwMG4wCwYJYIZIAWUCAQskMAsG
+CWCGSAFlAgELKjAMBgpghkgBZQMCAQMNMAwGCmCGSAFlAwIBAxEwDAYKYIZIAWUD
+AgEDJzAMBgpghkgBZQMCAQMSMAwGCmCGSAFlAwIBAxMwDAYKYIZIAWUDAgEDFDBU
+BgNVHSEETTBLMBcGCWCGSAFlAgELJAYKYIZIAWUDAgEDJjAXBglghkgBZQIBCyoG
+CmCGSAFlAwIBAwwwFwYJYIZIAWUCAQsqBgpghkgBZQMCAQMEMA8GA1UdEwEB/wQF
+MAMBAf8wSQYDVR0eAQH/BD8wPaE7MDmkNzA1MQswCQYDVQQGEwJVUzEYMBYGA1UE
+ChMPVS5TLiBHb3Zlcm5tZW50MQwwCgYDVQQLEwNEb0QwDwYDVR0kAQH/BAUwA4AB
+ADBHBgNVHR8EQDA+MDygOqA4hjZodHRwOi8vY3JsLmRpc2EubWlsL2NybC9ET0RJ
+TlRFUk9QRVJBQklMSVRZUk9PVENBMi5jcmwwWgYIKwYBBQUHAQEETjBMMEoGCCsG
+AQUFBzAChj5odHRwOi8vY3JsLmRpc2EubWlsL2lzc3VlZHRvL0RPRElOVEVST1BF
+UkFCSUxJVFlST09UQ0EyX0lULnA3YzBTBggrBgEFBQcBCwRHMEUwQwYIKwYBBQUH
+MAWGN2h0dHA6Ly9odHRwLmZwa2kuZ292L2JyaWRnZS9jYUNlcnRzSXNzdWVkQnlm
+YmNhMjAxMy5wN2MwDQYJKoZIhvcNAQELBQADggEBAGhtUiSdTJhxyqo8ckJpdtuT
+EShsEnyTy4koxLC5po1YjxbiqoKj18tVz7e4WsYBPjnoGU7lzvymKaj3csCcSDKi
+3dDiyKOsHmX4ZnloVat6AkLViFeHBaVgDAXXDc7r4yXPGYugGbpIBEEUIcHI9xbe
+G8VFxuUmouJeLRM1LyqZN41/D9y6l2GSr1Euqb7evYIaw/YnU7X1UotwOS3IHoA2
+20nSyAv5i/QCjhu8AIjl29stWRe0j7ALEMf4x+3iARukUGkjX26UeYEcKCfd86m1
+3WLBgP7pEjEo2WZH9ZpGfK2wwYwVn7ZRtRc0QfAtKA6olMqig0Iq2Nyw/VmACX0=
+-----END CERTIFICATE-----
+`
+
+// HexHashPEMFederalBridgeCA2013SignedByDoDInteropCA2 is the hex SHA256
+// fingerprint of PEMFederalBridgeCA2013SignedByDoDInteropCA2.
+const HexHashPEMFederalBridgeCA2013SignedByDoDInteropCA2 = "d19ee1728a2fbe37342f3b993d6c3f771516dbba190823ab059b2da0b3e44617"
+
 // PEMFederalBridgeCA2016SignedByDodInteropCA2 is the certificate for the
 // Federal Bridge CA 2016 signed by the Dod Interoperability Root CA 2.
 const PEMFederalBridgeCA2016SignedByDodInteropCA2 = `
