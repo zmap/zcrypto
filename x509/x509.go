@@ -1097,28 +1097,21 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 	out.TBSCertificateFingerprint = SHA256Fingerprint(in.TBSCertificate.Raw)
 
 	tbs := in.TBSCertificate
-	extensions := in.TBSCertificate.Extensions
+	originalExtensions := in.TBSCertificate.Extensions
 
 	// Blow away the raw data since it also includes CT data
 	tbs.Raw = nil
 
 	// remove the CT extensions
-	flag := false
-	for i, extension := range in.TBSCertificate.Extensions {
-		if extension.Id.Equal(oidExtensionCTPrecertificatePoison) == true {
-			extensions = append(extensions[:i], extensions[i+1:]...)
-			if flag {
-				break
-			}
-			flag = true
+	extensions := make([]pkix.Extension, 0, len(originalExtensions))
+	for _, extension := range originalExtensions {
+		if extension.Id.Equal(oidExtensionCTPrecertificatePoison) {
+			continue
 		}
 		if extension.Id.Equal(oidExtensionSignedCertificateTimestampList) {
-			extensions = append(extensions[:i], extensions[i+1:]...)
-			if flag {
-				break
-			}
-			flag = true
+			continue
 		}
+		extensions = append(extensions, extension)
 	}
 
 	tbs.Extensions = extensions
