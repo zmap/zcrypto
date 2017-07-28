@@ -189,6 +189,29 @@ var graphTests = []graphTest{
 			{0, 1, 1},
 		},
 	},
+	{
+		name: "all-bridge-ca-joined-by-common-policy-self-signed",
+		certificates: []string{
+			data.PEMFederalBridgeCA2016SignedByFederalCommonPolicyCA,
+			data.PEMFederalBridgeCASignedByFederalCommonPolicyCA,
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524,
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424,
+			data.PEMFederalCommonPolicyCASignedBySelf, // idx=4
+		},
+		expectedNodes: []string{
+			data.HexSPKISubjectFingerprintFederalBridgeCA,
+			data.HexSPKISubjectFingerprintFederalBridgeCA2013,
+			data.HexSPKISubjectFingerprintFederalBridgeCA2016,
+			data.HexSPKISubjectFingerprintFederalCommonPolicyCA, // idx=3
+		},
+		expectedEdges: []edgeIdx{
+			{3, 2, 0},
+			{3, 0, 1},
+			{3, 1, 2},
+			{3, 1, 3},
+			{3, 3, 4},
+		},
+	},
 }
 
 func TestGraphAddOneCert(t *testing.T) {
@@ -277,6 +300,7 @@ func TestGraph(t *testing.T) {
 			expectedIssuerFP := expectedNodeFingerprints[indicies.issuer]
 			if edge.issuer == nil {
 				t.Errorf("%s: expected edge for certificate %s to have issuer %s, got nil", test.name, c.FingerprintSHA256.Hex(), expectedIssuerFP.Hex())
+				continue
 			}
 			actualIssuerFP := edge.issuer.SubjectAndKey.Fingerprint
 			if !expectedIssuerFP.Equal(actualIssuerFP) {

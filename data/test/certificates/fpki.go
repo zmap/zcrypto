@@ -39,7 +39,8 @@ const HexSPKISubjectFingerprintFederalBridgeCA2016 = "d02e526c39cc5919006349e57a
 const HexSPKISubjectFingerprintFederalCommonPolicyCA = "be701d4acacaba917b5b936a8aa40e1970827df3b95a70b3c1fe99d4fea0b3c5"
 
 // PEMDoDRootCA3SelfSigned is the "DoD Root CA 3" self-signed certificate.
-const PEMDoDRootCA3SelfSigned string = `Certificate:
+const PEMDoDRootCA3SelfSigned = `
+Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number: 1 (0x1)
