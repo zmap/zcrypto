@@ -4,8 +4,15 @@
 
 package x509
 
-func (g *Graph) WalkChains(c *Certificate) chan CertificateChain {
-	out := make(chan CertificateChain, 2)
+type WalkOptions struct {
+	ChannelSize int
+}
+
+func (g *Graph) WalkChainsAsync(c *Certificate, opt WalkOptions) chan CertificateChain {
+	if opt.ChannelSize <= 0 {
+		opt.ChannelSize = 4
+	}
+	out := make(chan CertificateChain, opt.ChannelSize)
 	start := g.FindEdge(c.FingerprintSHA256)
 	if start == nil {
 		close(out)
@@ -15,9 +22,18 @@ func (g *Graph) WalkChains(c *Certificate) chan CertificateChain {
 	return out
 }
 
+func (g *Graph) WalkChains(c *Certificate) (out []CertificateChain) {
+	chainChan := g.WalkChainsAsync(c, WalkOptions{})
+	for chain := range chainChan {
+		out = append(out, chain)
+	}
+	return
+}
+
 func (g *Graph) walkFromEdgeToRoot(start *GraphEdge, out chan CertificateChain) {
 	soFar := CertificateChain{start.Certificate}
 	g.continueWalking(out, start, start.issuer, soFar, start)
+	close(out)
 	return
 }
 

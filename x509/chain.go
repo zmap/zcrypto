@@ -4,7 +4,10 @@
 
 package x509
 
-import "bytes"
+import (
+	"bytes"
+	"strings"
+)
 
 // CertificateChain is a slice of certificates. The 0'th element is the leaf,
 // and the last element is a root. Successive elements have a child-parent
@@ -56,4 +59,12 @@ func (chain CertificateChain) appendToFreshChain(c *Certificate) CertificateChai
 	copy(n, chain)
 	n[len(chain)] = c
 	return n
+}
+
+func (chain CertificateChain) chainID() string {
+	var parts []string
+	for _, c := range chain {
+		parts = append(parts, string(c.FingerprintSHA256))
+	}
+	return strings.Join(parts, "")
 }
