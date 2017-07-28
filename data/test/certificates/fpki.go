@@ -1490,6 +1490,144 @@ geBNJAPO8G16DEKSmeOGftlOy1Hkw35f3FXhOYNxjUg=
 // fingerprint of PEMFederalBridgeCASignedByFederalBridgeCA2013.
 const HexHashPEMFederalBridgeCASignedByFederalBridgeCA2013 = "687cae341a976f2862ce9c7543f5bbbc466a6cb9719cad755b14b76bc1e7788b"
 
+// PEMFederalBridgeCASignedByFederalCommonPolicyCA is the certificate for the
+// Federal Bridge CA signed by the Federal Common Policy CA.
+const PEMFederalBridgeCASignedByFederalCommonPolicyCA = `
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 2004 (0x7d4)
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=US, O=U.S. Government, OU=FPKI, CN=Federal Common Policy CA
+        Validity
+            Not Before: Dec 29 19:28:58 2011 GMT
+            Not After : Dec 29 19:27:54 2014 GMT
+        Subject: C=US, O=U.S. Government, OU=FPKI, CN=Federal Bridge CA
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (2048 bit)
+                Modulus (2048 bit):
+                    00:b9:33:6e:9e:e1:55:12:96:26:f6:6e:b6:85:58:
+                    a6:21:69:4b:37:41:24:7d:27:0b:90:40:76:50:4e:
+                    6b:a1:4c:e4:12:70:f3:bb:83:f2:40:74:db:d3:17:
+                    29:8e:20:79:d7:ae:29:e4:3e:63:86:f9:8c:aa:c5:
+                    04:1e:98:d7:48:ab:7c:a2:e4:00:14:b7:e2:3a:54:
+                    e8:6c:7d:23:61:65:36:49:b1:22:a8:36:c6:7b:d9:
+                    3c:6a:39:59:0b:32:f2:96:37:26:71:bd:c6:4a:dd:
+                    b1:b5:c3:1e:5e:12:bb:4a:aa:54:4c:8d:3a:2f:c4:
+                    65:f0:56:4b:41:e3:f2:7e:8a:ef:7b:e5:22:31:4f:
+                    59:88:68:db:0d:5a:dc:90:39:41:77:4f:83:fb:2b:
+                    cf:ee:d5:5c:0f:99:9d:92:8c:c3:58:8c:a9:c5:41:
+                    4e:c4:d1:57:e8:d4:e1:06:59:4a:d1:d0:aa:d2:05:
+                    44:f6:56:ee:8f:4a:3d:8e:c2:41:ab:e5:ea:7a:ae:
+                    bf:b6:be:36:e8:1e:95:86:eb:8a:8e:a0:14:07:c8:
+                    6c:1d:ee:ee:9f:ff:64:cf:92:80:f9:38:ea:86:74:
+                    a3:83:e1:bc:a2:7f:08:b8:2f:96:ab:6a:eb:27:c5:
+                    8f:98:cb:b8:cc:33:e8:9f:1b:5a:8a:0c:68:2e:a4:
+                    c2:63
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+            X509v3 Certificate Policies:
+                Policy: 2.16.840.1.101.3.2.1.3.2
+                Policy: 2.16.840.1.101.3.2.1.3.13
+                Policy: 2.16.840.1.101.3.2.1.3.1
+                Policy: 2.16.840.1.101.3.2.1.3.6
+                Policy: 2.16.840.1.101.3.2.1.3.7
+                Policy: 2.16.840.1.101.3.2.1.3.8
+                Policy: 2.16.840.1.101.3.2.1.3.16
+                Policy: 2.16.840.1.101.3.2.1.3.36
+                Policy: 2.16.840.1.101.3.2.1.3.17
+                Policy: 2.16.840.1.101.3.2.1.3.14
+                Policy: 2.16.840.1.101.3.2.1.3.15
+                Policy: 2.16.840.1.101.3.2.1.3.18
+                Policy: 2.16.840.1.101.3.2.1.3.20
+                Policy: 2.16.840.1.101.3.2.1.3.19
+                Policy: 2.16.840.1.101.3.2.1.3.21
+                Policy: 2.16.840.1.101.3.2.1.3.23
+                Policy: 2.16.840.1.101.3.2.1.3.22
+                Policy: 2.16.840.1.101.3.2.1.3.24
+                Policy: 2.16.840.1.101.3.2.1.3.25
+                Policy: 2.16.840.1.101.3.2.1.3.26
+                Policy: 2.16.840.1.101.3.2.1.3.27
+
+            Authority Information Access:
+                CA Issuers - URI:http://http.fpki.gov/fcpca/caCertsIssuedTofcpca.p7c
+
+            X509v3 Policy Mappings:
+                2.16.840.1.101.3.2.1.3.6:2.16.840.1.101.3.2.1.3.3, 2.16.840.1.101.3.2.1.3.7:2.16.840.1.101.3.2.1.3.12, 2.16.840.1.101.3.2.1.3.16:2.16.840.1.101.3.2.1.3.4, 2.16.840.1.101.3.2.1.3.8:2.16.840.1.101.3.2.1.3.37, 2.16.840.1.101.3.2.1.3.36:2.16.840.1.101.3.2.1.3.38
+            Subject Information Access:
+                CA Repository - URI:http://http.fpki.gov/bridge/caCertsIssuedByfbca.p7c
+
+            X509v3 Key Usage: critical
+                Certificate Sign, CRL Sign
+            X509v3 Authority Key Identifier:
+                keyid:AD:0C:7A:75:5C:E5:F3:98:C4:79:98:0E:AC:28:FD:97:F4:E7:02:FC
+
+            X509v3 CRL Distribution Points:
+                URI:http://http.fpki.gov/fcpca/fcpca.crl
+
+            X509v3 Subject Key Identifier:
+                C4:9D:FC:9D:5D:3A:5D:05:7A:BF:02:81:EC:DB:49:70:15:C7:B2:72
+    Signature Algorithm: sha256WithRSAEncryption
+        73:86:2a:f3:5b:fb:e2:d5:c1:47:41:b5:11:a8:50:11:63:11:
+        08:67:a5:64:23:b3:30:07:66:e5:be:61:ff:35:89:7e:5d:87:
+        c3:75:25:d8:63:99:ab:8f:30:50:a9:87:70:ae:8b:8f:ea:26:
+        ac:3b:bd:47:84:a0:86:85:6c:89:ca:b3:a5:04:cd:eb:16:b6:
+        b9:de:bc:6c:b0:27:8a:d0:c4:b0:5c:a5:27:8c:c5:5d:ff:e3:
+        e8:eb:e8:fb:37:78:82:19:47:98:0f:25:dc:a7:b3:bd:a4:33:
+        56:86:cf:75:c7:ae:9a:2b:ac:ca:22:d5:a9:38:79:f5:c6:2c:
+        4b:69:73:a4:8a:d7:9f:2c:17:dc:33:92:77:d0:95:48:7b:c2:
+        6f:3d:6f:64:eb:42:d5:eb:1d:39:2d:5d:46:22:15:36:9c:cb:
+        0f:ff:a9:2f:7a:63:b5:3e:cc:45:a3:df:22:15:06:c4:90:07:
+        7d:fc:9d:2d:e8:e1:12:09:30:9c:66:84:61:61:b4:98:63:da:
+        83:c6:a7:e0:f1:a7:c2:ba:88:2a:29:55:52:32:08:3b:2a:77:
+        30:f4:74:06:c3:d2:d8:64:e1:08:33:33:65:1e:02:2c:d1:5e:
+        fc:6c:44:a8:de:87:19:1b:6f:07:d7:67:cd:11:62:70:9b:c8:
+        cf:f9:fa:a4
+-----BEGIN CERTIFICATE-----
+MIIGLjCCBRagAwIBAgICB9QwDQYJKoZIhvcNAQELBQAwWTELMAkGA1UEBhMCVVMx
+GDAWBgNVBAoTD1UuUy4gR292ZXJubWVudDENMAsGA1UECxMERlBLSTEhMB8GA1UE
+AxMYRmVkZXJhbCBDb21tb24gUG9saWN5IENBMB4XDTExMTIyOTE5Mjg1OFoXDTE0
+MTIyOTE5Mjc1NFowUjELMAkGA1UEBhMCVVMxGDAWBgNVBAoTD1UuUy4gR292ZXJu
+bWVudDENMAsGA1UECxMERlBLSTEaMBgGA1UEAxMRRmVkZXJhbCBCcmlkZ2UgQ0Ew
+ggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC5M26e4VUSlib2braFWKYh
+aUs3QSR9JwuQQHZQTmuhTOQScPO7g/JAdNvTFymOIHnXrinkPmOG+YyqxQQemNdI
+q3yi5AAUt+I6VOhsfSNhZTZJsSKoNsZ72TxqOVkLMvKWNyZxvcZK3bG1wx5eErtK
+qlRMjTovxGXwVktB4/J+iu975SIxT1mIaNsNWtyQOUF3T4P7K8/u1VwPmZ2SjMNY
+jKnFQU7E0Vfo1OEGWUrR0KrSBUT2Vu6PSj2OwkGr5ep6rr+2vjboHpWG64qOoBQH
+yGwd7u6f/2TPkoD5OOqGdKOD4byifwi4L5arausnxY+Yy7jMM+ifG1qKDGgupMJj
+AgMBAAGjggMFMIIDATAPBgNVHRMBAf8EBTADAQH/MIIBMwYDVR0gBIIBKjCCASYw
+DAYKYIZIAWUDAgEDAjAMBgpghkgBZQMCAQMNMAwGCmCGSAFlAwIBAwEwDAYKYIZI
+AWUDAgEDBjAMBgpghkgBZQMCAQMHMAwGCmCGSAFlAwIBAwgwDAYKYIZIAWUDAgED
+EDAMBgpghkgBZQMCAQMkMAwGCmCGSAFlAwIBAxEwDAYKYIZIAWUDAgEDDjAMBgpg
+hkgBZQMCAQMPMAwGCmCGSAFlAwIBAxIwDAYKYIZIAWUDAgEDFDAMBgpghkgBZQMC
+AQMTMAwGCmCGSAFlAwIBAxUwDAYKYIZIAWUDAgEDFzAMBgpghkgBZQMCAQMWMAwG
+CmCGSAFlAwIBAxgwDAYKYIZIAWUDAgEDGTAMBgpghkgBZQMCAQMaMAwGCmCGSAFl
+AwIBAxswTwYIKwYBBQUHAQEEQzBBMD8GCCsGAQUFBzAChjNodHRwOi8vaHR0cC5m
+cGtpLmdvdi9mY3BjYS9jYUNlcnRzSXNzdWVkVG9mY3BjYS5wN2MwgY0GA1UdIQSB
+hTCBgjAYBgpghkgBZQMCAQMGBgpghkgBZQMCAQMDMBgGCmCGSAFlAwIBAwcGCmCG
+SAFlAwIBAwwwGAYKYIZIAWUDAgEDEAYKYIZIAWUDAgEDBDAYBgpghkgBZQMCAQMI
+BgpghkgBZQMCAQMlMBgGCmCGSAFlAwIBAyQGCmCGSAFlAwIBAyYwTwYIKwYBBQUH
+AQsEQzBBMD8GCCsGAQUFBzAFhjNodHRwOi8vaHR0cC5mcGtpLmdvdi9icmlkZ2Uv
+Y2FDZXJ0c0lzc3VlZEJ5ZmJjYS5wN2MwDgYDVR0PAQH/BAQDAgEGMB8GA1UdIwQY
+MBaAFK0MenVc5fOYxHmYDqwo/Zf05wL8MDUGA1UdHwQuMCwwKqAooCaGJGh0dHA6
+Ly9odHRwLmZwa2kuZ292L2ZjcGNhL2ZjcGNhLmNybDAdBgNVHQ4EFgQUxJ38nV06
+XQV6vwKB7NtJcBXHsnIwDQYJKoZIhvcNAQELBQADggEBAHOGKvNb++LVwUdBtRGo
+UBFjEQhnpWQjszAHZuW+Yf81iX5dh8N1JdhjmauPMFCph3Cui4/qJqw7vUeEoIaF
+bInKs6UEzesWtrnevGywJ4rQxLBcpSeMxV3/4+jr6Ps3eIIZR5gPJdyns72kM1aG
+z3XHrporrMoi1ak4efXGLEtpc6SK158sF9wzknfQlUh7wm89b2TrQtXrHTktXUYi
+FTacyw//qS96Y7U+zEWj3yIVBsSQB338nS3o4RIJMJxmhGFhtJhj2oPGp+Dxp8K6
+iCopVVIyCDsqdzD0dAbD0thk4QgzM2UeAizRXvxsRKjehxkbbwfXZ80RYnCbyM/5
++qQ=
+-----END CERTIFICATE-----
+`
+
+// HexHashPEMFederalBridgeCASignedByFederalCommonPolicyCA is the hex SHA256
+// fingeprint of PEMFederalBridgeCASignedByFederalCommonPolicyCA.
+const HexHashPEMFederalBridgeCASignedByFederalCommonPolicyCA = "8a51e575c2eac47ad7d9739684e9bbabcc28caff53bc6a1ebb860a2bdcf732c8"
+
 // PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524 is the certificate for
 // the Federal Bridge CA 2013 signed by the Federal Common Policy CA with serial
 // numbewr 5524.
