@@ -170,11 +170,6 @@ func (g *Graph) AddCert(c *Certificate) {
 		missingIssuerSet.addOrPanic(edge)
 	}
 
-	// Don't double add an edge.
-	if c.SelfSigned {
-		return
-	}
-
 	// If we added a new node, check if it issued an existing dangling edge.
 	if !isNewNode {
 		return
