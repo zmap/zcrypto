@@ -38,8 +38,8 @@ const HexSPKISubjectFingerprintFederalBridgeCA2016 = "d02e526c39cc5919006349e57a
 // Fingerprint of the Federal Common Policy CA.
 const HexSPKISubjectFingerprintFederalCommonPolicyCA = "be701d4acacaba917b5b936a8aa40e1970827df3b95a70b3c1fe99d4fea0b3c5"
 
-// PEMDoDRootCA3SelfSigned is the "DoD Root CA 3" self-signed certificate.
-const PEMDoDRootCA3SelfSigned = `
+// PEMDoDRootCA3SignedBySelf is the "DoD Root CA 3" self-signed certificate.
+const PEMDoDRootCA3SignedBySelf = `
 Certificate:
     Data:
         Version: 3 (0x2)
@@ -119,9 +119,9 @@ fOs/QbP1b0s6Xq5vk3aY0vGZnUXEjnI=
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMDoDRootCA3SelfSigned is the hex SHA256 fingerprint of
-// PEMDoDRootCA3SelfSigned.
-const HexHashPEMDoDRootCA3SelfSigned = "b107b33f453e5510f68e513110c6f6944bacc263df0137f821c1b3c2f8f863d2"
+// HexHashPEMDoDRootCA3SignedBySelf is the hex SHA256 fingerprint of
+// PEMDoDRootCA3SignedBySelf.
+const HexHashPEMDoDRootCA3SignedBySelf = "b107b33f453e5510f68e513110c6f6944bacc263df0137f821c1b3c2f8f863d2"
 
 // PEMDoDRootCA3SignedByDoDInteropCA2Serial655 is the PEM of a certificate for
 // the DoD Root CA 3 signed by DoD Interoperability CA 2 with serial number 655.

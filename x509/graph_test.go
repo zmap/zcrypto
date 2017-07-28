@@ -49,20 +49,20 @@ var graphTests = []graphTest{
 	},
 	{
 		name:          "self-signed",
-		certificates:  []string{data.PEMDoDRootCA3SelfSigned},
+		certificates:  []string{data.PEMDoDRootCA3SignedBySelf},
 		expectedNodes: []string{data.HexSPKISubjectFingerprintDoDRootCA3},
 		expectedEdges: []edgeIdx{{0, 0, 0}},
 	},
 	{
 		name:          "dod-root-ca-3-no-issuers",
-		certificates:  []string{data.PEMDoDRootCA3SelfSigned, data.PEMDoDRootCA3SignedByCCEBInteropRootCA2, data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655, data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748},
+		certificates:  []string{data.PEMDoDRootCA3SignedBySelf, data.PEMDoDRootCA3SignedByCCEBInteropRootCA2, data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655, data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748},
 		expectedNodes: []string{data.HexSPKISubjectFingerprintDoDRootCA3},
 		expectedEdges: []edgeIdx{{0, 0, 0}, {-1, 0, 1}, {-1, 0, 2}, {-1, 0, 3}},
 	},
 	{
 		name: "dod-root-ca-3-interop-issued-by-bridge-16",
 		certificates: []string{
-			data.PEMDoDRootCA3SelfSigned,
+			data.PEMDoDRootCA3SignedBySelf,
 			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2,
 			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
 			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
@@ -78,7 +78,7 @@ var graphTests = []graphTest{
 		name: "dod-root-ca-3-interop-issued-by-bridge-16-reversed",
 		certificates: []string{
 			data.PEMDoDInteropCA2SignedByFederalBridgeCA2016, // issuer (idx=0)
-			data.PEMDoDRootCA3SelfSigned,
+			data.PEMDoDRootCA3SignedBySelf,
 			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2,
 			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
 			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
@@ -92,7 +92,7 @@ var graphTests = []graphTest{
 	{
 		name: "dod-root-ca-3-interop-ca-2",
 		certificates: []string{
-			data.PEMDoDRootCA3SelfSigned,
+			data.PEMDoDRootCA3SignedBySelf,
 			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2,
 			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
 			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
@@ -142,7 +142,7 @@ var graphTests = []graphTest{
 			data.PEMFederalBridgeCA2013SignedByIdenTrust,
 			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524,
 			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424,
-			data.PEMDoDRootCA3SelfSigned, // idx=3
+			data.PEMDoDRootCA3SignedBySelf, // idx=3
 			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2,
 			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
 			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
@@ -210,6 +210,67 @@ var graphTests = []graphTest{
 			{3, 1, 2},
 			{3, 1, 3},
 			{3, 3, 4},
+		},
+	},
+	{
+		name: "fpki",
+		certificates: []string{
+			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2,
+			data.PEMDoDRootCA3SignedBySelf,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
+			data.PEMFederalCommonPolicyCASignedBySelf, // idx=4
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA,
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA2013,
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA2016,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA, // idx=8
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial906,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8225,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8844,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2016,
+			data.PEMFederalBridgeCASignedByDoDInteropCA2, // idx=14
+			data.PEMFederalBridgeCASignedByFederalBridgeCA2013,
+			data.PEMFederalBridgeCASignedByFederalCommonPolicyCA,
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524, // idx=17
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424,
+			data.PEMFederalBridgeCA2013SignedByDoDInteropCA2,
+			data.PEMFederalBridgeCA2013SignedByIdenTrust,
+			data.PEMFederalBridgeCA2016SignedByDodInteropCA2, // idx=21
+			data.PEMFederalBridgeCA2016SignedByFederalCommonPolicyCA,
+		},
+		expectedNodes: []string{
+			data.HexSPKISubjectFingerprintDoDRootCA3,
+			data.HexSPKISubjectFingerprintDoDInteropCA2,
+			data.HexSPKISubjectFingerprintFederalBridgeCA, //idx=2
+			data.HexSPKISubjectFingerprintFederalBridgeCA2013,
+			data.HexSPKISubjectFingerprintFederalBridgeCA2016,
+			data.HexSPKISubjectFingerprintFederalCommonPolicyCA, //idx=5
+		},
+		expectedEdges: []edgeIdx{
+			{-1, 0, 0},
+			{0, 0, 1},
+			{1, 0, 2},
+			{1, 0, 3},
+			{5, 5, 4},
+			{2, 5, 5},
+			{3, 5, 6},
+			{4, 5, 7},
+			{2, 1, 8},
+			{3, 1, 9},
+			{3, 1, 10},
+			{3, 1, 11},
+			{3, 1, 12},
+			{4, 1, 13},
+			{1, 2, 14},
+			{3, 2, 15},
+			{5, 2, 16},
+			{5, 3, 17},
+			{5, 3, 18},
+			{1, 3, 19},
+			{-1, 3, 20},
+			{1, 4, 21},
+			{5, 4, 22},
 		},
 	},
 }
