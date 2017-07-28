@@ -46,6 +46,51 @@ var walkTests = []walkTest{
 			[]int{0, 2, 6}, []int{0, 3, 5},
 		},
 	},
+	{
+		name:  "dod-root-ca-3",
+		start: data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
+		intermediates: []string{
+			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2, // idx=1
+			data.PEMDoDRootCA3SignedBySelf,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA, // idx=5
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA2013,
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA2016,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA, // idx=8
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial906,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8225,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8844,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2016,
+			data.PEMFederalBridgeCASignedByDoDInteropCA2, // idx=14
+			data.PEMFederalBridgeCASignedByFederalBridgeCA2013,
+			data.PEMFederalBridgeCASignedByFederalCommonPolicyCA,
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524, // idx=17
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424,
+			data.PEMFederalBridgeCA2013SignedByDoDInteropCA2,
+			data.PEMFederalBridgeCA2013SignedByIdenTrust,
+			data.PEMFederalBridgeCA2016SignedByDodInteropCA2, // idx=21
+			data.PEMFederalBridgeCA2016SignedByFederalCommonPolicyCA,
+		},
+		roots: []string{
+			data.PEMFederalCommonPolicyCASignedBySelf, // idx=23
+		},
+		expectedChains: [][]int{
+			[]int{0, 8, 16, 23},
+			[]int{0, 8, 15, 17, 23},
+			[]int{0, 8, 15, 18, 23},
+			[]int{0, 9, 17, 23},
+			[]int{0, 9, 18, 23},
+			[]int{0, 10, 17, 23},
+			[]int{0, 10, 18, 23},
+			[]int{0, 11, 17, 23},
+			[]int{0, 11, 18, 23},
+			[]int{0, 12, 17, 23},
+			[]int{0, 12, 18, 23},
+			[]int{0, 13, 22, 23},
+		},
+	},
 }
 
 func TestWalk(t *testing.T) {
