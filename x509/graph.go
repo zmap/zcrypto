@@ -230,6 +230,15 @@ func (g *Graph) AddRoot(c *Certificate) {
 	edge.root = true
 }
 
+// IsRoot returns true if c is a root in the graph.
+func (g *Graph) IsRoot(c *Certificate) bool {
+	edge := g.FindEdge(c.FingerprintSHA256)
+	if edge == nil {
+		return false
+	}
+	return edge.root
+}
+
 // NewGraphEdgeSet initializes an empty GraphEdgeSet.
 func NewGraphEdgeSet() (es *GraphEdgeSet) {
 	es = new(GraphEdgeSet)

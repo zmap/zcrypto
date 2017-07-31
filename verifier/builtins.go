@@ -37,35 +37,60 @@ var (
 
 // InitializeNSS sets up the built-in NSS Verifier.
 func InitializeNSS(roots, intermediates *x509.CertPool) {
-	NSS.Roots = roots
-	NSS.Intermediates = intermediates
-	NSS.VerifyProcedure = &VerifyProcedureNSS{}
+	Java.PKI = x509.NewGraph()
+	for _, c := range roots.Certificates() {
+		Java.PKI.AddRoot(c)
+	}
+	for _, c := range intermediates.Certificates() {
+		Java.PKI.AddCert(c)
+	}
+	Java.VerifyProcedure = &VerifyProcedureNSS{}
 }
 
 // InitializeMicrosoft sets up the built-in Microsoft Verifier.
 func InitializeMicrosoft(roots, intermediates *x509.CertPool) {
-	Microsoft.Roots = roots
-	Microsoft.Intermediates = intermediates
+	Microsoft.PKI = x509.NewGraph()
+	for _, c := range roots.Certificates() {
+		Microsoft.PKI.AddRoot(c)
+	}
+	for _, c := range intermediates.Certificates() {
+		Microsoft.PKI.AddCert(c)
+	}
 	Microsoft.VerifyProcedure = &VerifyProcedureMicrosoft{}
 }
 
 // InitializeApple sets up the built-in Apple Verifier.
 func InitializeApple(roots, intermediates *x509.CertPool) {
-	Apple.Roots = roots
-	Apple.Intermediates = intermediates
+	Apple.PKI = x509.NewGraph()
+	for _, c := range roots.Certificates() {
+		Apple.PKI.AddRoot(c)
+	}
+	for _, c := range intermediates.Certificates() {
+		Apple.PKI.AddCert(c)
+	}
 	Apple.VerifyProcedure = &VerifyProcedureApple{}
 }
 
 // InitializeJava sets up the built-in Java Verifier.
 func InitializeJava(roots, intermediates *x509.CertPool) {
-	Java.Roots = roots
-	Java.Intermediates = intermediates
+	Java.PKI = x509.NewGraph()
+	for _, c := range roots.Certificates() {
+		Java.PKI.AddRoot(c)
+	}
+	for _, c := range intermediates.Certificates() {
+		Java.PKI.AddCert(c)
+	}
 	Java.VerifyProcedure = &VerifyProcedureJava{}
 }
 
 // InitializeGoogleCTPrimary sets up the built-in Google CT Primary verifier.
 func InitializeGoogleCTPrimary(roots, intermediates *x509.CertPool) {
-	GoogleCTPrimary.Roots = roots
-	GoogleCTPrimary.Intermediates = intermediates
+	GoogleCTPrimary.PKI = x509.NewGraph()
+	for _, c := range roots.Certificates() {
+		GoogleCTPrimary.PKI.AddRoot(c)
+	}
+	for _, c := range intermediates.Certificates() {
+		GoogleCTPrimary.PKI.AddCert(c)
+	}
 	GoogleCTPrimary.VerifyProcedure = &VerifyProcedureGoogleCTPrimary{}
 }

@@ -78,6 +78,13 @@ func (g *Graph) continueWalking(found chan CertificateChain, start *GraphEdge, c
 		// was nil, we also aren't doing a duplicate visit, because if we were, the
 		// edge would not be dangling.
 		for _, edge := range edgeSet.edges {
+			certType := CertificateTypeIntermediate
+			if edge.root {
+				certType = CertificateTypeRoot
+			}
+			if edge.Certificate.isValid(certType, soFar) != nil {
+				continue
+			}
 			nextSoFar := soFar.appendToFreshChain(edge.Certificate)
 			g.continueWalking(found, start, edge.issuer, nextSoFar, edge)
 		}
