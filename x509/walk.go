@@ -15,8 +15,17 @@ func (g *Graph) WalkChainsAsync(c *Certificate, opt WalkOptions) chan Certificat
 	out := make(chan CertificateChain, opt.ChannelSize)
 	start := g.FindEdge(c.FingerprintSHA256)
 	if start == nil {
-		close(out)
-		return out
+		start = new(GraphEdge)
+		start.Certificate = c
+		parentCandidates := g.nodesBySubject[string(c.RawIssuer)]
+		for _, candidate := range parentCandidates {
+			identity := candidate.SubjectAndKey
+			if err := checkSignatureFromKey(identity.PublicKey, c.SignatureAlgorithm, c.RawTBSCertificate, c.Signature); err != nil {
+				continue
+			}
+			start.issuer = candidate
+			break
+		}
 	}
 	go g.walkFromEdgeToRoot(start, out)
 	return out
