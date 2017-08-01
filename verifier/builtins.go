@@ -16,81 +16,33 @@ package verifier
 
 import "github.com/zmap/zcrypto/x509"
 
-// Built-in verifiers representing common root stores.
-var (
-	// NSS is a Verifier mimicking the validation used in Firefox.
-	NSS Verifier
-
-	// Microsoft is a Verifier mimicking the validation in Windows 10 SChannel.
-	Microsoft Verifier
-
-	// Apple is a Verifier mimicking the validation in OS X Sierra SecureTransport.
-	Apple Verifier
-
-	// Java is a Verifier mimicking the validation in Java 8 javax.net.ssl.
-	Java Verifier
-
-	//. GoogleCTPrimary is a Verifier mimicking the validation for the primary
-	//Google CT servers (e.g. Pilot).
-	GoogleCTPrimary Verifier
-)
-
-// InitializeNSS sets up the built-in NSS Verifier.
-func InitializeNSS(roots, intermediates *x509.CertPool) {
-	Java.PKI = x509.NewGraph()
-	for _, c := range roots.Certificates() {
-		Java.PKI.AddRoot(c)
-	}
-	for _, c := range intermediates.Certificates() {
-		Java.PKI.AddCert(c)
-	}
-	Java.VerifyProcedure = &VerifyProcedureNSS{}
+// NewNSS returns a new verifier mimicking NSS.
+func NewNSS(pki *x509.Graph) (nss *Verifier) {
+	nss = NewVerifier(pki, &VerifyProcedureNSS{})
+	return
 }
 
-// InitializeMicrosoft sets up the built-in Microsoft Verifier.
-func InitializeMicrosoft(roots, intermediates *x509.CertPool) {
-	Microsoft.PKI = x509.NewGraph()
-	for _, c := range roots.Certificates() {
-		Microsoft.PKI.AddRoot(c)
-	}
-	for _, c := range intermediates.Certificates() {
-		Microsoft.PKI.AddCert(c)
-	}
-	Microsoft.VerifyProcedure = &VerifyProcedureMicrosoft{}
+// NewMicrosoft returns a new verifier mimicking Microsoft SChannel.
+func NewMicrosoft(pki *x509.Graph) (microsoft *Verifier) {
+	microsoft = NewVerifier(pki, &VerifyProcedureMicrosoft{})
+	return
 }
 
-// InitializeApple sets up the built-in Apple Verifier.
-func InitializeApple(roots, intermediates *x509.CertPool) {
-	Apple.PKI = x509.NewGraph()
-	for _, c := range roots.Certificates() {
-		Apple.PKI.AddRoot(c)
-	}
-	for _, c := range intermediates.Certificates() {
-		Apple.PKI.AddCert(c)
-	}
-	Apple.VerifyProcedure = &VerifyProcedureApple{}
+// NewApple returns a new verifier mimicking Apple SecureTransport.
+func NewApple(pki *x509.Graph) (apple *Verifier) {
+	apple = NewVerifier(pki, &VerifyProcedureApple{})
+	return
 }
 
-// InitializeJava sets up the built-in Java Verifier.
-func InitializeJava(roots, intermediates *x509.CertPool) {
-	Java.PKI = x509.NewGraph()
-	for _, c := range roots.Certificates() {
-		Java.PKI.AddRoot(c)
-	}
-	for _, c := range intermediates.Certificates() {
-		Java.PKI.AddCert(c)
-	}
-	Java.VerifyProcedure = &VerifyProcedureJava{}
+// NewJava returns a new verifier mimicking javax.net.ssl.
+func NewJava(pki *x509.Graph) (java *Verifier) {
+	java = NewVerifier(pki, &VerifyProcedureJava{})
+	return
 }
 
-// InitializeGoogleCTPrimary sets up the built-in Google CT Primary verifier.
-func InitializeGoogleCTPrimary(roots, intermediates *x509.CertPool) {
-	GoogleCTPrimary.PKI = x509.NewGraph()
-	for _, c := range roots.Certificates() {
-		GoogleCTPrimary.PKI.AddRoot(c)
-	}
-	for _, c := range intermediates.Certificates() {
-		GoogleCTPrimary.PKI.AddCert(c)
-	}
-	GoogleCTPrimary.VerifyProcedure = &VerifyProcedureGoogleCTPrimary{}
+// NewGoogleCTPrimary returns a new verifier mimicking the behavior of the
+// primary Google CT logs (e.g. Pilot).
+func NewGoogleCTPrimary(pki *x509.Graph) (gct *Verifier) {
+	gct = NewVerifier(pki, &VerifyProcedureGoogleCTPrimary{})
+	return
 }

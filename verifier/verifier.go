@@ -129,6 +129,15 @@ type Verifier struct {
 	VerifyProcedure VerifyProcedure
 }
 
+// NewVerifier returns and initializes a new Verifier given a PKI graph and set
+// of verification procedures.
+func NewVerifier(pki *x509.Graph, verifyProc VerifyProcedure) *Verifier {
+	out := new(Verifier)
+	out.PKI = pki
+	out.VerifyProcedure = verifyProc
+	return out
+}
+
 func parentsFromChains(chains []x509.CertificateChain) (parents []*x509.Certificate) {
 	// parentSet is a map from FingerprintSHA256 to the index of the chain the
 	// parent was in. We use this to deduplicate parents.
