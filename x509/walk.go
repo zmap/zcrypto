@@ -47,7 +47,8 @@ func (g *Graph) walkFromEdgeToRoot(start *GraphEdge, out chan CertificateChain) 
 }
 
 func (g *Graph) continueWalking(found chan CertificateChain, start *GraphEdge, current *GraphNode, soFar CertificateChain, lastEdge *GraphEdge) {
-	// If the chain ends at a root certificate, send the chain through the out channel.
+	// If the chain ends at a root certificate, send the chain through the out
+	// channel.
 	if lastEdge.root {
 		found <- soFar
 		return

@@ -30,6 +30,19 @@ type walkTest struct {
 
 var walkTests = []walkTest{
 	{
+		name:  "root",
+		start: data.PEMDSTRootCAX3SignedBySelf,
+		intermediates: []string{
+			data.PEMLEX3SignedByDSTRootCAX3,
+		},
+		roots: []string{
+			data.PEMDSTRootCAX3SignedBySelf,
+		},
+		expectedChains: [][]int{
+			[]int{0},
+		},
+	},
+	{
 		name:  "two-dadrian-le",
 		start: data.PEMDAdrianIOSignedByLEX3, // idx=0
 		intermediates: []string{
