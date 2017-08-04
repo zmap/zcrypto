@@ -6,6 +6,7 @@ package x509
 
 import (
 	"encoding/hex"
+	"strings"
 	"testing"
 
 	data "github.com/zmap/zcrypto/data/test/certificates"
@@ -369,5 +370,17 @@ func TestGraph(t *testing.T) {
 			}
 		}
 
+	}
+}
+
+func TestAppendFromPEM(t *testing.T) {
+	for _, test := range graphTests {
+		g := NewGraph()
+		joined := strings.Join(test.certificates, "\n")
+		r := strings.NewReader(joined)
+		n := g.AppendFromPEM(r, false)
+		if len(test.certificates) != n {
+			t.Errorf("%s: expected size %d, got %d", test.name, len(test.certificates), n)
+		}
 	}
 }

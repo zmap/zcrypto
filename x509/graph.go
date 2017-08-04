@@ -4,7 +4,14 @@
 
 package x509
 
-import "fmt"
+import (
+	"bufio"
+	"encoding/pem"
+	"fmt"
+	"io"
+
+	"github.com/zmap/zcertificate"
+)
 
 func (sk *SubjectAndKey) subjectAndKeyFingerprint() subjectAndKeyFingerprint {
 	return subjectAndKeyFingerprint(sk.Fingerprint)
@@ -237,6 +244,31 @@ func (g *Graph) IsRoot(c *Certificate) bool {
 		return false
 	}
 	return edge.root
+}
+
+// AppendFromPEM adds any certificates encoded as PEM from r to the graph. If
+// root is true, it marks them as roots. It returns the number of certificates
+// parsed.
+func (g *Graph) AppendFromPEM(r io.Reader, root bool) int {
+	count := 0
+	scanner := bufio.NewScanner(r)
+	scanner.Split(zcertificate.ScannerSplitPEM)
+	for scanner.Scan() {
+		p, _ := pem.Decode(scanner.Bytes())
+		if p == nil {
+			continue
+		}
+		c, err := ParseCertificate(p.Bytes)
+		if err != nil {
+			continue
+		}
+		g.AddCert(c)
+		if root {
+			g.AddRoot(c)
+		}
+		count++
+	}
+	return count
 }
 
 // NewGraphEdgeSet initializes an empty GraphEdgeSet.
