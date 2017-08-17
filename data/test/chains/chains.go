@@ -53,7 +53,16 @@ type ChainError struct {
 }
 
 func (e *ChainError) Error() string {
-	out := fmt.Sprintf("missing: %v, extra: %v", e.Missing, e.Extra)
+	out := fmt.Sprintf("missing chains: %v, extra chains: %v", e.Missing, e.Extra)
+	return out
+}
+
+type ParentError struct {
+	Extra, Missing []string
+}
+
+func (e *ParentError) Error() string {
+	out := fmt.Sprintf("missing parents: %v, extra parents: %v", e.Missing, e.Extra)
 	return out
 }
 
@@ -148,7 +157,7 @@ func (vt *VerifyTest) CompareChains(expected [][]int, actual []x509.CertificateC
 	return nil
 }
 
-func (vt *VerifyTest) CompareParents(expected []int, actual []*x509.Certificate) *ChainError {
+func (vt *VerifyTest) CompareParents(expected []int, actual []*x509.Certificate) *ParentError {
 	type empty struct{}
 	expectedHashMap := make(map[string]empty)
 	for _, certIdx := range expected {
@@ -177,7 +186,7 @@ func (vt *VerifyTest) CompareParents(expected []int, actual []*x509.Certificate)
 	}
 
 	if len(missing) > 0 || len(extra) > 0 {
-		err := ChainError{
+		err := ParentError{
 			Missing: missing,
 			Extra:   extra,
 		}
@@ -202,8 +211,48 @@ var VerifyTests = []VerifyTest{
 		ExpectedChains: [][]int{
 			{0, 1, 3},
 		},
-		ExpiredChains:   [][]int{},
-		NeverChains:     [][]int{},
+		ExpiredChains:   nil,
+		NeverChains:     nil,
 		ExpectedParents: []int{1},
+	},
+	{
+		Name:      "root-only",
+		Leaf:      data.PEMDSTRootCAX3SignedBySelf,
+		Presented: nil,
+		Intermediates: []string{
+			data.PEMLEX3SignedByDSTRootCAX3,
+		},
+		Roots: []string{
+			data.PEMDSTRootCAX3SignedBySelf,
+		},
+		CurrentTime: 1501804800, // 2017-08-04T00:00:00
+		ExpectedChains: [][]int{
+			[]int{0},
+		},
+		ExpiredChains:   nil,
+		NeverChains:     nil,
+		ExpectedParents: nil,
+	},
+	{
+		Name:      "two-dadrian-le",
+		Leaf:      data.PEMDAdrianIOSignedByLEX3, // idx=0
+		Presented: nil,
+		Intermediates: []string{
+			data.PEMDAdrianIOSignedByLEX3, // idx=1
+			data.PEMLEX3SignedByDSTRootCAX3,
+			data.PEMLEX3SignedByISRGRootX1,
+			data.PEMISRGRootX1SignedBySelf,
+		},
+		Roots: []string{
+			data.PEMISRGRootX1SignedBySelf, // idx=5
+			data.PEMDSTRootCAX3SignedBySelf,
+		},
+		CurrentTime: 1501804800, // 2017-08-04T00:00:00
+		ExpectedChains: [][]int{
+			[]int{0, 2, 6}, []int{0, 3, 5},
+		},
+		ExpiredChains:   nil,
+		NeverChains:     nil,
+		ExpectedParents: []int{2, 3},
 	},
 }

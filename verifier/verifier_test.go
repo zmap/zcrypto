@@ -61,7 +61,7 @@ func TestVerify(t *testing.T) {
 		opts := optsFromTest(&test)
 		verifyResult := v.Verify(test.ParsedLeaf(), *opts)
 		if err := checkVerifyResult(&test, verifyResult); err != nil {
-			t.Errorf("%s: bad result: %s", test.Name, err)
+			t.Errorf("%s: %s", test.Name, err)
 		}
 	}
 }
