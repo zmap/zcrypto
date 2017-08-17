@@ -265,15 +265,15 @@ var supportedClientCertSignatureAlgorithms = []signatureAndHash{
 
 // ConnectionState records basic TLS details about the connection.
 type ConnectionState struct {
-	Version                    uint16                // TLS version used by the connection (e.g. VersionTLS12)
-	HandshakeComplete          bool                  // TLS handshake is complete
-	DidResume                  bool                  // connection resumes a previous TLS connection
-	CipherSuite                uint16                // cipher suite in use (TLS_RSA_WITH_RC4_128_SHA, ...)
-	NegotiatedProtocol         string                // negotiated next protocol (from Config.NextProtos)
-	NegotiatedProtocolIsMutual bool                  // negotiated protocol was advertised by server
-	ServerName                 string                // server name requested by client, if any (server side only)
-	PeerCertificates           []*x509.Certificate   // certificate chain presented by remote peer
-	VerifiedChains             [][]*x509.Certificate // verified chains built from PeerCertificates
+	Version                    uint16                  // TLS version used by the connection (e.g. VersionTLS12)
+	HandshakeComplete          bool                    // TLS handshake is complete
+	DidResume                  bool                    // connection resumes a previous TLS connection
+	CipherSuite                uint16                  // cipher suite in use (TLS_RSA_WITH_RC4_128_SHA, ...)
+	NegotiatedProtocol         string                  // negotiated next protocol (from Config.NextProtos)
+	NegotiatedProtocolIsMutual bool                    // negotiated protocol was advertised by server
+	ServerName                 string                  // server name requested by client, if any (server side only)
+	PeerCertificates           []*x509.Certificate     // certificate chain presented by remote peer
+	VerifiedChains             []x509.CertificateChain // verified chains built from PeerCertificates
 }
 
 // ClientAuthType declares the policy the server will follow for
