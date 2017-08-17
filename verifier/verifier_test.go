@@ -56,7 +56,7 @@ func checkVerifyResult(test *chains.VerifyTest, res *VerificationResult) error {
 		return fmt.Errorf("bad never chains: %s", err)
 	}
 	if err := test.CompareParents(test.ExpectedParents, res.Parents); err != nil {
-		return fmt.Errorf("bad never chains: %s", err)
+		return fmt.Errorf("bad parents: %s", err)
 	}
 	return nil
 }

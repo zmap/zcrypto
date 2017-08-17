@@ -309,7 +309,10 @@ var VerifyTests = []VerifyTest{
 		},
 		CurrentTime: 1501545600, // 2017-08-01T00:00:00
 		ExpectedChains: [][]int{
-			[]int{0, 8, 16, 23},
+			[]int{0, 12, 18, 23},
+			[]int{0, 13, 22, 23},
+		},
+		ExpiredChains: [][]int{
 			[]int{0, 8, 15, 17, 23},
 			[]int{0, 8, 15, 18, 23},
 			[]int{0, 9, 17, 23},
@@ -319,9 +322,11 @@ var VerifyTests = []VerifyTest{
 			[]int{0, 11, 17, 23},
 			[]int{0, 11, 18, 23},
 			[]int{0, 12, 17, 23},
-			[]int{0, 12, 18, 23},
-			[]int{0, 13, 22, 23},
 		},
+		NeverChains: [][]int{
+			[]int{0, 8, 16, 23},
+		},
+		ExpectedParents: []int{12, 13},
 	},
 	{
 		Name:      "dod-root-ca-3-leaf-no-presented",
@@ -356,7 +361,10 @@ var VerifyTests = []VerifyTest{
 		},
 		CurrentTime: 1501545600, // 2017-08-01T00:00:00
 		ExpectedChains: [][]int{
-			[]int{0, 8, 16, 23},
+			[]int{0, 12, 18, 23},
+			[]int{0, 13, 22, 23},
+		},
+		ExpiredChains: [][]int{
 			[]int{0, 8, 15, 17, 23},
 			[]int{0, 8, 15, 18, 23},
 			[]int{0, 9, 17, 23},
@@ -366,11 +374,10 @@ var VerifyTests = []VerifyTest{
 			[]int{0, 11, 17, 23},
 			[]int{0, 11, 18, 23},
 			[]int{0, 12, 17, 23},
-			[]int{0, 12, 18, 23},
-			[]int{0, 13, 22, 23},
 		},
-		ExpiredChains:   nil,
-		NeverChains:     nil,
-		ExpectedParents: nil,
+		NeverChains: [][]int{
+			[]int{0, 8, 16, 23},
+		},
+		ExpectedParents: []int{12, 13},
 	},
 }
