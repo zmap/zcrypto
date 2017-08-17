@@ -15,6 +15,7 @@
 package verifier
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -46,10 +47,16 @@ func optsFromTest(test *chains.VerifyTest) (opts *VerificationOptions) {
 
 func checkVerifyResult(test *chains.VerifyTest, res *VerificationResult) error {
 	if err := test.CompareChains(test.ExpectedChains, res.CurrentChains); err != nil {
-		return err
+		return fmt.Errorf("bad expected chains: %s", err)
+	}
+	if err := test.CompareChains(test.ExpiredChains, res.ExpiredChains); err != nil {
+		return fmt.Errorf("bad expired chains: %s", err)
+	}
+	if err := test.CompareChains(test.NeverChains, res.NeverValidChains); err != nil {
+		return fmt.Errorf("bad never chains: %s", err)
 	}
 	if err := test.CompareParents(test.ExpectedParents, res.Parents); err != nil {
-		return err
+		return fmt.Errorf("bad never chains: %s", err)
 	}
 	return nil
 }

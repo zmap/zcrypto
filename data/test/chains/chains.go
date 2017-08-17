@@ -234,7 +234,7 @@ var VerifyTests = []VerifyTest{
 		ExpectedParents: nil,
 	},
 	{
-		Name:      "two-dadrian-le",
+		Name:      "two-dadrian-le-in-intermediates",
 		Leaf:      data.PEMDAdrianIOSignedByLEX3, // idx=0
 		Presented: nil,
 		Intermediates: []string{
@@ -254,5 +254,123 @@ var VerifyTests = []VerifyTest{
 		ExpiredChains:   nil,
 		NeverChains:     nil,
 		ExpectedParents: []int{2, 3},
+	},
+	{
+		Name:      "two-dadrian-le-no-presented",
+		Leaf:      data.PEMDAdrianIOSignedByLEX3, // idx=0
+		Presented: nil,
+		Intermediates: []string{
+			data.PEMLEX3SignedByDSTRootCAX3, // idx=1
+			data.PEMLEX3SignedByISRGRootX1,
+			data.PEMISRGRootX1SignedBySelf,
+		},
+		Roots: []string{
+			data.PEMISRGRootX1SignedBySelf, // idx=4
+			data.PEMDSTRootCAX3SignedBySelf,
+		},
+		CurrentTime: 1501804800, // 2017-08-04T00:00:00
+		ExpectedChains: [][]int{
+			[]int{0, 1, 5}, []int{0, 2, 4},
+		},
+		ExpiredChains:   nil,
+		NeverChains:     nil,
+		ExpectedParents: []int{1, 2},
+	},
+	{
+		Name:      "dod-root-ca-3-in-intermediates",
+		Leaf:      data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
+		Presented: nil,
+		Intermediates: []string{
+			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2, // idx=1
+			data.PEMDoDRootCA3SignedBySelf,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA, // idx=5
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA2013,
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA2016,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA, // idx=8
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial906,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8225,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8844,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2016,
+			data.PEMFederalBridgeCASignedByDoDInteropCA2, // idx=14
+			data.PEMFederalBridgeCASignedByFederalBridgeCA2013,
+			data.PEMFederalBridgeCASignedByFederalCommonPolicyCA,
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524, // idx=17
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424,
+			data.PEMFederalBridgeCA2013SignedByDoDInteropCA2,
+			data.PEMFederalBridgeCA2013SignedByIdenTrust,
+			data.PEMFederalBridgeCA2016SignedByDodInteropCA2, // idx=21
+			data.PEMFederalBridgeCA2016SignedByFederalCommonPolicyCA,
+		},
+		Roots: []string{
+			data.PEMFederalCommonPolicyCASignedBySelf, // idx=23
+		},
+		CurrentTime: 1501545600, // 2017-08-01T00:00:00
+		ExpectedChains: [][]int{
+			[]int{0, 8, 16, 23},
+			[]int{0, 8, 15, 17, 23},
+			[]int{0, 8, 15, 18, 23},
+			[]int{0, 9, 17, 23},
+			[]int{0, 9, 18, 23},
+			[]int{0, 10, 17, 23},
+			[]int{0, 10, 18, 23},
+			[]int{0, 11, 17, 23},
+			[]int{0, 11, 18, 23},
+			[]int{0, 12, 17, 23},
+			[]int{0, 12, 18, 23},
+			[]int{0, 13, 22, 23},
+		},
+	},
+	{
+		Name:      "dod-root-ca-3-leaf-no-presented",
+		Leaf:      data.PEMDoDRootCA3SignedByDoDInteropCA2Serial748,
+		Presented: nil,
+		Intermediates: []string{
+			data.PEMDoDRootCA3SignedByCCEBInteropRootCA2, // idx=1
+			data.PEMDoDRootCA3SignedBySelf,
+			data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655,
+			data.PEMDAdrianIOSignedByLEX3,
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA, // idx=5
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA2013,
+			data.PEMFederalCommonPolicyCASignedByFederalBridgeCA2016,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA, // idx=8
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial906,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8225,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8844,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644,
+			data.PEMDoDInteropCA2SignedByFederalBridgeCA2016,
+			data.PEMFederalBridgeCASignedByDoDInteropCA2, // idx=14
+			data.PEMFederalBridgeCASignedByFederalBridgeCA2013,
+			data.PEMFederalBridgeCASignedByFederalCommonPolicyCA,
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524, // idx=17
+			data.PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424,
+			data.PEMFederalBridgeCA2013SignedByDoDInteropCA2,
+			data.PEMFederalBridgeCA2013SignedByIdenTrust,
+			data.PEMFederalBridgeCA2016SignedByDodInteropCA2, // idx=21
+			data.PEMFederalBridgeCA2016SignedByFederalCommonPolicyCA,
+		},
+		Roots: []string{
+			data.PEMFederalCommonPolicyCASignedBySelf, // idx=23
+		},
+		CurrentTime: 1501545600, // 2017-08-01T00:00:00
+		ExpectedChains: [][]int{
+			[]int{0, 8, 16, 23},
+			[]int{0, 8, 15, 17, 23},
+			[]int{0, 8, 15, 18, 23},
+			[]int{0, 9, 17, 23},
+			[]int{0, 9, 18, 23},
+			[]int{0, 10, 17, 23},
+			[]int{0, 10, 18, 23},
+			[]int{0, 11, 17, 23},
+			[]int{0, 11, 18, 23},
+			[]int{0, 12, 17, 23},
+			[]int{0, 12, 18, 23},
+			[]int{0, 13, 22, 23},
+		},
+		ExpiredChains:   nil,
+		NeverChains:     nil,
+		ExpectedParents: nil,
 	},
 }
