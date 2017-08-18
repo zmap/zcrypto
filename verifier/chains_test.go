@@ -17,7 +17,6 @@ package verifier
 import (
 	"encoding/hex"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -26,18 +25,19 @@ import (
 
 func loadPEMs(pems []string) (out []*x509.Certificate) {
 	for _, s := range pems {
-		c, _ := certificateFromPEM(s)
+		c := loadPEM(s)
 		out = append(out, c)
 	}
 	return
 }
 
-func certificateFromPEM(pemBytes string) (*x509.Certificate, error) {
+func loadPEM(pemBytes string) *x509.Certificate {
 	block, _ := pem.Decode([]byte(pemBytes))
 	if block == nil {
-		return nil, errors.New("failed to decode PEM")
+		return nil
 	}
-	return x509.ParseCertificate(block.Bytes)
+	c, _ := x509.ParseCertificate(block.Bytes)
+	return c
 }
 
 func getChainID(chain x509.CertificateChain) string {
@@ -89,7 +89,7 @@ type verifyTest struct {
 }
 
 func (vt *verifyTest) parseSelf() {
-	vt.leaf, _ = certificateFromPEM(vt.Leaf)
+	vt.leaf = loadPEM(vt.Leaf)
 	vt.presented = loadPEMs(vt.Presented)
 	vt.intermediates = loadPEMs(vt.Intermediates)
 	vt.roots = loadPEMs(vt.Roots)

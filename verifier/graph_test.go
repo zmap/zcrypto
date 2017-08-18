@@ -289,7 +289,7 @@ var graphTests = []graphTest{
 }
 
 func TestGraphAddOneCert(t *testing.T) {
-	c, _ := certificateFromPEM(data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655)
+	c := loadPEM(data.PEMDoDRootCA3SignedByDoDInteropCA2Serial655)
 	g := NewGraph()
 	g.AddCert(c)
 	nodes := g.Nodes()
@@ -314,12 +314,8 @@ func TestGraph(t *testing.T) {
 		g := NewGraph()
 		var certificates []*x509.Certificate
 		// Add all the certificates to the graph
-		for certIdx, pem := range test.certificates {
-			c, err := certificateFromPEM(pem)
-			if err != nil {
-				t.Errorf("%s: could not parse certificate #%d", test.name, certIdx)
-				t.FailNow()
-			}
+		for _, pem := range test.certificates {
+			c := loadPEM(pem)
 			certificates = append(certificates, c)
 			g.AddCert(c)
 		}
