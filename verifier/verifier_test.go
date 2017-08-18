@@ -87,6 +87,8 @@ type verifyTest struct {
 	NeverChains     [][]int
 	ExpectedParents []int
 
+	ExpectHostnameError bool
+
 	certificates                    []*x509.Certificate
 	leaf                            *x509.Certificate
 	presented, intermediates, roots []*x509.Certificate
@@ -247,6 +249,12 @@ func (vt *verifyTest) checkVerifyResult(res *VerificationResult) error {
 	}
 	if err := vt.compareParents(vt.ExpectedParents, res.Parents); err != nil {
 		return fmt.Errorf("bad parents: %s", err)
+	}
+	if vt.ExpectHostnameError && res.NameError == nil {
+		return fmt.Errorf("expected hostname error, got nil")
+	}
+	if res.NameError != nil && !vt.ExpectHostnameError {
+		return fmt.Errorf("unexpected name error: %s", res.NameError)
 	}
 	return nil
 }
@@ -451,6 +459,84 @@ var verifyTests = []verifyTest{
 			[]int{0, 1, 2},
 		},
 		ExpectedParents: []int{1},
+	},
+	{
+		Name: "google-mixed-case",
+		Leaf: data.PEMGoogleSignedByGIAG2,
+		Intermediates: []string{
+			data.PEMGIAG2SignedByGeoTrust,
+		},
+		Roots: []string{
+			data.PEMGeoTrustSignedBySelf,
+		},
+		CurrentTime: 1395785200,
+		DNSName:     "www.google.com",
+		ExpectedChains: [][]int{
+			[]int{0, 1, 2},
+		},
+		ExpectedParents: []int{1},
+	},
+	{
+		Name: "google-not-yet-valid",
+		Leaf: data.PEMGoogleSignedByGIAG2,
+		Intermediates: []string{
+			data.PEMGIAG2SignedByGeoTrust,
+		},
+		Roots: []string{
+			data.PEMGeoTrustSignedBySelf,
+		},
+		CurrentTime:    1,
+		DNSName:        "www.google.com",
+		ExpectedChains: nil,
+		ExpiredChains: [][]int{
+			[]int{0, 1, 2},
+		},
+		ExpectedParents: []int{1},
+	},
+	{
+		Name: "google-expired",
+		Leaf: data.PEMGoogleSignedByGIAG2,
+		Intermediates: []string{
+			data.PEMGIAG2SignedByGeoTrust,
+		},
+		Roots: []string{
+			data.PEMGeoTrustSignedBySelf,
+		},
+		CurrentTime:    2000000000,
+		DNSName:        "www.google.com",
+		ExpectedChains: nil,
+		ExpiredChains: [][]int{
+			[]int{0, 1, 2},
+		},
+		ExpectedParents: []int{1},
+	},
+	{
+		Name: "google-name-mismatch",
+		Leaf: data.PEMGoogleSignedByGIAG2,
+		Intermediates: []string{
+			data.PEMGIAG2SignedByGeoTrust,
+		},
+		Roots: []string{
+			data.PEMGeoTrustSignedBySelf,
+		},
+		CurrentTime: 1395785200,
+		DNSName:     "www.example.com",
+		ExpectedChains: [][]int{
+			[]int{0, 1, 2},
+		},
+		ExpectedParents:     []int{1},
+		ExpectHostnameError: true,
+	},
+	{
+		Name:          "google-missing-intermediate",
+		Leaf:          data.PEMGoogleSignedByGIAG2,
+		Intermediates: nil,
+		Roots: []string{
+			data.PEMGeoTrustSignedBySelf,
+		},
+		CurrentTime:     1395785200,
+		ExpectedChains:  nil,
+		ExpectedParents: nil,
 	},
 }
 
