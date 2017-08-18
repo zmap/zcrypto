@@ -18,10 +18,18 @@ import "github.com/zmap/zcrypto/x509"
 
 const maxIntermediateCount = 9
 
+// WalkOptions contains options for the Graph.Walk* functions. It's a structure
+// since anything related to verification inevitably results in a large number
+// of arguments.
 type WalkOptions struct {
 	ChannelSize int
 }
 
+// WalkChainsAsync performs a depth-first walk of g, starting at c, to any root
+// edges. It returns all non-looping paths from c to a root. WalkChainsAsync
+// immediately returns a channel. It sends any chains it finds through the
+// channel, and closes it once all paths have been found. If the channel does
+// not get consumed, this function may block indefinitely.
 func (g *Graph) WalkChainsAsync(c *x509.Certificate, opt WalkOptions) chan x509.CertificateChain {
 	if opt.ChannelSize <= 0 {
 		opt.ChannelSize = 4
@@ -45,6 +53,7 @@ func (g *Graph) WalkChainsAsync(c *x509.Certificate, opt WalkOptions) chan x509.
 	return out
 }
 
+// WalkChains is the same as WalkChainsAsync, except synchronous.
 func (g *Graph) WalkChains(c *x509.Certificate) (out []x509.CertificateChain) {
 	chainChan := g.WalkChainsAsync(c, WalkOptions{})
 	for chain := range chainChan {

@@ -436,6 +436,22 @@ var verifyTests = []verifyTest{
 		},
 		ExpectedParents: []int{12, 13},
 	},
+	{
+		Name: "google-no-presented-chain",
+		Leaf: data.PEMGoogleSignedByGIAG2,
+		Intermediates: []string{
+			data.PEMGIAG2SignedByGeoTrust,
+		},
+		Roots: []string{
+			data.PEMGeoTrustSignedBySelf,
+		},
+		CurrentTime: 1395785200,
+		DNSName:     "www.google.com",
+		ExpectedChains: [][]int{
+			[]int{0, 1, 2},
+		},
+		ExpectedParents: []int{1},
+	},
 }
 
 func TestVerify(t *testing.T) {
