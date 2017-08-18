@@ -148,8 +148,5 @@ func canAddToChain(c *x509.Certificate, certType x509.CertificateType, currentCh
 		}
 	}
 
-	if len(currentChain) > maxIntermediateCount {
-		return x509.CertificateInvalidError{Cert: c, Reason: x509.TooManyIntermediates}
-	}
 	return nil
 }

@@ -275,9 +275,18 @@ var verifyTests = []verifyTest{
 		ExpectedChains: [][]int{
 			{0, 1, 3},
 		},
-		ExpiredChains:   nil,
-		NeverChains:     nil,
 		ExpectedParents: []int{1},
+	},
+	{
+		Name:          "dadrian-missing-intermediate",
+		Leaf:          data.PEMDAdrianIOSignedByLEX3,
+		Intermediates: nil,
+		Roots: []string{
+			data.PEMDSTRootCAX3SignedBySelf,
+		},
+		CurrentTime:     1501804800, // 2017-08-04T00:00:00
+		ExpectedChains:  nil,
+		ExpectedParents: nil,
 	},
 	{
 		Name:      "root-only",
@@ -537,6 +546,23 @@ var verifyTests = []verifyTest{
 		CurrentTime:     1395785200,
 		ExpectedChains:  nil,
 		ExpectedParents: nil,
+	},
+	{
+		Name: "google-with-unrelated-intermediate",
+		Leaf: data.PEMGoogleSignedByGIAG2,
+		Intermediates: []string{
+			data.PEMGIAG2SignedByGeoTrust,
+			data.PEMDAdrianIOSignedByLEX3,
+		},
+		Roots: []string{
+			data.PEMGeoTrustSignedBySelf,
+		},
+		CurrentTime: 1395785200,
+		DNSName:     "www.google.com",
+		ExpectedChains: [][]int{
+			[]int{0, 1, 3},
+		},
+		ExpectedParents: []int{1},
 	},
 }
 

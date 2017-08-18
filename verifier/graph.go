@@ -229,7 +229,7 @@ func (g *Graph) AddCert(c *x509.Certificate) {
 
 	// Remove any fixed-up edges from the missingIssuerNode map.
 	for _, fixedEdge := range fixedUpEdges {
-		potentialOutgoingEdges.RemoveEdge(fixedEdge.Certificate.FingerprintSHA256)
+		potentialOutgoingEdges.removeEdge(fixedEdge.Certificate.FingerprintSHA256)
 	}
 	if potentialOutgoingEdges.Size() == 0 {
 		potentialOutgoingEdges = nil
@@ -320,7 +320,7 @@ func (es *GraphEdgeSet) FindEdge(fp x509.CertificateFingerprint) *GraphEdge {
 // RemoveEdge removes an edge matching the certificate fingerprint, if it
 // exists. If it exists, RemoveEdge returns a point to the removed edge. If no
 // such edge exists, RemoveEdge does nothing and returns nil.
-func (es *GraphEdgeSet) RemoveEdge(fp x509.CertificateFingerprint) *GraphEdge {
+func (es *GraphEdgeSet) removeEdge(fp x509.CertificateFingerprint) *GraphEdge {
 	edge, ok := es.edges[string(fp)]
 	if !ok {
 		return nil

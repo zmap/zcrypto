@@ -286,6 +286,9 @@ var graphTests = []graphTest{
 			{5, 4, 22},
 		},
 	},
+	{
+		name: "empty", // this shouldn't panic
+	},
 }
 
 func TestGraphAddOneCert(t *testing.T) {
