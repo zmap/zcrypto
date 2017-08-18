@@ -14,35 +14,33 @@
 
 package verifier
 
-import "github.com/zmap/zcrypto/x509"
-
 // NewNSS returns a new verifier mimicking NSS.
-func NewNSS(pki *x509.Graph) (nss *Verifier) {
+func NewNSS(pki *Graph) (nss *Verifier) {
 	nss = NewVerifier(pki, &VerifyProcedureNSS{})
 	return
 }
 
 // NewMicrosoft returns a new verifier mimicking Microsoft SChannel.
-func NewMicrosoft(pki *x509.Graph) (microsoft *Verifier) {
+func NewMicrosoft(pki *Graph) (microsoft *Verifier) {
 	microsoft = NewVerifier(pki, &VerifyProcedureMicrosoft{})
 	return
 }
 
 // NewApple returns a new verifier mimicking Apple SecureTransport.
-func NewApple(pki *x509.Graph) (apple *Verifier) {
+func NewApple(pki *Graph) (apple *Verifier) {
 	apple = NewVerifier(pki, &VerifyProcedureApple{})
 	return
 }
 
 // NewJava returns a new verifier mimicking javax.net.ssl.
-func NewJava(pki *x509.Graph) (java *Verifier) {
+func NewJava(pki *Graph) (java *Verifier) {
 	java = NewVerifier(pki, &VerifyProcedureJava{})
 	return
 }
 
 // NewGoogleCTPrimary returns a new verifier mimicking the behavior of the
 // primary Google CT logs (e.g. Pilot).
-func NewGoogleCTPrimary(pki *x509.Graph) (gct *Verifier) {
+func NewGoogleCTPrimary(pki *Graph) (gct *Verifier) {
 	gct = NewVerifier(pki, &VerifyProcedureGoogleCTPrimary{})
 	return
 }

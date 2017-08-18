@@ -114,7 +114,7 @@ type VerifyProcedure interface {
 type VerificationOptions struct {
 	VerifyTime     time.Time
 	Name           string
-	PresentedChain *x509.Graph // XXX: Unused
+	PresentedChain *Graph // XXX: Unused
 }
 
 func (opt *VerificationOptions) clean() {
@@ -125,13 +125,13 @@ func (opt *VerificationOptions) clean() {
 
 // A Verifier represents a context for verifying certificates.
 type Verifier struct {
-	PKI             *x509.Graph
+	PKI             *Graph
 	VerifyProcedure VerifyProcedure
 }
 
 // NewVerifier returns and initializes a new Verifier given a PKI graph and set
 // of verification procedures.
-func NewVerifier(pki *x509.Graph, verifyProc VerifyProcedure) *Verifier {
+func NewVerifier(pki *Graph, verifyProc VerifyProcedure) *Verifier {
 	out := new(Verifier)
 	out.PKI = pki
 	out.VerifyProcedure = verifyProc

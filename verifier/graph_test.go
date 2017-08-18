@@ -1,13 +1,25 @@
-// Copyright 2017 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+/*
+ * ZCrypto Copyright 2017 Regents of the University of Michigan
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
 
-package x509
+package verifier
 
 import (
 	"encoding/hex"
 	"strings"
 	"testing"
+
+	"github.com/zmap/zcrypto/x509"
 
 	data "github.com/zmap/zcrypto/data/test/certificates"
 )
@@ -300,7 +312,7 @@ func TestGraphAddOneCert(t *testing.T) {
 func TestGraph(t *testing.T) {
 	for _, test := range graphTests {
 		g := NewGraph()
-		var certificates []*Certificate
+		var certificates []*x509.Certificate
 		// Add all the certificates to the graph
 		for certIdx, pem := range test.certificates {
 			c, err := certificateFromPEM(pem)
@@ -312,7 +324,7 @@ func TestGraph(t *testing.T) {
 			g.AddCert(c)
 		}
 
-		var expectedNodeFingerprints []CertificateFingerprint
+		var expectedNodeFingerprints []x509.CertificateFingerprint
 		for _, hexfp := range test.expectedNodes {
 			fp, err := hex.DecodeString(hexfp)
 			if err != nil {

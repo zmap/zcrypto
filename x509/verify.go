@@ -175,7 +175,7 @@ func (c *Certificate) buildChains(cache map[int][]CertificateChain, currentChain
 			continue
 		}
 		if !currentChain.CertificateInChain(root) {
-			chains = append(chains, currentChain.appendToFreshChain(root))
+			chains = append(chains, currentChain.AppendToFreshChain(root))
 		}
 	}
 
@@ -203,7 +203,7 @@ func (c *Certificate) buildChains(cache map[int][]CertificateChain, currentChain
 		// that part separately.
 		childChains, ok := cache[intermediateNum]
 		if !ok {
-			childChains, err = intermediate.buildChains(cache, currentChain.appendToFreshChain(intermediate), opts)
+			childChains, err = intermediate.buildChains(cache, currentChain.AppendToFreshChain(intermediate), opts)
 			cache[intermediateNum] = childChains
 		}
 		chains = append(chains, childChains...)

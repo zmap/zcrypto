@@ -778,7 +778,7 @@ func (c *Certificate) CheckSignatureFrom(parent *Certificate) (err error) {
 	return parent.CheckSignature(c.SignatureAlgorithm, c.RawTBSCertificate, c.Signature)
 }
 
-func checkSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signed, signature []byte) (err error) {
+func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signed, signature []byte) (err error) {
 	var hashType crypto.Hash
 
 	switch algo {
@@ -850,7 +850,7 @@ func checkSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 // CheckSignature verifies that signature is a valid signature over signed from
 // c's public key.
 func (c *Certificate) CheckSignature(algo SignatureAlgorithm, signed, signature []byte) (err error) {
-	return checkSignatureFromKey(c.PublicKey, algo, signed, signature)
+	return CheckSignatureFromKey(c.PublicKey, algo, signed, signature)
 }
 
 // CheckCRLSignature checks that the signature in crl is from c.

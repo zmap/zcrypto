@@ -54,7 +54,7 @@ func (chain CertificateChain) CertificateInChain(c *Certificate) bool {
 	return false
 }
 
-func (chain CertificateChain) appendToFreshChain(c *Certificate) CertificateChain {
+func (chain CertificateChain) AppendToFreshChain(c *Certificate) CertificateChain {
 	n := make([]*Certificate, len(chain)+1)
 	copy(n, chain)
 	n[len(chain)] = c

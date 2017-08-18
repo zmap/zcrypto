@@ -1,8 +1,18 @@
-// Copyright 2017 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+/*
+ * ZCrypto Copyright 2017 Regents of the University of Michigan
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
 
-package x509
+package verifier
 
 import (
 	"bufio"
@@ -11,11 +21,8 @@ import (
 	"io"
 
 	"github.com/zmap/zcertificate"
+	"github.com/zmap/zcrypto/x509"
 )
-
-func (sk *SubjectAndKey) subjectAndKeyFingerprint() subjectAndKeyFingerprint {
-	return subjectAndKeyFingerprint(sk.Fingerprint)
-}
 
 // subjectAndKeyFingerprint is a SHA256 fingerprint of (public key, subject).
 // This is used a key in maps.
@@ -34,14 +41,14 @@ type Graph struct {
 
 // A GraphNode is a SubjectAndKey
 type GraphNode struct {
-	SubjectAndKey           *SubjectAndKey
+	SubjectAndKey           *x509.SubjectAndKey
 	childrenBySubjectAndKey map[subjectAndKeyFingerprint]*GraphEdgeSet
 	parentsBySubjectAndKey  map[subjectAndKeyFingerprint]*GraphEdgeSet
 }
 
 // A GraphEdge is a certificate that joins two SubjectAndKeys.
 type GraphEdge struct {
-	Certificate *Certificate
+	Certificate *x509.Certificate
 	issuer      *GraphNode // this might not always be filled out
 	child       *GraphNode
 	root        bool
@@ -80,21 +87,21 @@ func (g *Graph) Edges() []*GraphEdge {
 
 // FindEdge returns an edge with a certificate matching the given SHA256
 // fingerprint, if it exists. If it does not exist, FindEdge returns nil.
-func (g *Graph) FindEdge(fp CertificateFingerprint) *GraphEdge {
+func (g *Graph) FindEdge(fp x509.CertificateFingerprint) *GraphEdge {
 	return g.edges.FindEdge(fp)
 }
 
 // FindNode returns a node with a matching spki_subject_fingerprint to fp, if it
 // exists. If it does not exist, FindNode returns nil.
-func (g *Graph) FindNode(fp CertificateFingerprint) *GraphNode {
+func (g *Graph) FindNode(fp x509.CertificateFingerprint) *GraphNode {
 	node := g.nodesBySubjectAndKey[subjectAndKeyFingerprint(fp)]
 	return node
 }
 
 // AddCert inserts an edge for c into the graph, and creates nodes as needed.
-func (g *Graph) AddCert(c *Certificate) {
+func (g *Graph) AddCert(c *x509.Certificate) {
 	sk := c.SubjectAndKey()
-	skfp := sk.subjectAndKeyFingerprint()
+	skfp := subjectAndKeyFingerprint(sk.Fingerprint)
 	isNewNode := false
 
 	if g.edges.ContainsCertificate(c) {
@@ -129,7 +136,7 @@ func (g *Graph) AddCert(c *Certificate) {
 	potentialIssuers, _ := g.nodesBySubject[string(c.RawIssuer)]
 	for _, potentialIssuerNode := range potentialIssuers {
 		issuerIdentity := potentialIssuerNode.SubjectAndKey
-		if err := checkSignatureFromKey(issuerIdentity.PublicKey, c.SignatureAlgorithm, c.RawTBSCertificate, c.Signature); err != nil {
+		if err := x509.CheckSignatureFromKey(issuerIdentity.PublicKey, c.SignatureAlgorithm, c.RawTBSCertificate, c.Signature); err != nil {
 			// If the signature was not valid, this is not an issuer.
 			continue
 		}
@@ -152,7 +159,7 @@ func (g *Graph) AddCert(c *Certificate) {
 		edgeSet.addOrPanic(edge)
 
 		// Update the parents of this node
-		parentSkpf := potentialIssuerNode.SubjectAndKey.subjectAndKeyFingerprint()
+		parentSkpf := subjectAndKeyFingerprint(potentialIssuerNode.SubjectAndKey.Fingerprint)
 		parentSet := node.parentsBySubjectAndKey[parentSkpf]
 		if parentSet == nil {
 			parentSet = NewGraphEdgeSet()
@@ -191,14 +198,14 @@ func (g *Graph) AddCert(c *Certificate) {
 	for _, candidateEdge := range potentialOutgoingEdges.Edges() {
 		pk := node.SubjectAndKey.PublicKey
 		candidateCert := candidateEdge.Certificate
-		if err := checkSignatureFromKey(pk, candidateCert.SignatureAlgorithm, candidateCert.RawTBSCertificate, candidateCert.Signature); err != nil {
+		if err := x509.CheckSignatureFromKey(pk, candidateCert.SignatureAlgorithm, candidateCert.RawTBSCertificate, candidateCert.Signature); err != nil {
 			// If the signature was not valid, this node is not an issuer
 			continue
 		}
 
 		// The signature was valid, so fixup this edge.
 		candidateEdge.issuer = node
-		childSubjectAndKeyFingerprint := candidateEdge.child.SubjectAndKey.subjectAndKeyFingerprint()
+		childSubjectAndKeyFingerprint := subjectAndKeyFingerprint(candidateEdge.child.SubjectAndKey.Fingerprint)
 		edgeSet := node.childrenBySubjectAndKey[childSubjectAndKeyFingerprint]
 		if edgeSet == nil {
 			edgeSet = NewGraphEdgeSet()
@@ -207,7 +214,7 @@ func (g *Graph) AddCert(c *Certificate) {
 		edgeSet.addOrPanic(candidateEdge)
 
 		// Set the parents of the node
-		parentSkpf := node.SubjectAndKey.subjectAndKeyFingerprint()
+		parentSkpf := subjectAndKeyFingerprint(node.SubjectAndKey.Fingerprint)
 		parentSet := candidateEdge.child.parentsBySubjectAndKey[parentSkpf]
 		if parentSet == nil {
 			parentSet = NewGraphEdgeSet()
@@ -231,14 +238,14 @@ func (g *Graph) AddCert(c *Certificate) {
 }
 
 // AddRoot adges an edge for certificate c, and marks it as a root.
-func (g *Graph) AddRoot(c *Certificate) {
+func (g *Graph) AddRoot(c *x509.Certificate) {
 	g.AddCert(c)
 	edge := g.edges.FindEdge(c.FingerprintSHA256)
 	edge.root = true
 }
 
 // IsRoot returns true if c is a root in the graph.
-func (g *Graph) IsRoot(c *Certificate) bool {
+func (g *Graph) IsRoot(c *x509.Certificate) bool {
 	edge := g.FindEdge(c.FingerprintSHA256)
 	if edge == nil {
 		return false
@@ -258,7 +265,7 @@ func (g *Graph) AppendFromPEM(r io.Reader, root bool) int {
 		if p == nil {
 			continue
 		}
-		c, err := ParseCertificate(p.Bytes)
+		c, err := x509.ParseCertificate(p.Bytes)
 		if err != nil {
 			continue
 		}
@@ -287,7 +294,7 @@ func (es *GraphEdgeSet) Edges() (out []*GraphEdge) {
 }
 
 // ContainsCertificate returns true if c is contained in the GraphEdgeSet.
-func (es *GraphEdgeSet) ContainsCertificate(c *Certificate) bool {
+func (es *GraphEdgeSet) ContainsCertificate(c *x509.Certificate) bool {
 	fp := string(c.FingerprintSHA256)
 	_, ok := es.edges[fp]
 	return ok
@@ -305,7 +312,7 @@ func (es *GraphEdgeSet) Size() int {
 
 // FindEdge returns an edge matching the certificate fingerprint, if it exists.
 // If it does not exist, FindEdge returns nil.
-func (es *GraphEdgeSet) FindEdge(fp CertificateFingerprint) *GraphEdge {
+func (es *GraphEdgeSet) FindEdge(fp x509.CertificateFingerprint) *GraphEdge {
 	edge, _ := es.edges[string(fp)]
 	return edge
 }
@@ -313,7 +320,7 @@ func (es *GraphEdgeSet) FindEdge(fp CertificateFingerprint) *GraphEdge {
 // RemoveEdge removes an edge matching the certificate fingerprint, if it
 // exists. If it exists, RemoveEdge returns a point to the removed edge. If no
 // such edge exists, RemoveEdge does nothing and returns nil.
-func (es *GraphEdgeSet) RemoveEdge(fp CertificateFingerprint) *GraphEdge {
+func (es *GraphEdgeSet) RemoveEdge(fp x509.CertificateFingerprint) *GraphEdge {
 	edge, ok := es.edges[string(fp)]
 	if !ok {
 		return nil
