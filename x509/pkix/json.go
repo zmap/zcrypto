@@ -142,6 +142,8 @@ type auxName struct {
 	PostalCode         []string `json:"postal_code,omitempty"`
 	DomainComponent    []string `json:"domain_component,omitempty"`
 	EmailAddress       []string `json:"email_address,omitempty"`
+	GivenName	   []string `json:"given_name,omitempty"`
+	Surname		   []string `json:"surname,omitempty"`
 	// EV
 	JurisdictionCountry  []string `json:"jurisdiction_country,omitempty"`
 	JurisdictionLocality []string `json:"jurisdiction_locality,omitempty"`
@@ -162,6 +164,8 @@ func (n *Name) MarshalJSON() ([]byte, error) {
 			}
 			if a.Type.Equal(oidCommonName) {
 				aux.CommonName = append(aux.CommonName, s)
+			} else if a.Type.Equal(oidSurname) {
+				aux.Surname = append(aux.Surname, s)
 			} else if a.Type.Equal(oidSerialNumber) {
 				aux.SerialNumber = append(aux.SerialNumber, s)
 			} else if a.Type.Equal(oidCountry) {
@@ -174,6 +178,8 @@ func (n *Name) MarshalJSON() ([]byte, error) {
 				aux.StreetAddress = append(aux.StreetAddress, s)
 			} else if a.Type.Equal(oidOrganization) {
 				aux.Organization = append(aux.Organization, s)
+			} else if a.Type.Equal(oidGivenName) {
+				aux.GivenName = append(aux.GivenName, s)
 			} else if a.Type.Equal(oidOrganizationalUnit) {
 				aux.OrganizationalUnit = append(aux.OrganizationalUnit, s)
 			} else if a.Type.Equal(oidPostalCode) {

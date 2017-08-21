@@ -54,6 +54,7 @@ type Name struct {
 	StreetAddress, PostalCode, DomainComponent []string
 	EmailAddress                               []string
 	SerialNumber, CommonName                   string
+	GivenName, Surname			   []string
 	// EV Components
 	JurisdictionLocality, JurisdictionProvince, JurisdictionCountry []string
 
@@ -86,6 +87,8 @@ func (n *Name) FillFromRDNSequence(rdns *RDNSequence) {
 			switch t[3] {
 			case 3:
 				n.CommonName = value
+			case 4:
+				n.Surname = append(n.Surname, value)
 			case 5:
 				n.SerialNumber = value
 			case 6:
@@ -102,6 +105,8 @@ func (n *Name) FillFromRDNSequence(rdns *RDNSequence) {
 				n.OrganizationalUnit = append(n.OrganizationalUnit, value)
 			case 17:
 				n.PostalCode = append(n.PostalCode, value)
+			case 42:
+				n.GivenName = append(n.GivenName, value)
 			}
 		} else if t.Equal(oidDomainComponent) {
 			n.DomainComponent = append(n.DomainComponent, value)
@@ -123,11 +128,13 @@ var (
 	oidOrganization       = []int{2, 5, 4, 10}
 	oidOrganizationalUnit = []int{2, 5, 4, 11}
 	oidCommonName         = []int{2, 5, 4, 3}
+	oidSurname	      = []int{2, 5, 4, 4}
 	oidSerialNumber       = []int{2, 5, 4, 5}
 	oidLocality           = []int{2, 5, 4, 7}
 	oidProvince           = []int{2, 5, 4, 8}
 	oidStreetAddress      = []int{2, 5, 4, 9}
 	oidPostalCode         = []int{2, 5, 4, 17}
+	oidGivenName	      = []int{2, 5, 4, 42}
 	oidDomainComponent    = []int{0, 9, 2342, 19200300, 100, 1, 25}
 	oidDNEmailAddress     = []int{1, 2, 840, 113549, 1, 9, 1}
 	// EV
