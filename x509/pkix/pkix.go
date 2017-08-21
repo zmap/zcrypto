@@ -128,11 +128,13 @@ var (
 	oidOrganization       = []int{2, 5, 4, 10}
 	oidOrganizationalUnit = []int{2, 5, 4, 11}
 	oidCommonName         = []int{2, 5, 4, 3}
+	oidSurname	      = []int{2, 5, 4, 4}
 	oidSerialNumber       = []int{2, 5, 4, 5}
 	oidLocality           = []int{2, 5, 4, 7}
 	oidProvince           = []int{2, 5, 4, 8}
 	oidStreetAddress      = []int{2, 5, 4, 9}
 	oidPostalCode         = []int{2, 5, 4, 17}
+	oidGivenName	      = []int{2, 5, 4, 42}
 	oidDomainComponent    = []int{0, 9, 2342, 19200300, 100, 1, 25}
 	oidDNEmailAddress     = []int{1, 2, 840, 113549, 1, 9, 1}
 	// EV
