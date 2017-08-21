@@ -266,7 +266,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 `
 
 // HexHashPEMLEX3SignedByISRGRootX1 is the hex SHA256 fingerprint of
-// PEMLEX3SignedByISRGRootX1.
+// LEX3SignedByISRGRootX1.
 const HexHashPEMLEX3SignedByISRGRootX1 = "731d3d9cfaa061487a1d71445a42f67df0afca2a6c2d2f98ff7b3ce112b1f568"
 
 // PEMLEX3SignedByDSTRootCAX3 is the certificate for Let's Encrypt Authority X3
@@ -374,5 +374,5 @@ KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 `
 
 // HexHashPEMLEX3SignedByDSTRootCAX3 is the hex SHA256 fingerprint of
-// PEMLEX3SignedByDSTRootCAX3.
+// LEX3SignedByDSTRootCAX3.
 const HexHashPEMLEX3SignedByDSTRootCAX3 = "25847d668eb4f04fdd40b12b6b0740c567da7d024308eb6c2c96fe41d9de218d"

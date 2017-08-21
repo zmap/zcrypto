@@ -97,5 +97,5 @@ Ob8VZRzI9neWagqNdwvYkQsEjgfbKbYK7p2CNTUQ
 `
 
 // HexHashPEMDSTRootCAX3SignedBySelf is the hex SHA256 fingeprint of
-// PEMDSTRootCAX3SignedBySelf.
+// DSTRootCAX3SignedBySelf.
 const HexHashPEMDSTRootCAX3SignedBySelf = "0687260331a72403d909f105e69bcf0d32e1bd2493ffc6d9206d11bcd6770739"

@@ -119,9 +119,9 @@ fOs/QbP1b0s6Xq5vk3aY0vGZnUXEjnI=
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMDoDRootCA3SignedBySelf is the hex SHA256 fingerprint of
-// PEMDoDRootCA3SignedBySelf.
-const HexHashPEMDoDRootCA3SignedBySelf = "b107b33f453e5510f68e513110c6f6944bacc263df0137f821c1b3c2f8f863d2"
+// HexHashDoDRootCA3SignedBySelf is the hex SHA256 fingerprint of
+// DoDRootCA3SignedBySelf.
+const HexHashDoDRootCA3SignedBySelf = "b107b33f453e5510f68e513110c6f6944bacc263df0137f821c1b3c2f8f863d2"
 
 // PEMDoDRootCA3SignedByDoDInteropCA2Serial655 is the PEM of a certificate for
 // the DoD Root CA 3 signed by DoD Interoperability CA 2 with serial number 655.
@@ -236,9 +236,9 @@ f66NhFdmQLW2Z5VnQVNLi+k/5yjpsoDdfdl8iUAuVeFFX9VHapu2NAOXXjKl7D4C
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMDoDRootCA3SignedByDoDInteropCA2Serial655 is the hex SHA256
-// fingerprint of PEMDoDRootCA3SignedByDoDInteropCA2Serial655.
-const HexHashPEMDoDRootCA3SignedByDoDInteropCA2Serial655 = "fc326b6b92fd2a3dd0c2961428672bf10f974552319f6930c62c6c791d18e84a"
+// HexHashDoDRootCA3SignedByDoDInteropCA2Serial655 is the hex SHA256
+// fingerprint of DoDRootCA3SignedByDoDInteropCA2Serial655.
+const HexHashDoDRootCA3SignedByDoDInteropCA2Serial655 = "fc326b6b92fd2a3dd0c2961428672bf10f974552319f6930c62c6c791d18e84a"
 
 // PEMDoDRootCA3SignedByDoDInteropCA2Serial748 is the certificate for the DoD
 // Root CA 3 signed by the DoD Interoperability CA 2 with serial number 748.
@@ -354,9 +354,9 @@ DN5q33Kdvj7uTGKcELDtK/vGlfhKJB6OKRvck/Xk
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMDoDRootCA3SignedByDoDInteropCA2Serial748 is the hex SHA256
-// fingerprint of PEMDoDRootCA3SignedByDoDInteropCA2Serial748.
-const HexHashPEMDoDRootCA3SignedByDoDInteropCA2Serial748 = "42e59ccbf68c413a10dd1bb6bc41a930bf1228e16905d9301559cfc4083d589b"
+// HexHashDoDRootCA3SignedByDoDInteropCA2Serial748 is the hex SHA256
+// fingerprint of DoDRootCA3SignedByDoDInteropCA2Serial748.
+const HexHashDoDRootCA3SignedByDoDInteropCA2Serial748 = "42e59ccbf68c413a10dd1bb6bc41a930bf1228e16905d9301559cfc4083d589b"
 
 // PEMDoDRootCA3SignedByCCEBInteropRootCA2 is the certificate for DoD Root CA 3
 // signed by the DoD CCEB Interoperability Root CA 2.
@@ -469,9 +469,9 @@ sZcxsgTC5Ec=
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMDoDRootCA3SignedByCCEBInteropRootCA2 is the hex SHA256 fingerprint
-// of PEMDoDRootCA3SignedByCCEBInteropRootCA2.
-const HexHashPEMDoDRootCA3SignedByCCEBInteropRootCA2 = "925820ceae31ca372175d0eda58063e0bf8d7f6bd1a6de007d22861bb6270b62"
+// HexHashDoDRootCA3SignedByCCEBInteropRootCA2 is the hex SHA256 fingerprint
+// ofDoDRootCA3SignedByCCEBInteropRootCA2.
+const HexHashDoDRootCA3SignedByCCEBInteropRootCA2 = "925820ceae31ca372175d0eda58063e0bf8d7f6bd1a6de007d22861bb6270b62"
 
 // PEMDoDInteropCA2SignedByFederalBridgeCA2016 is a certificate for the DoD
 // Interoperability CA 2 signed by the Federal Bridge CA 2016.
@@ -610,6 +610,10 @@ vHr7d5SIZmwQR3IhKRBNzAzh7HQ=
 -----END CERTIFICATE-----
 `
 
+// HexHashDoDInteropCA2SignedByFederalBridgeCA2016 is the hex SHA256 fingerprint
+// of DoDInteropCA2SignedByFederalBridgeCA2016.
+const HexHashDoDInteropCA2SignedByFederalBridgeCA2016 = "4859a804b9e7e62cbdf1fe18c80bd7df77f0b07f716305efce6e5663358f5738"
+
 // PEMDoDInteropCA2SignedByFederalBridgeCA is a certificate for the DoD
 // Interoperability CA 2 signed by the Federal Bridge CA.
 const PEMDoDInteropCA2SignedByFederalBridgeCA = `
@@ -732,9 +736,9 @@ b6b0PDQT2nIxmA==
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMDoDInteropCA2SignedByFederalBridgeCA is the hex SHA256 fingerprint
-// of PEMDoDInteropCA2SignedByFederalBridgeCA.
-const HexHashPEMDoDInteropCA2SignedByFederalBridgeCA = "76eb46d3a0808c7ef85fcd7128c2611e840c8299b836cc88d372564e1be1e96f"
+// HexHashDoDInteropCA2SignedByFederalBridgeCA is the hex SHA256 fingerprint
+// ofDoDInteropCA2SignedByFederalBridgeCA.
+const HexHashDoDInteropCA2SignedByFederalBridgeCA = "76eb46d3a0808c7ef85fcd7128c2611e840c8299b836cc88d372564e1be1e96f"
 
 // PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial906 is the certificate for
 // the DoD Interoperability CA 2 signed by the Federal Bridge CA 2013 with the
@@ -859,9 +863,9 @@ wHVl4NVlY+rw5bq53dVWtrjhk8Zor8Y=
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMDoDInteropCA2SignedByFederalBridgeCA2013Serial906 is the hex SHA256
-// fingerprint of PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial906.
-const HexHashPEMDoDInteropCA2SignedByFederalBridgeCA2013Serial906 = "f1ca80e8c4420f0cab6c2f8b04b4deda19b1cea1f6869e16907674209035d5a1"
+// HexHashDoDInteropCA2SignedByFederalBridgeCA2013Serial906 is the hex SHA256
+// fingerprint ofDoDInteropCA2SignedByFederalBridgeCA2013Serial906.
+const HexHashDoDInteropCA2SignedByFederalBridgeCA2013Serial906 = "f1ca80e8c4420f0cab6c2f8b04b4deda19b1cea1f6869e16907674209035d5a1"
 
 // PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8225 is the certificate for
 // the DoD Interoperability CA 2 signed by the Federal Bridge CA 2013 with the
@@ -988,9 +992,9 @@ mYm60X4EwhCRp34UmratrWJb411EkKV15QT4pINuxF1nTVLzEh/I7JJrotkeprAS
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8225 is the hex
-// SHA256 fingerprint of PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8225.
-const HexHashPEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8225 = "15fc3efd4294832257ba5a24a232fee2244880dcdc297a2872a6b75727557b1f"
+// HexHashDoDInteropCA2SignedByFederalBridgeCA2013Serial8225 is the hex
+// SHA256 fingerprint ofDoDInteropCA2SignedByFederalBridgeCA2013Serial8225.
+const HexHashDoDInteropCA2SignedByFederalBridgeCA2013Serial8225 = "15fc3efd4294832257ba5a24a232fee2244880dcdc297a2872a6b75727557b1f"
 
 // PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8844 is the certificate for
 // the DoD Interoperability CA 2 signed by the Federal Bridge CA 2013 with the
@@ -1116,9 +1120,9 @@ cDchc3Rt28Z8QRUnehqj0T0IJmUXqrHKEa9sZ2BKyjwgvOZTJze73iaxZtq1kxwj
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8844 is the hex
-// SHA256 fingerprint of PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8844.
-const HexHashPEMDoDInteropCA2SignedByFederalBridgeCA2013Serial8844 = "ce1a4657b4649ba5701126c740642a56c464225eec3bf398a1a45b57e33356b6"
+// HexHashDoDInteropCA2SignedByFederalBridgeCA2013Serial8844 is the hex
+// SHA256 fingerprint ofDoDInteropCA2SignedByFederalBridgeCA2013Serial8844.
+const HexHashDoDInteropCA2SignedByFederalBridgeCA2013Serial8844 = "ce1a4657b4649ba5701126c740642a56c464225eec3bf398a1a45b57e33356b6"
 
 // PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644 is the certificate for
 // the Dod Interoperability CA 2 signed by the Federal Bridge CA 2013 with the
@@ -1257,9 +1261,9 @@ wdo=
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644 is the hex
-// SHA256 fingerprint for PEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644.
-const HexHashPEMDoDInteropCA2SignedByFederalBridgeCA2013Serial9644 = "f72ccd4b250e9e53ebf1d8d400322c21456afb255be1a23d8053eaa8763d3c80"
+// HexHashDoDInteropCA2SignedByFederalBridgeCA2013Serial9644 is the hex
+// SHA256 fingerprint forDoDInteropCA2SignedByFederalBridgeCA2013Serial9644.
+const HexHashDoDInteropCA2SignedByFederalBridgeCA2013Serial9644 = "f72ccd4b250e9e53ebf1d8d400322c21456afb255be1a23d8053eaa8763d3c80"
 
 // PEMFederalBridgeCASignedByDoDInteropCA2 is the certificate for the Federal
 // Bridge CA signed by the DoD Interoperability Root CA 2.
@@ -1384,9 +1388,9 @@ NA99v6k52QORDrRyFtpnQwL+FvO4Q+Tr
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalBridgeCASignedByDoDInteropCA2 is the hex SHA256 fingerprint
-// of PEMFederalBridgeCASignedByDoDInteropCA2.
-const HexHashPEMFederalBridgeCASignedByDoDInteropCA2 = "fa22bf37e4111e66c0c0761eae45adc973a88a87a47b7d8f65b485d563fa5c2b"
+// HexHashFederalBridgeCASignedByDoDInteropCA2 is the hex SHA256 fingerprint
+// ofFederalBridgeCASignedByDoDInteropCA2.
+const HexHashFederalBridgeCASignedByDoDInteropCA2 = "fa22bf37e4111e66c0c0761eae45adc973a88a87a47b7d8f65b485d563fa5c2b"
 
 // PEMFederalBridgeCASignedByFederalBridgeCA2013 is the certificate for the Federal
 // Bridge CA signed by the Federal Bridge CA 2013.
@@ -1487,9 +1491,9 @@ geBNJAPO8G16DEKSmeOGftlOy1Hkw35f3FXhOYNxjUg=
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalBridgeCASignedByFederalBridgeCA2013 is the hex SHA256
-// fingerprint of PEMFederalBridgeCASignedByFederalBridgeCA2013.
-const HexHashPEMFederalBridgeCASignedByFederalBridgeCA2013 = "687cae341a976f2862ce9c7543f5bbbc466a6cb9719cad755b14b76bc1e7788b"
+// HexHashFederalBridgeCASignedByFederalBridgeCA2013 is the hex SHA256
+// fingerprint ofFederalBridgeCASignedByFederalBridgeCA2013.
+const HexHashFederalBridgeCASignedByFederalBridgeCA2013 = "687cae341a976f2862ce9c7543f5bbbc466a6cb9719cad755b14b76bc1e7788b"
 
 // PEMFederalBridgeCASignedByFederalCommonPolicyCA is the certificate for the
 // Federal Bridge CA signed by the Federal Common Policy CA.
@@ -1625,9 +1629,9 @@ iCopVVIyCDsqdzD0dAbD0thk4QgzM2UeAizRXvxsRKjehxkbbwfXZ80RYnCbyM/5
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalBridgeCASignedByFederalCommonPolicyCA is the hex SHA256
-// fingeprint of PEMFederalBridgeCASignedByFederalCommonPolicyCA.
-const HexHashPEMFederalBridgeCASignedByFederalCommonPolicyCA = "8a51e575c2eac47ad7d9739684e9bbabcc28caff53bc6a1ebb860a2bdcf732c8"
+// HexHashFederalBridgeCASignedByFederalCommonPolicyCA is the hex SHA256
+// fingeprint ofFederalBridgeCASignedByFederalCommonPolicyCA.
+const HexHashFederalBridgeCASignedByFederalCommonPolicyCA = "8a51e575c2eac47ad7d9739684e9bbabcc28caff53bc6a1ebb860a2bdcf732c8"
 
 // PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524 is the certificate for
 // the Federal Bridge CA 2013 signed by the Federal Common Policy CA with serial
@@ -1764,9 +1768,9 @@ IhYr1OgWaVLqs1o=
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524 is the hex
-// SHA256 fingerprint of PEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524.
-const HexHashPEMFederalBridgeCA2013SignedByCommonPolicyCASerial5524 = "ae014e287fb3709f7d57c29065cdc0d37499e52f83f5ffbe83b883698a2c03f6"
+// HexHashFederalBridgeCA2013SignedByCommonPolicyCASerial5524 is the hex
+// SHA256 fingerprint ofFederalBridgeCA2013SignedByCommonPolicyCASerial5524.
+const HexHashFederalBridgeCA2013SignedByCommonPolicyCASerial5524 = "ae014e287fb3709f7d57c29065cdc0d37499e52f83f5ffbe83b883698a2c03f6"
 
 // PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424 is the certificate
 // for the Federal Bridge CA 2013 signed by the Federal Common Policy CA with
@@ -1909,10 +1913,10 @@ zaehYm7UZ14x
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424 is the hex
+// HexHashFederalBridgeCA2013SignedByCommonPolicyCASerial11424 is the hex
 // SHA256 fingerprint of
-// PEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424.
-const HexHashPEMFederalBridgeCA2013SignedByCommonPolicyCASerial11424 = "8ed99089806b1005d6a6417c50f182325b670b9d87b17f3fd7aefc360a300e91"
+//FederalBridgeCA2013SignedByCommonPolicyCASerial11424.
+const HexHashFederalBridgeCA2013SignedByCommonPolicyCASerial11424 = "8ed99089806b1005d6a6417c50f182325b670b9d87b17f3fd7aefc360a300e91"
 
 // PEMFederalBridgeCA2013SignedByIdenTrust is the certificate for the Federal
 // Bridge CA 2013 signed by IdenTrust ACES CA 1.
@@ -2033,9 +2037,9 @@ ZpZD80pKZjAyIcVmRRcNzlt8Yw==
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalBridgeCA2013SignedByIdenTrust is the hex SHA256 fingerprint
-// of PEMFederalBridgeCA2013SignedByIdenTrust.
-const HexHashPEMFederalBridgeCA2013SignedByIdenTrust = "a2d96559f2237d3962a5d879e0327f9610097f83fe3e6f4e8d9fa567e88efca4"
+// HexHashFederalBridgeCA2013SignedByIdenTrust is the hex SHA256 fingerprint
+// ofFederalBridgeCA2013SignedByIdenTrust.
+const HexHashFederalBridgeCA2013SignedByIdenTrust = "a2d96559f2237d3962a5d879e0327f9610097f83fe3e6f4e8d9fa567e88efca4"
 
 // PEMFederalBridgeCA2013SignedByDoDInteropCA2 is the certificate for the
 // Federal Bridge CA 2013 signed by the DoD Interoperability Root CA 2.
@@ -2161,9 +2165,9 @@ G8VFxuUmouJeLRM1LyqZN41/D9y6l2GSr1Euqb7evYIaw/YnU7X1UotwOS3IHoA2
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalBridgeCA2013SignedByDoDInteropCA2 is the hex SHA256
-// fingerprint of PEMFederalBridgeCA2013SignedByDoDInteropCA2.
-const HexHashPEMFederalBridgeCA2013SignedByDoDInteropCA2 = "d19ee1728a2fbe37342f3b993d6c3f771516dbba190823ab059b2da0b3e44617"
+// HexHashFederalBridgeCA2013SignedByDoDInteropCA2 is the hex SHA256
+// fingerprint ofFederalBridgeCA2013SignedByDoDInteropCA2.
+const HexHashFederalBridgeCA2013SignedByDoDInteropCA2 = "d19ee1728a2fbe37342f3b993d6c3f771516dbba190823ab059b2da0b3e44617"
 
 // PEMFederalBridgeCA2016SignedByDodInteropCA2 is the certificate for the
 // Federal Bridge CA 2016 signed by the Dod Interoperability Root CA 2.
@@ -2296,9 +2300,9 @@ dsszSeSGwcvp
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalBridgeCA2016SignedByDodInteropCA2 is the hex SHA256
-// fingerprint of PEMFederalBridgeCA2016SignedByDodInteropCA2.
-const HexHashPEMFederalBridgeCA2016SignedByDodInteropCA2 = "bf6cbf5649bc6eacf8cc906ecb6b23c190bd926e49cafeb23c3ecf4dc5906bbb"
+// HexHashFederalBridgeCA2016SignedByDodInteropCA2 is the hex SHA256
+// fingerprint ofFederalBridgeCA2016SignedByDodInteropCA2.
+const HexHashFederalBridgeCA2016SignedByDodInteropCA2 = "bf6cbf5649bc6eacf8cc906ecb6b23c190bd926e49cafeb23c3ecf4dc5906bbb"
 
 // PEMFederalBridgeCA2016SignedByFederalCommonPolicyCA is the certificate for
 // the Federal Bridge CA 2016 signed by the Federal Common Policy CA.
@@ -2440,9 +2444,9 @@ WL+r9v7aykNo
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalBridgeCA2016SignedByFederalCommonPolicyCA is the hex SHA256
-// fingerprint of PEMFederalBridgeCA2016SignedByFederalCommonPolicyCA.
-const HexHashPEMFederalBridgeCA2016SignedByFederalCommonPolicyCA = "039c1473089282fb36a4dbc23b1125aec83219c6e624fd169b02e08e6409c3f2"
+// HexHashFederalBridgeCA2016SignedByFederalCommonPolicyCA is the hex SHA256
+// fingerprint ofFederalBridgeCA2016SignedByFederalCommonPolicyCA.
+const HexHashFederalBridgeCA2016SignedByFederalCommonPolicyCA = "039c1473089282fb36a4dbc23b1125aec83219c6e624fd169b02e08e6409c3f2"
 
 // PEMFederalCommonPolicyCASignedBySelf is the self-signed certificate for the
 // Federal Common Policy CA.
@@ -2535,9 +2539,9 @@ A2EC/0rskqTcLe4qNJMHtyznGI8=
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalCommonPolicyCASignedBySelf is the hex SHA256 fingerprint of
-// PEMFederalCommonPolicyCASignedBySelf.
-const HexHashPEMFederalCommonPolicyCASignedBySelf = "894ebc0b23da2a50c0186b7f8f25ef1f6b2935af32a94584ef80aaf877a3a06e"
+// HexHashFederalCommonPolicyCASignedBySelf is the hex SHA256 fingerprint of
+//FederalCommonPolicyCASignedBySelf.
+const HexHashFederalCommonPolicyCASignedBySelf = "894ebc0b23da2a50c0186b7f8f25ef1f6b2935af32a94584ef80aaf877a3a06e"
 
 // PEMFederalCommonPolicyCASignedByFederalBridgeCA is the certificate for the
 // Federal Common Policy CA signed by the Federal Bridge CA.
@@ -2673,9 +2677,9 @@ eHg=
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalCommonPolicyCASignedByFederalBridgeCA is the hex SHA256
-// fingeprint of PEMFederalCommonPolicyCASignedByFederalBridgeCA.
-const HexHashPEMFederalCommonPolicyCASignedByFederalBridgeCA = "96289a5f9a419d10c9cf3739c477a3fb8cd1c56f8f69528b97a2dbb1b6a3270f"
+// HexHashFederalCommonPolicyCASignedByFederalBridgeCA is the hex SHA256
+// fingeprint ofFederalCommonPolicyCASignedByFederalBridgeCA.
+const HexHashFederalCommonPolicyCASignedByFederalBridgeCA = "96289a5f9a419d10c9cf3739c477a3fb8cd1c56f8f69528b97a2dbb1b6a3270f"
 
 // PEMFederalCommonPolicyCASignedByFederalBridgeCA2013 is the certificate for
 // the Federal Common Policy CA signed by the Federal Bridge CA 2013.
@@ -2718,9 +2722,9 @@ ZbE+MYKadMsXhFkpcp2J4hKPsoycvRXegy00411ZLkUcn48Ha8DdDJSktUQgJolZ
 IeSPIo86WvJEwAAVhg==
 -----END CERTIFICATE-----`
 
-// HexHashPEMFederalCommonPolicyCASignedByFederalBridgeCA2013 is the hex SHA256
-// fingerprint of PEMFederalCommonPolicyCASignedByFederalBridgeCA2013.
-const HexHashPEMFederalCommonPolicyCASignedByFederalBridgeCA2013 = "59cb0702bc82d6a6c58eedbf84e610c3d9ce4630e61fba5745ded0cb371e675c"
+// HexHashFederalCommonPolicyCASignedByFederalBridgeCA2013 is the hex SHA256
+// fingerprint ofFederalCommonPolicyCASignedByFederalBridgeCA2013.
+const HexHashFederalCommonPolicyCASignedByFederalBridgeCA2013 = "59cb0702bc82d6a6c58eedbf84e610c3d9ce4630e61fba5745ded0cb371e675c"
 
 // PEMFederalCommonPolicyCASignedByFederalBridgeCA2016 is the certificate for
 // the Federal Common Policy CA signed by the Federal Bridge CA 2016.
@@ -2863,6 +2867,6 @@ PxwlMwAr4zxG5ev/VUxGhmZw9bbkbLvmLvXXEGb6BQ==
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMFederalCommonPolicyCASignedByFederalBridgeCA2016 is the hex SHA256
-// fingerprint of PEMFederalCommonPolicyCASignedByFederalBridgeCA2016.
-const HexHashPEMFederalCommonPolicyCASignedByFederalBridgeCA2016 = "343293348becda9784b09e5e252a25355772e488cb75dc8b5075dc89541b3cc9"
+// HexHashFederalCommonPolicyCASignedByFederalBridgeCA2016 is the hex SHA256
+// fingerprint ofFederalCommonPolicyCASignedByFederalBridgeCA2016.
+const HexHashFederalCommonPolicyCASignedByFederalBridgeCA2016 = "343293348becda9784b09e5e252a25355772e488cb75dc8b5075dc89541b3cc9"

@@ -132,7 +132,7 @@ z0N/n3TEStkjFXPPuIDewwLAq+U8OEBnmsYd
 `
 
 // HexSPKISubjectFingerprintDAdrianIO is the hex of the SPKI Subject Fingerprint
-// of the certificate in PEMDAdrianIOSignedByLEX3.
+// of the certificate in DAdrianIOSignedByLEX3.
 const HexSPKISubjectFingerprintDAdrianIO = "8a5d4cbab48316c11c5b2fa053ad119f807bf41a29cc97f713edd3e46c3f53a2"
 
 // PEMUNIWUCAG01SignedByDFNVerin is the certificate for the Universitaet
@@ -239,7 +239,7 @@ HRo+OrihtePLscBIB+8n3qak8xuZ9zBaf7Pi9Q==
 `
 
 // HexHashPEMUNIWUCAG01SignedByDFNVerin is the hex SHA256 fingerprint of
-// PEMUNIWUCAG01SignedByDFNVerin.
+// UNIWUCAG01SignedByDFNVerin.
 const HexHashPEMUNIWUCAG01SignedByDFNVerin = "e06c3af4ea837d9e6346ecfff832bf7b6fcbfc5a5ef3cd37b04496f87b9bedf8"
 
 // PEMSBHome6WuerzburgSignedByUNIWUCAG01 is the certificate for
@@ -348,5 +348,5 @@ E/2cKoUO9g==
 -----END CERTIFICATE-----
 `
 
-// HexHashPEMSBHome6WuerzburgSignedByUNIWUCAG01 is the hex SHA256 fingerprint of PEMSBHome6WuerzburgSignedByUNIWUCAG01.
+// HexHashPEMSBHome6WuerzburgSignedByUNIWUCAG01 is the hex SHA256 fingerprint of SBHome6WuerzburgSignedByUNIWUCAG01.
 const HexHashPEMSBHome6WuerzburgSignedByUNIWUCAG01 = "956ba7bcb13113915f2501501bf7ea5104c9969ac301475385130f8f5e4df56b"

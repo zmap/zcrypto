@@ -118,7 +118,7 @@ Kom08eUK8skxAzfDDijZPh10VtJ66uBoiDPdT+uCBehcBIcmSTrKjFGX
 `
 
 // HexHashPEMGoogleSignedByGIAG2 is the hex SHA356 fingerprint of
-// PEMGoogleSignedByGIAG2.
+// GoogleSignedByGIAG2.
 const HexHashPEMGoogleSignedByGIAG2 = "e23648ebf04ee37b48d2ae504f673d4c867416519db807b5b9471d20a83097c7"
 
 // PEMGIAG2SignedByGeoTrust is the certificate for the Google Internet Authority
@@ -219,7 +219,7 @@ yuGnBXj8ytqU0CwIPX4WecigUCAkVDNx
 `
 
 // HexHashPEMGIAG2SignedByGeoTrust is the hex SHA256 fingerprint of
-// PEMGIAG2SignedByGeoTrust.
+// GIAG2SignedByGeoTrust.
 const HexHashPEMGIAG2SignedByGeoTrust = "a047a37fa2d2e118a4f5095fe074d6cfe0e352425a7632bf8659c03919a6c81d"
 
 // PEMGeoTrustSignedBySelf is the self-signed certificate for GeoTrust.
@@ -304,5 +304,5 @@ hw4EbNX/3aBd7YdStysVAq45pmp06drE57xNNB6pXE0zX5IJL4hmXXeXxx12E6nV
 `
 
 // HexHashPEMGeoTrustSignedBySelf is the hex SHA256 fingerprint of
-// PEMGeoTrustSignedBySelf.
+// GeoTrustSignedBySelf.
 const HexHashPEMGeoTrustSignedBySelf = "ff856a2d251dcd88d36656f450126798cfabaade40799c722de4d2b5db36a73a"
