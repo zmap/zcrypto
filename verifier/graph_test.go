@@ -287,6 +287,21 @@ var graphTests = []graphTest{
 		},
 	},
 	{
+		name: "wuerzburg",
+		certificates: []string{
+			data.PEMSBHome6WuerzburgSignedByUNIWUCAG01,
+			data.PEMUNIWUCAG01SignedByDFNVerin,
+		},
+		expectedNodes: []string{
+			data.HexSPKISubjectFingerprintUNIWUCAG01,
+			data.HexSPKISubjectFingerprintSBHome6Wuerzburg,
+		},
+		expectedEdges: []edgeIdx{
+			{0, 1, 0},
+			{-1, 0, 1},
+		},
+	},
+	{
 		name: "empty", // this shouldn't panic
 	},
 }
