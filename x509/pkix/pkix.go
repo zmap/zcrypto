@@ -54,7 +54,7 @@ type Name struct {
 	StreetAddress, PostalCode, DomainComponent []string
 	EmailAddress                               []string
 	SerialNumber, CommonName                   string
-	GivenName, Surname			   string
+	GivenName, Surname			   []string
 	// EV Components
 	JurisdictionLocality, JurisdictionProvince, JurisdictionCountry []string
 
@@ -88,7 +88,7 @@ func (n *Name) FillFromRDNSequence(rdns *RDNSequence) {
 			case 3:
 				n.CommonName = value
 			case 4:
-				n.Surname = value
+				n.Surname = append(n.Surname, value)
 			case 5:
 				n.SerialNumber = value
 			case 6:
@@ -106,7 +106,7 @@ func (n *Name) FillFromRDNSequence(rdns *RDNSequence) {
 			case 17:
 				n.PostalCode = append(n.PostalCode, value)
 			case 42:
-				n.GivenName = value
+				n.GivenName = append(n.GivenName, value)
 			}
 		} else if t.Equal(oidDomainComponent) {
 			n.DomainComponent = append(n.DomainComponent, value)
