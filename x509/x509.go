@@ -12,6 +12,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	_ "crypto/sha512"
+	"strings"
 
 	"bytes"
 	"crypto"
@@ -343,16 +344,24 @@ func getPublicKeyAlgorithmFromOID(oid asn1.ObjectIdentifier) PublicKeyAlgorithm 
 	return UnknownPublicKeyAlgorithm
 }
 
+func maxValidationLevel(a, b CertValidationLevel) CertValidationLevel {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func getMaxCertValidationLevel(oids []asn1.ObjectIdentifier) CertValidationLevel {
-	maxOID := DV
+	maxOID := UnknownValidationLevel
 	for _, oid := range oids {
 		if _, ok := ExtendedValidationOIDs[oid.String()]; ok {
 			return EV
 		} else if _, ok := OrganizationValidationOIDs[oid.String()]; ok {
-			maxOID = OV
+			maxOID = maxValidationLevel(maxOID, OV)
+		} else if _, ok := DomainValidationOIDs[oid.String()]; ok {
+			maxOID = maxValidationLevel(maxOID, DV)
 		}
 	}
-
 	return maxOID
 }
 
@@ -1447,7 +1456,22 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 						}
 					}
 				}
-				out.ValidationLevel = getMaxCertValidationLevel(out.PolicyIdentifiers)
+				if out.SelfSigned {
+					out.ValidationLevel = UnknownValidationLevel
+				} else {
+					// See http://unmitigatedrisk.com/?p=203
+					validationLevel := getMaxCertValidationLevel(out.PolicyIdentifiers)
+					if validationLevel == UnknownValidationLevel {
+						if (len(out.Subject.Organization) > 0 && out.Subject.Organization[0] == out.Subject.CommonName) || (len(out.Subject.OrganizationalUnit) > 0 && strings.Contains(out.Subject.OrganizationalUnit[0], "Domain Control Validated")) {
+							if len(out.Subject.Locality) == 0 && len(out.Subject.Province) == 0 && len(out.Subject.PostalCode) == 0 {
+								validationLevel = DV
+							}
+						} else if len(out.Subject.Organization) > 0 && out.Subject.Organization[0] == "Persona Not Validated" && strings.Contains(out.Issuer.CommonName, "StartCom") {
+							validationLevel = DV
+						}
+					}
+					out.ValidationLevel = validationLevel
+				}
 			}
 		} else if e.Id.Equal(oidExtensionAuthorityInfoAccess) {
 			// RFC 5280 4.2.2.1: Authority Information Access
