@@ -401,8 +401,8 @@ const (
 )
 
 func (c *CertValidationLevel) MarshalJSON() ([]byte, error) {
-	if *c == UnknownValidationLevel {
-		return []byte("unknown"), nil
+	if *c == UnknownValidationLevel || *c < 0 || *c > EV {
+		return json.Marshal("unknown")
 	}
 	return json.Marshal(c.String())
 }
