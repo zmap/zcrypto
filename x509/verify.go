@@ -5,7 +5,6 @@
 package x509
 
 import (
-	"bytes"
 	"net"
 	"strings"
 	"time"
@@ -33,7 +32,7 @@ type VerifyOptions struct {
 
 // isValid performs validity checks on the c. It will never return a
 // date-related error.
-func (c *Certificate) isValid(certType CertificateType, currentChain []*Certificate, opts *VerifyOptions) error {
+func (c *Certificate) isValid(certType CertificateType, currentChain CertificateChain) error {
 
 	// KeyUsage status flags are ignored. From Engineering Security, Peter
 	// Gutmann: A European government CA marked its signing certificates as
@@ -79,13 +78,7 @@ func (c *Certificate) isValid(certType CertificateType, currentChain []*Certific
 // will be of type SystemRootsError.
 //
 // WARNING: this doesn't do any revocation checking.
-func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never [][]*Certificate, err error) {
-
-	// TODO: Populate with the correct OID
-	if len(c.UnhandledCriticalExtensions) > 0 {
-		err = UnhandledCriticalExtension{nil, ""}
-		return
-	}
+func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never []CertificateChain, err error) {
 
 	if opts.Roots == nil {
 		opts.Roots = systemRootsPool()
@@ -95,12 +88,12 @@ func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never [][]*C
 		}
 	}
 
-	err = c.isValid(CertificateTypeLeaf, nil, &opts)
+	err = c.isValid(CertificateTypeLeaf, nil)
 	if err != nil {
 		return
 	}
 
-	candidateChains, err := c.buildChains(make(map[int][][]*Certificate), []*Certificate{c}, &opts)
+	candidateChains, err := c.buildChains(make(map[int][]CertificateChain), []*Certificate{c}, &opts)
 	if err != nil {
 		return
 	}
@@ -119,7 +112,7 @@ func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never [][]*C
 		}
 	}
 
-	var chains [][]*Certificate
+	var chains []CertificateChain
 	if hasKeyUsageAny {
 		chains = candidateChains
 	} else {
@@ -154,45 +147,17 @@ func (c *Certificate) Verify(opts VerifyOptions) (current, expired, never [][]*C
 	return
 }
 
-func appendToFreshChain(chain []*Certificate, cert *Certificate) []*Certificate {
-	n := make([]*Certificate, len(chain)+1)
-	copy(n, chain)
-	n[len(chain)] = cert
-	return n
-}
-
-// Returns true if a certificate with a matching (Name, SPKI) is already in the
-// given chain.
-func (c *Certificate) subjectAndSPKIInChain(chain []*Certificate) bool {
-	for _, cert := range chain {
-		if bytes.Equal(c.RawSubject, cert.RawSubject) && bytes.Equal(c.RawSubjectPublicKeyInfo, cert.RawSubjectPublicKeyInfo) {
-			return true
-		}
-	}
-	return false
-}
-
-// Returns true if an identical certificate is already in the given chain.
-func (c *Certificate) inChain(chain []*Certificate) bool {
-	for _, cert := range chain {
-		if cert.Equal(c) {
-			return true
-		}
-	}
-	return false
-}
-
 // buildChains returns all chains of length < maxIntermediateCount. Chains begin
 // the certificate being validated (chain[0] = c), and end at a root. It
 // enforces that all intermediates can sign certificates, and checks signatures.
 // It does not enforce expiration.
-func (c *Certificate) buildChains(cache map[int][][]*Certificate, currentChain []*Certificate, opts *VerifyOptions) (chains [][]*Certificate, err error) {
+func (c *Certificate) buildChains(cache map[int][]CertificateChain, currentChain CertificateChain, opts *VerifyOptions) (chains []CertificateChain, err error) {
 
 	// If the certificate being validated is a root, add the chain of length one
 	// containing just the root. Only do this on the first call to buildChains,
 	// when the len(currentChain) = 1.
 	if len(currentChain) == 1 && opts.Roots.Contains(c) {
-		chains = append(chains, appendToFreshChain(nil, c))
+		chains = append(chains, CertificateChain{c})
 	}
 
 	if len(chains) == 0 && c.SelfSigned {
@@ -205,12 +170,12 @@ func (c *Certificate) buildChains(cache map[int][][]*Certificate, currentChain [
 	// If any roots are parents of c, create new chain for each one of them.
 	for _, rootNum := range possibleRoots {
 		root := opts.Roots.certs[rootNum]
-		err = root.isValid(CertificateTypeRoot, currentChain, opts)
+		err = root.isValid(CertificateTypeRoot, currentChain)
 		if err != nil {
 			continue
 		}
-		if !root.inChain(currentChain) {
-			chains = append(chains, appendToFreshChain(currentChain, root))
+		if !currentChain.CertificateInChain(root) {
+			chains = append(chains, currentChain.AppendToFreshChain(root))
 		}
 	}
 
@@ -224,10 +189,10 @@ func (c *Certificate) buildChains(cache map[int][][]*Certificate, currentChain [
 		if opts.Roots.Contains(intermediate) {
 			continue
 		}
-		if intermediate.subjectAndSPKIInChain(currentChain) {
+		if currentChain.CertificateSubjectAndKeyInChain(intermediate) {
 			continue
 		}
-		err = intermediate.isValid(CertificateTypeIntermediate, currentChain, opts)
+		err = intermediate.isValid(CertificateTypeIntermediate, currentChain)
 		if err != nil {
 			continue
 		}
@@ -238,7 +203,7 @@ func (c *Certificate) buildChains(cache map[int][][]*Certificate, currentChain [
 		// that part separately.
 		childChains, ok := cache[intermediateNum]
 		if !ok {
-			childChains, err = intermediate.buildChains(cache, appendToFreshChain(currentChain, intermediate), opts)
+			childChains, err = intermediate.buildChains(cache, currentChain.AppendToFreshChain(intermediate), opts)
 			cache[intermediateNum] = childChains
 		}
 		chains = append(chains, childChains...)
@@ -307,7 +272,7 @@ func later(a, b time.Time) time.Time {
 // check expirations divides chains into a set of disjoint chains, containing
 // current chains valid now, expired chains that were valid at some point, and
 // the set of chains that were never valid.
-func FilterByDate(chains [][]*Certificate, now time.Time) (current, expired, never [][]*Certificate) {
+func FilterByDate(chains []CertificateChain, now time.Time) (current, expired, never []CertificateChain) {
 	for _, chain := range chains {
 		if len(chain) == 0 {
 			continue

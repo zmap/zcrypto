@@ -12,13 +12,31 @@
  * permissions and limitations under the License.
  */
 
-// Package verifier performs detailed certificate validation mimicking the
-// behavior of popular browsers and root stores.
-// 
-// It includes a Graph structure than can be used to model the PKI. It
-// implements a multigraph in which edges are certificates, and nodes are
-// (spki, subject) tuples. The head/source of the edge is the issuer, and the
-// tail/destination is the subject. Verifiers walk this graph to perform
-// certificate validation.
-
 package verifier
+
+import "testing"
+
+func TestWalk(t *testing.T) {
+	type empty struct{}
+
+	for _, test := range verifyTests {
+		g := NewGraph()
+		test.parseSelf()
+
+		// Add the presented chain
+		// TODO
+
+		for _, c := range test.parsedIntermediates() {
+			g.AddCert(c)
+		}
+		for _, c := range test.parsedRoots() {
+			g.AddRoot(c)
+		}
+
+		// See what chains we got
+		actualChains := g.WalkChains(test.parsedLeaf())
+		if err := test.compareChains(test.unionAllExpected(), actualChains); err != nil {
+			t.Errorf("%s: %s", test.Name, err)
+		}
+	}
+}

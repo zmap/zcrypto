@@ -41,7 +41,7 @@ type Conn struct {
 	peerCertificates     []*x509.Certificate
 	// verifiedChains contains the certificate chains that we built, as
 	// opposed to the ones presented by the server.
-	verifiedChains [][]*x509.Certificate
+	verifiedChains []x509.CertificateChain
 	// serverName contains the server name indicated by the client, if any.
 	serverName string
 

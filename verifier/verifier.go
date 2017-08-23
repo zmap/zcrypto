@@ -61,19 +61,19 @@ type VerificationResult struct {
 	// CurrentChains is a list of validated certificate chains that are valid at
 	// ValidationTime, starting at the certificate being verified, and ending at a
 	// certificate in the root store.
-	CurrentChains [][]*x509.Certificate
+	CurrentChains []x509.CertificateChain
 
 	// ExpiredChains is a list of certificate chains that were valid at some
 	// point, but not at ValidationTime.
-	ExpiredChains [][]*x509.Certificate
+	ExpiredChains []x509.CertificateChain
 
 	// NeverValidChains is a list of certificate chains that could never be valid
 	// due to date-related issues, but are otherwise valid.
-	NeverValidChains [][]*x509.Certificate
+	NeverValidChains []x509.CertificateChain
 
 	// ValidAtExpirationChains is a list of certificate chains that were valid at
 	// the time of expiration of the certificate being validated.
-	ValidAtExpirationChains [][]*x509.Certificate
+	ValidAtExpirationChains []x509.CertificateChain
 
 	// CertificateType is one of Leaf, Intermediate, or Root.
 	CertificateType x509.CertificateType
@@ -114,7 +114,7 @@ type VerifyProcedure interface {
 type VerificationOptions struct {
 	VerifyTime     time.Time
 	Name           string
-	PresentedChain *x509.CertPool
+	PresentedChain *Graph // XXX: Unused
 }
 
 func (opt *VerificationOptions) clean() {
@@ -125,25 +125,20 @@ func (opt *VerificationOptions) clean() {
 
 // A Verifier represents a context for verifying certificates.
 type Verifier struct {
-	Roots           *x509.CertPool
-	Intermediates   *x509.CertPool
+	PKI             *Graph
 	VerifyProcedure VerifyProcedure
 }
 
-func (v *Verifier) convertOptions(opt *VerificationOptions) (out x509.VerifyOptions) {
-	out.CurrentTime = opt.VerifyTime
-	out.Roots = v.Roots
-	if opt.PresentedChain.Size() > 0 && !v.Intermediates.Covers(opt.PresentedChain) {
-		out.Intermediates = v.Intermediates.Sum(opt.PresentedChain)
-	} else {
-		out.Intermediates = v.Intermediates
-	}
-	out.DNSName = opt.Name
-	out.KeyUsages = []x509.ExtKeyUsage{x509.ExtKeyUsageAny}
-	return
+// NewVerifier returns and initializes a new Verifier given a PKI graph and set
+// of verification procedures.
+func NewVerifier(pki *Graph, verifyProc VerifyProcedure) *Verifier {
+	out := new(Verifier)
+	out.PKI = pki
+	out.VerifyProcedure = verifyProc
+	return out
 }
 
-func parentsFromChains(chains [][]*x509.Certificate) (parents []*x509.Certificate) {
+func parentsFromChains(chains []x509.CertificateChain) (parents []*x509.Certificate) {
 	// parentSet is a map from FingerprintSHA256 to the index of the chain the
 	// parent was in. We use this to deduplicate parents.
 	parentSet := make(map[string]int)
@@ -170,24 +165,21 @@ func parentsFromChains(chains [][]*x509.Certificate) (parents []*x509.Certificat
 // certificate.
 func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *VerificationResult) {
 	opts.clean()
-	xopts := v.convertOptions(&opts)
 
 	res = new(VerificationResult)
 	res.Name = opts.Name
 	res.Expired = !c.TimeInValidityPeriod(opts.VerifyTime)
 
-	// Don't pass DNSName to x509.Verify(), we'll check it ourselves by calling
-	// VerifyHostname() if necessary.
-	xopts.DNSName = ""
+	// Build chains back to the roots.
+	graphChains := v.PKI.WalkChains(c)
+	res.CurrentChains, res.ExpiredChains, res.NeverValidChains = x509.FilterByDate(graphChains, opts.VerifyTime)
 
-	// Build chains back to the roots. If we have a DNSName, verify the leaf
-	// certificate matches.
-	res.CurrentChains, res.ExpiredChains, res.NeverValidChains, res.ValidationError = c.Verify(xopts)
+	// If we have a DNSName, verify the leaf certificate matches.
 	if len(opts.Name) > 0 {
 		res.NameError = c.VerifyHostname(opts.Name)
 	}
 
-	var allChains [][]*x509.Certificate
+	var allChains []x509.CertificateChain
 	allChains = append(allChains, res.CurrentChains...)
 	allChains = append(allChains, res.ExpiredChains...)
 	allChains = append(allChains, res.NeverValidChains...)
@@ -203,7 +195,7 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 	}
 
 	// Determine certificate type.
-	if xopts.Roots.Contains(c) {
+	if v.PKI.IsRoot(c) {
 		// A certificate is only a root if it's in the root store.
 		res.CertificateType = x509.CertificateTypeRoot
 	} else if c.IsCA && len(res.Parents) > 0 {

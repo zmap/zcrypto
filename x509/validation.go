@@ -19,7 +19,7 @@ type Validation struct {
 // also check if the domain matches.
 //
 // Deprecated: Use verifier.Verify() instead.
-func (c *Certificate) ValidateWithStupidDetail(opts VerifyOptions) (chains [][]*Certificate, validation *Validation, err error) {
+func (c *Certificate) ValidateWithStupidDetail(opts VerifyOptions) (chains []CertificateChain, validation *Validation, err error) {
 
 	// Manually set the time, so that all verifies we do get the same time
 	if opts.CurrentTime.IsZero() {

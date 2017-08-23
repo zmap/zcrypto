@@ -14,58 +14,33 @@
 
 package verifier
 
-import "github.com/zmap/zcrypto/x509"
-
-// Built-in verifiers representing common root stores.
-var (
-	// NSS is a Verifier mimicking the validation used in Firefox.
-	NSS Verifier
-
-	// Microsoft is a Verifier mimicking the validation in Windows 10 SChannel.
-	Microsoft Verifier
-
-	// Apple is a Verifier mimicking the validation in OS X Sierra SecureTransport.
-	Apple Verifier
-
-	// Java is a Verifier mimicking the validation in Java 8 javax.net.ssl.
-	Java Verifier
-
-	//. GoogleCTPrimary is a Verifier mimicking the validation for the primary
-	//Google CT servers (e.g. Pilot).
-	GoogleCTPrimary Verifier
-)
-
-// InitializeNSS sets up the built-in NSS Verifier.
-func InitializeNSS(roots, intermediates *x509.CertPool) {
-	NSS.Roots = roots
-	NSS.Intermediates = intermediates
-	NSS.VerifyProcedure = &VerifyProcedureNSS{}
+// NewNSS returns a new verifier mimicking NSS.
+func NewNSS(pki *Graph) (nss *Verifier) {
+	nss = NewVerifier(pki, &VerifyProcedureNSS{})
+	return
 }
 
-// InitializeMicrosoft sets up the built-in Microsoft Verifier.
-func InitializeMicrosoft(roots, intermediates *x509.CertPool) {
-	Microsoft.Roots = roots
-	Microsoft.Intermediates = intermediates
-	Microsoft.VerifyProcedure = &VerifyProcedureMicrosoft{}
+// NewMicrosoft returns a new verifier mimicking Microsoft SChannel.
+func NewMicrosoft(pki *Graph) (microsoft *Verifier) {
+	microsoft = NewVerifier(pki, &VerifyProcedureMicrosoft{})
+	return
 }
 
-// InitializeApple sets up the built-in Apple Verifier.
-func InitializeApple(roots, intermediates *x509.CertPool) {
-	Apple.Roots = roots
-	Apple.Intermediates = intermediates
-	Apple.VerifyProcedure = &VerifyProcedureApple{}
+// NewApple returns a new verifier mimicking Apple SecureTransport.
+func NewApple(pki *Graph) (apple *Verifier) {
+	apple = NewVerifier(pki, &VerifyProcedureApple{})
+	return
 }
 
-// InitializeJava sets up the built-in Java Verifier.
-func InitializeJava(roots, intermediates *x509.CertPool) {
-	Java.Roots = roots
-	Java.Intermediates = intermediates
-	Java.VerifyProcedure = &VerifyProcedureJava{}
+// NewJava returns a new verifier mimicking javax.net.ssl.
+func NewJava(pki *Graph) (java *Verifier) {
+	java = NewVerifier(pki, &VerifyProcedureJava{})
+	return
 }
 
-// InitializeGoogleCTPrimary sets up the built-in Google CT Primary verifier.
-func InitializeGoogleCTPrimary(roots, intermediates *x509.CertPool) {
-	GoogleCTPrimary.Roots = roots
-	GoogleCTPrimary.Intermediates = intermediates
-	GoogleCTPrimary.VerifyProcedure = &VerifyProcedureGoogleCTPrimary{}
+// NewGoogleCTPrimary returns a new verifier mimicking the behavior of the
+// primary Google CT logs (e.g. Pilot).
+func NewGoogleCTPrimary(pki *Graph) (gct *Verifier) {
+	gct = NewVerifier(pki, &VerifyProcedureGoogleCTPrimary{})
+	return
 }
