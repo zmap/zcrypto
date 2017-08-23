@@ -308,15 +308,16 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 	null := asn1.BitString{Bytes: byt, BitLength: 0}
 
 	tests := []struct {
-		name      string
-		pub, priv interface{}
-		checkSig  bool
-		sigAlgo   SignatureAlgorithm
+		name       string
+		pub, priv  interface{}
+		checkSig   bool
+		sigAlgo    SignatureAlgorithm
+		selfSigned bool
 	}{
-		{"RSA/RSA", &rsaPriv.PublicKey, rsaPriv, true, SHA1WithRSA},
-		{"RSA/ECDSA", &rsaPriv.PublicKey, ecdsaPriv, false, ECDSAWithSHA384},
-		{"ECDSA/RSA", &AugmentedECDSA{Pub: &ecdsaPriv.PublicKey, Raw: null}, rsaPriv, false, SHA256WithRSA},
-		{"ECDSA/ECDSA", &AugmentedECDSA{Pub: &ecdsaPriv.PublicKey, Raw: null}, ecdsaPriv, true, ECDSAWithSHA1},
+		{"RSA/RSA", &rsaPriv.PublicKey, rsaPriv, true, SHA1WithRSA, true},
+		{"RSA/ECDSA", &rsaPriv.PublicKey, ecdsaPriv, false, ECDSAWithSHA384, false},
+		{"ECDSA/RSA", &AugmentedECDSA{Pub: &ecdsaPriv.PublicKey, Raw: null}, rsaPriv, false, SHA256WithRSA, false},
+		{"ECDSA/ECDSA", &AugmentedECDSA{Pub: &ecdsaPriv.PublicKey, Raw: null}, ecdsaPriv, true, ECDSAWithSHA1, true},
 	}
 
 	testExtKeyUsage := []ExtKeyUsage{ExtKeyUsageClientAuth, ExtKeyUsageServerAuth}
@@ -403,8 +404,14 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 			t.Errorf("%s: SignatureAlgorithm wasn't copied from template. Got %v, want %v", test.name, cert.SignatureAlgorithm, test.sigAlgo)
 		}
 
-		if cert.ValidationLevel != EV {
-			t.Errorf("%s: ValidationLevel was not set properly. Got %s, want %s", test.name, cert.ValidationLevel.String(), EV.String())
+		if cert.SelfSigned != test.selfSigned {
+			t.Errorf("%s: SelfSigned was not set properly. Got %v, want %v", test.name, cert.SelfSigned, test.selfSigned)
+		}
+
+		if !cert.SelfSigned {
+			if cert.ValidationLevel != EV {
+				t.Errorf("%s: ValidationLevel was not set properly. Got %s, want %s", test.name, cert.ValidationLevel.String(), EV.String())
+			}
 		}
 
 		if !reflect.DeepEqual(cert.ExtKeyUsage, testExtKeyUsage) {

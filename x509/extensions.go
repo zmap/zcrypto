@@ -394,17 +394,27 @@ func (e *ExtendedKeyUsageExtension) UnmarshalJSON(b []byte) error {
 type CertValidationLevel int
 
 const (
-	DV CertValidationLevel = iota
-	OV
-	EV
+	UnknownValidationLevel CertValidationLevel = 0
+	DV                     CertValidationLevel = 1
+	OV                     CertValidationLevel = 2
+	EV                     CertValidationLevel = 3
 )
 
 func (c *CertValidationLevel) MarshalJSON() ([]byte, error) {
+	if *c == UnknownValidationLevel || *c < 0 || *c > EV {
+		return json.Marshal("unknown")
+	}
 	return json.Marshal(c.String())
 }
 
-// UNION of Chromium (https://chromium.googlesource.com/chromium/src/net/+/master/cert/ev_root_ca_metadata.cc)
-// and Firefox (http://hg.mozilla.org/mozilla-central/file/tip/security/certverifier/ExtendedValidation.cpp) EV OID lists
+// TODO: All of validation-level maps should be auto-generated from
+// https://github.com/zmap/constants.
+
+// ExtendedValidationOIDs contains the UNION of Chromium
+// (https://chromium.googlesource.com/chromium/src/net/+/master/cert/ev_root_ca_metadata.cc)
+// and Firefox
+// (http://hg.mozilla.org/mozilla-central/file/tip/security/certverifier/ExtendedValidation.cpp)
+// EV OID lists
 var ExtendedValidationOIDs = map[string]interface{}{
 	// CA/Browser Forum EV OID standard
 	// https://cabforum.org/object-registry/
@@ -557,7 +567,8 @@ var ExtendedValidationOIDs = map[string]interface{}{
 	"2.16.792.3.0.3.1.1.5": nil,
 }
 
-// CA specific OV OIDs from https://cabforum.org/object-registry/
+// OrganizationValidationOIDs contains CA specific OV OIDs from
+// https://cabforum.org/object-registry/
 var OrganizationValidationOIDs = map[string]interface{}{
 	// CA/Browser Forum OV OID standard
 	// https://cabforum.org/object-registry/
@@ -578,6 +589,88 @@ var OrganizationValidationOIDs = map[string]interface{}{
 	"2.16.840.1.114414.1.7.23.2": nil,
 	// TurkTrust
 	"2.16.792.3.0.3.1.1.2": nil,
+}
+
+// DomainValidationOIDs contain OIDs that identify DV certs.
+var DomainValidationOIDs = map[string]interface{}{
+	// Globalsign
+	"1.3.6.1.4.1.4146.1.10.10": nil,
+	// Let's Encrypt
+	"1.3.6.1.4.1.44947.1.1.1": nil,
+	// Comodo (eNom)
+	"1.3.6.1.4.1.6449.1.2.2.10": nil,
+	// Comodo (WoTrust)
+	"1.3.6.1.4.1.6449.1.2.2.15": nil,
+	// Comodo (RBC SOFT)
+	"1.3.6.1.4.1.6449.1.2.2.16": nil,
+	// Comodo (RegisterFly)
+	"1.3.6.1.4.1.6449.1.2.2.17": nil,
+	// Comodo (Central Security Patrols)
+	"1.3.6.1.4.1.6449.1.2.2.18": nil,
+	// Comodo (eBiz Networks)
+	"1.3.6.1.4.1.6449.1.2.2.19": nil,
+	// Comodo (OptimumSSL)
+	"1.3.6.1.4.1.6449.1.2.2.21": nil,
+	// Comodo (WoSign)
+	"1.3.6.1.4.1.6449.1.2.2.22": nil,
+	// Comodo (Register.com)
+	"1.3.6.1.4.1.6449.1.2.2.24": nil,
+	// Comodo (The Code Project)
+	"1.3.6.1.4.1.6449.1.2.2.25": nil,
+	// Comodo (Gandi)
+	"1.3.6.1.4.1.6449.1.2.2.26": nil,
+	// Comodo (GlobeSSL)
+	"1.3.6.1.4.1.6449.1.2.2.27": nil,
+	// Comodo (DreamHost)
+	"1.3.6.1.4.1.6449.1.2.2.28": nil,
+	// Comodo (TERENA)
+	"1.3.6.1.4.1.6449.1.2.2.29": nil,
+	// Comodo (GlobalSSL)
+	"1.3.6.1.4.1.6449.1.2.2.31": nil,
+	// Comodo (IceWarp)
+	"1.3.6.1.4.1.6449.1.2.2.35": nil,
+	// Comodo (Dotname Korea)
+	"1.3.6.1.4.1.6449.1.2.2.37": nil,
+	// Comodo (TrustSign)
+	"1.3.6.1.4.1.6449.1.2.2.38": nil,
+	// Comodo (Formidable)
+	"1.3.6.1.4.1.6449.1.2.2.39": nil,
+	// Comodo (SSL Blindado)
+	"1.3.6.1.4.1.6449.1.2.2.40": nil,
+	// Comodo (Dreamscape Networks)
+	"1.3.6.1.4.1.6449.1.2.2.41": nil,
+	// Comodo (K Software)
+	"1.3.6.1.4.1.6449.1.2.2.42": nil,
+	// Comodo (FBS)
+	"1.3.6.1.4.1.6449.1.2.2.44": nil,
+	// Comodo (ReliaSite)
+	"1.3.6.1.4.1.6449.1.2.2.45": nil,
+	// Comodo (CertAssure)
+	"1.3.6.1.4.1.6449.1.2.2.47": nil,
+	// Comodo (TrustAsia)
+	"1.3.6.1.4.1.6449.1.2.2.49": nil,
+	// Comodo (SecureCore)
+	"1.3.6.1.4.1.6449.1.2.2.50": nil,
+	// Comodo (Western Digital)
+	"1.3.6.1.4.1.6449.1.2.2.51": nil,
+	// Comodo (cPanel)
+	"1.3.6.1.4.1.6449.1.2.2.52": nil,
+	// Comodo (BlackCert)
+	"1.3.6.1.4.1.6449.1.2.2.53": nil,
+	// Comodo (KeyNet Systems)
+	"1.3.6.1.4.1.6449.1.2.2.54": nil,
+	// Comodo
+	"1.3.6.1.4.1.6449.1.2.2.7": nil,
+	// Comodo (CSC)
+	"1.3.6.1.4.1.6449.1.2.2.8": nil,
+	// Digicert
+	"2.16.840.1.114412.1.2": nil,
+	// GoDaddy
+	"2.16.840.1.114413.1.7.23.1": nil,
+	// Starfield
+	"2.16.840.1.114414.1.7.23.1": nil,
+	// CA/B Forum
+	"2.23.140.1.2.1": nil,
 }
 
 // TODO pull out other types
