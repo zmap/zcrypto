@@ -83,6 +83,10 @@ type VerificationResult struct {
 
 	// Expired is false if NotBefore < VerifyTime < NotAfter
 	Expired bool
+
+	// ParentSPKISubjectFingerprint is the SHA256 of the (SPKI, Subject) for
+	// parents of this certificate.
+	ParentSPKISubjectFingerprint x509.CertificateFingerprint
 }
 
 // MatchesDomain returns true if NameError == nil and Name != "".
@@ -209,6 +213,15 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 	} else {
 		// Default to Unknown
 		res.CertificateType = x509.CertificateTypeUnknown
+	}
+
+	// Set the ParentSPKISubjectFingerprint
+	if len(res.Parents) > 0 {
+		// All parents should have the same (SPKI, Subject) fingerprint. If not,
+		// there's a bug.
+		fp := res.Parents[0].SPKISubjectFingerprint
+		res.ParentSPKISubjectFingerprint = make([]byte, len(fp))
+		copy(res.ParentSPKISubjectFingerprint, fp)
 	}
 
 	return

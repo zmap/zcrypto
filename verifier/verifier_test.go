@@ -15,6 +15,7 @@
 package verifier
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
@@ -216,6 +217,23 @@ func (vt *verifyTest) compareParents(expected []int, actual []*x509.Certificate)
 	return nil
 }
 
+func (vt *verifyTest) compareParentSPKISubjectToParents(verifyResult *VerificationResult) error {
+	if len(verifyResult.ParentSPKISubjectFingerprint) == 0 && len(verifyResult.Parents) > 0 {
+		return fmt.Errorf("got empty ParentSPKISubjectFingerprint, but have %d parents", len(verifyResult.Parents))
+	}
+	if len(verifyResult.Parents) == 0 && len(verifyResult.ParentSPKISubjectFingerprint) != 0 {
+		return fmt.Errorf("got ParentSPKISubjectFingeprint %s, but no parents", verifyResult.ParentSPKISubjectFingerprint.Hex())
+	}
+	expected := verifyResult.ParentSPKISubjectFingerprint
+	for i, parent := range verifyResult.Parents {
+		actualParentFp := parent.SPKISubjectFingerprint
+		if !bytes.Equal(expected, actualParentFp) {
+			return fmt.Errorf("got ParentSPKISubjectFingerprint %s, but parent index %d and hash %s had SPKISubjectFingerprint %s", expected.Hex(), i, parent.FingerprintSHA256.Hex(), actualParentFp.Hex())
+		}
+	}
+	return nil
+}
+
 func (vt *verifyTest) makeVerifier() *Verifier {
 	pki := NewGraph()
 
@@ -255,6 +273,9 @@ func (vt *verifyTest) checkVerifyResult(res *VerificationResult) error {
 	}
 	if res.NameError != nil && !vt.ExpectHostnameError {
 		return fmt.Errorf("unexpected name error: %s", res.NameError)
+	}
+	if err := vt.compareParentSPKISubjectToParents(res); err != nil {
+		return err
 	}
 	return nil
 }
