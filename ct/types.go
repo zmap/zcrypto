@@ -300,6 +300,15 @@ type SignedCertificateTimestamp struct {
 	Signature  DigitallySigned `json:"signature"`            // The Log's signature for this SCT
 }
 
+type auxSignedCertificateTimestamp SignedCertificateTimestamp
+
+// MarshalJSON implements the JSON.Marshaller interface.
+func (sct *SignedCertificateTimestamp) MarshalJSON() ([]byte, error) {
+	aux := auxSignedCertificateTimestamp(*sct)
+	aux.Timestamp = sct.Timestamp / 1000 // convert ms to sec
+	return json.Marshal(&aux)
+}
+
 func (s SignedCertificateTimestamp) String() string {
 	return fmt.Sprintf("{Version:%d LogId:%s Timestamp:%d Extensions:'%s' Signature:%v}", s.SCTVersion,
 		base64.StdEncoding.EncodeToString(s.LogID[:]),
