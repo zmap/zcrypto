@@ -149,7 +149,7 @@ type auxName struct {
 	JurisdictionLocality []string `json:"jurisdiction_locality,omitempty"`
 	JurisdictionProvince []string `json:"jurisdiction_province,omitempty"`
 
-	UnknownAttributes []AttributeTypeAndValue `json:"-,omitempty"`
+	UnknownAttributes []AttributeTypeAndValue `json:"-"`
 }
 
 // MarshalJSON implements the json.Marshaler interface.
