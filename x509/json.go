@@ -20,6 +20,20 @@ import (
 	"github.com/zmap/zgrab/ztools/keys"
 )
 
+var kMinTime, kMaxTime time.Time
+
+func init() {
+	var err error
+	kMinTime, err = time.Parse(time.RFC3339, "0001-01-01T00:00:00Z")
+	if err != nil {
+		panic(err)
+	}
+	kMaxTime, err = time.Parse(time.RFC3339, "9999-12-31T23:59:59Z")
+	if err != nil {
+		panic(err)
+	}
+}
+
 type auxKeyUsage struct {
 	DigitalSignature  bool   `json:"digital_signature,omitempty"`
 	ContentCommitment bool   `json:"content_commitment,omitempty"`
@@ -139,6 +153,16 @@ func (p *PublicKeyAlgorithm) UnmarshalJSON(b []byte) error {
 	panic("unimplemented")
 }
 
+func clampTime(t time.Time) time.Time {
+	if t.Before(kMinTime) {
+		return kMinTime
+	}
+	if t.After(kMaxTime) {
+		return kMaxTime
+	}
+	return t
+}
+
 type auxValidity struct {
 	Start          string `json:"start"`
 	End            string `json:"end"`
@@ -147,8 +171,8 @@ type auxValidity struct {
 
 func (v *validity) MarshalJSON() ([]byte, error) {
 	aux := auxValidity{
-		Start:          v.NotBefore.UTC().Format(time.RFC3339),
-		End:            v.NotAfter.UTC().Format(time.RFC3339),
+		Start:          clampTime(v.NotBefore.UTC()).Format(time.RFC3339),
+		End:            clampTime(v.NotAfter.UTC()).Format(time.RFC3339),
 		ValidityPeriod: int(v.NotAfter.Sub(v.NotBefore).Seconds()),
 	}
 	return json.Marshal(&aux)
