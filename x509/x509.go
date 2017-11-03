@@ -31,6 +31,8 @@ import (
 
 	"github.com/zmap/zcrypto/ct"
 	"github.com/zmap/zcrypto/x509/pkix"
+
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 )
 
 // pkixPublicKey reflects a PKIX public key structure. See SubjectPublicKeyInfo
@@ -38,6 +40,11 @@ import (
 type pkixPublicKey struct {
 	Algo      pkix.AlgorithmIdentifier
 	BitString asn1.BitString
+}
+
+type ParsedDomainName struct {
+	Domain     *publicsuffix.DomainName
+	ParseError error
 }
 
 // ParsePKIXPublicKey parses a DER encoded public key. These values are
@@ -628,6 +635,11 @@ type Certificate struct {
 
 	// CT
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp
+
+	// Used to speed up the zlint checks. Populated by zlint.
+	// Each map key is a potential domain name ( CommonName or DNS SAN)
+	// Each corresponding key is a structure holding a parsed domain name and a parsing error
+	ParsedDomainsMap map[string]ParsedDomainName
 }
 
 // SubjectAndKey represents a (subjecty, subject public key info) tuple.
@@ -1551,6 +1563,7 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 		//	return out, UnhandledCriticalExtension{e.Id}
 		//}
 	}
+
 	return out, nil
 }
 
