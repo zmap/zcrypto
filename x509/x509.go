@@ -2147,33 +2147,28 @@ func (c *Certificate) CreateCRL(rand io.Reader, priv interface{}, revokedCerts [
 // domain name components from it. Parsed domain info and parsing error are subsequently stored in the ParsedDomainsMap.
 // The ParsedDomainsMap is used as a cache by zlint to speed up the slowest lints.
 func (c *Certificate) PopulateDomainsMap() {
-	var parseError error
-	var parsedDomain *publicsuffix.DomainName
 	c.ParsedDomainsMap = make(map[string]ParsedDomainName)
 
 	if c.Subject.CommonName != "" {
-		parsedDomain, parseError = publicsuffix.ParseFromListWithOptions(publicsuffix.DefaultList,
-			c.Subject.CommonName,
-			&publicsuffix.FindOptions{IgnorePrivate: true, DefaultRule: publicsuffix.DefaultRule})
-
-		c.ParsedDomainsMap[c.Subject.CommonName] = ParsedDomainName{
-			Domain:     parsedDomain,
-			ParseError: parseError,
-		}
+		c.parseDomainAndAddToMap(c.Subject.CommonName)
 	}
 
 	for _, DNSName := range c.DNSNames {
 		if DNSName == "" {
 			continue
 		}
-		parsedDomain, parseError = publicsuffix.ParseFromListWithOptions(publicsuffix.DefaultList,
-			DNSName,
-			&publicsuffix.FindOptions{IgnorePrivate: true, DefaultRule: publicsuffix.DefaultRule})
+		c.parseDomainAndAddToMap(DNSName)
+	}
+}
 
-		c.ParsedDomainsMap[DNSName] = ParsedDomainName{
-			Domain:     parsedDomain,
-			ParseError: parseError,
-		}
+func (c *Certificate) parseDomainAndAddToMap(domain string) {
+	var parsedDomain, parseError = publicsuffix.ParseFromListWithOptions(publicsuffix.DefaultList,
+		domain,
+		&publicsuffix.FindOptions{IgnorePrivate: true, DefaultRule: publicsuffix.DefaultRule})
+
+	c.ParsedDomainsMap[domain] = ParsedDomainName{
+		Domain:     parsedDomain,
+		ParseError: parseError,
 	}
 }
 
