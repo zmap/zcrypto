@@ -29,10 +29,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"github.com/zmap/zcrypto/ct"
 	"github.com/zmap/zcrypto/x509/pkix"
-
-	"github.com/weppos/publicsuffix-go/publicsuffix"
 )
 
 // pkixPublicKey reflects a PKIX public key structure. See SubjectPublicKeyInfo
@@ -42,8 +41,8 @@ type pkixPublicKey struct {
 	BitString asn1.BitString
 }
 
-// ParsedDomainName is a structure holding a parsed domain name (CommonName or DNS SAN) and a parsing error.
-type ParsedDomainName struct {
+// parsedDomainName is a structure holding a parsed domain name (CommonName or DNS SAN) and a parsing error.
+type parsedDomainName struct {
 	Domain     *publicsuffix.DomainName
 	ParseError error
 }
@@ -637,10 +636,10 @@ type Certificate struct {
 	// CT
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp
 
-	// Used to speed up the zlint checks. Populated by zlint.
+	// Used to speed up the zlint checks. Populated by the ParseDomainName method.
 	// Each map key is a potential domain name ( CommonName or DNS SAN)
 	// Each corresponding key is a structure holding a parsed domain name and a parsing error
-	ParsedDomainsMap map[string]ParsedDomainName
+	parsedDomainsMap map[string]parsedDomainName
 }
 
 // SubjectAndKey represents a (subjecty, subject public key info) tuple.
@@ -2143,33 +2142,31 @@ func (c *Certificate) CreateCRL(rand io.Reader, priv interface{}, revokedCerts [
 	})
 }
 
-// PopulateDomainsMap iterates over SAN DNS names and CommonName and parses the strings to extract
-// domain name components from it. Parsed domain info and parsing error are subsequently stored in the ParsedDomainsMap.
-// The ParsedDomainsMap is used as a cache by zlint to speed up the slowest lints.
-func (c *Certificate) PopulateDomainsMap() {
-	c.ParsedDomainsMap = make(map[string]ParsedDomainName)
-
-	if c.Subject.CommonName != "" {
-		c.parseDomainAndAddToMap(c.Subject.CommonName)
+// ParseDomainName returns parsed domain name and a parsing error. Subsequent calls to ParseDomainName with the same argument
+// returns cached values. This allows to significantly speed up subsequent calls.
+func (c *Certificate) ParseDomainName(domain string) (*publicsuffix.DomainName, error) {
+	if c.parsedDomainsMap == nil {
+		c.parsedDomainsMap = make(map[string]parsedDomainName)
 	}
 
-	for _, DNSName := range c.DNSNames {
-		if DNSName == "" {
-			continue
-		}
-		c.parseDomainAndAddToMap(DNSName)
+	if domain == "" {
+		return nil, errors.New("empty domain name")
 	}
-}
 
-func (c *Certificate) parseDomainAndAddToMap(domain string) {
+	if mapEntry, ok := c.parsedDomainsMap[domain]; ok {
+		return mapEntry.Domain, mapEntry.ParseError
+	}
+
 	var parsedDomain, parseError = publicsuffix.ParseFromListWithOptions(publicsuffix.DefaultList,
 		domain,
 		&publicsuffix.FindOptions{IgnorePrivate: true, DefaultRule: publicsuffix.DefaultRule})
 
-	c.ParsedDomainsMap[domain] = ParsedDomainName{
+	c.parsedDomainsMap[domain] = parsedDomainName{
 		Domain:     parsedDomain,
 		ParseError: parseError,
 	}
+
+	return parsedDomain, parseError
 }
 
 // CertificateRequest represents a PKCS #10, certificate signature request.
