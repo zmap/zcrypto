@@ -2143,6 +2143,40 @@ func (c *Certificate) CreateCRL(rand io.Reader, priv interface{}, revokedCerts [
 	})
 }
 
+// PopulateDomainsMap iterates over SAN DNS names and CommonName and parses the strings to extract
+// domain name components from it. Parsed domain info and parsing error are subsequently stored in the ParsedDomainsMap.
+// The ParsedDomainsMap is used as a cache by zlint to speed up the slowest lints.
+func (c *Certificate) PopulateDomainsMap() {
+	var parseError error
+	var parsedDomain *publicsuffix.DomainName
+	c.ParsedDomainsMap = make(map[string]ParsedDomainName)
+
+	if c.Subject.CommonName != "" {
+		parsedDomain, parseError = publicsuffix.ParseFromListWithOptions(publicsuffix.DefaultList,
+			c.Subject.CommonName,
+			&publicsuffix.FindOptions{IgnorePrivate: true, DefaultRule: publicsuffix.DefaultRule})
+
+		c.ParsedDomainsMap[c.Subject.CommonName] = ParsedDomainName{
+			Domain:     parsedDomain,
+			ParseError: parseError,
+		}
+	}
+
+	for _, DNSName := range c.DNSNames {
+		if DNSName == "" {
+			continue
+		}
+		parsedDomain, parseError = publicsuffix.ParseFromListWithOptions(publicsuffix.DefaultList,
+			DNSName,
+			&publicsuffix.FindOptions{IgnorePrivate: true, DefaultRule: publicsuffix.DefaultRule})
+
+		c.ParsedDomainsMap[DNSName] = ParsedDomainName{
+			Domain:     parsedDomain,
+			ParseError: parseError,
+		}
+	}
+}
+
 // CertificateRequest represents a PKCS #10, certificate signature request.
 type CertificateRequest struct {
 	Raw                      []byte // Complete ASN.1 DER content (CSR, signature algorithm and signature).
