@@ -42,6 +42,7 @@ type pkixPublicKey struct {
 	BitString asn1.BitString
 }
 
+// ParsedDomainName is a structure holding a parsed domain name (CommonName or DNS SAN) and a parsing error.
 type ParsedDomainName struct {
 	Domain     *publicsuffix.DomainName
 	ParseError error
