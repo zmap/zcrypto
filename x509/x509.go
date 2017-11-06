@@ -41,10 +41,11 @@ type pkixPublicKey struct {
 	BitString asn1.BitString
 }
 
-// parsedDomainName is a structure holding a parsed domain name (CommonName or DNS SAN) and a parsing error.
-type parsedDomainName struct {
-	Domain     *publicsuffix.DomainName
-	ParseError error
+// ParsedDomainName is a structure holding a parsed domain name (CommonName or DNS SAN) and a parsing error.
+type ParsedDomainName struct {
+	DomainString string
+	ParsedDomain *publicsuffix.DomainName
+	ParseError   error
 }
 
 // ParsePKIXPublicKey parses a DER encoded public key. These values are
@@ -636,10 +637,10 @@ type Certificate struct {
 	// CT
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp
 
-	// Used to speed up the zlint checks. Populated by the ParseDomainName method.
-	// Each map key is a potential domain name ( CommonName or DNS SAN)
-	// Each corresponding key is a structure holding a parsed domain name and a parsing error
-	parsedDomainsMap map[string]parsedDomainName
+	// Used to speed up the zlint checks. Populated by the GetParsedDNSNames method.
+	parsedDNSNames []ParsedDomainName
+	// Used to speed up the zlint checks. Populated by the GetParsedCommonName method
+	parsedCommonName *ParsedDomainName
 }
 
 // SubjectAndKey represents a (subjecty, subject public key info) tuple.
@@ -2142,31 +2143,49 @@ func (c *Certificate) CreateCRL(rand io.Reader, priv interface{}, revokedCerts [
 	})
 }
 
-// ParseDomainName returns parsed domain name and a parsing error. Subsequent calls to ParseDomainName with the same argument
-// returns cached values. This allows to significantly speed up subsequent calls.
-func (c *Certificate) ParseDomainName(domain string) (*publicsuffix.DomainName, error) {
-	if c.parsedDomainsMap == nil {
-		c.parsedDomainsMap = make(map[string]parsedDomainName)
+// GetParsedDNSNames returns a list of parsed SAN DNS names. It is used to cache the parsing result and
+// speed up zlint linters. If invalidateCache is true, then the cache is repopulated with current list of string from
+// Certificate.DNSNames. This parameter should always be false, unless the Certificate.DNSNames have been modified
+// after calling GetParsedDNSNames the previous time.
+func (c *Certificate) GetParsedDNSNames(invalidateCache bool) []ParsedDomainName {
+	if c.parsedDNSNames != nil && !invalidateCache {
+		return c.parsedDNSNames
+	}
+	c.parsedDNSNames = make([]ParsedDomainName, len(c.DNSNames))
+
+	for i := range c.DNSNames {
+		var parsedDomain, parseError = publicsuffix.ParseFromListWithOptions(publicsuffix.DefaultList,
+			c.DNSNames[i],
+			&publicsuffix.FindOptions{IgnorePrivate: true, DefaultRule: publicsuffix.DefaultRule})
+
+		c.parsedDNSNames[i].DomainString = c.DNSNames[i]
+		c.parsedDNSNames[i].ParsedDomain = parsedDomain
+		c.parsedDNSNames[i].ParseError = parseError
 	}
 
-	if domain == "" {
-		return nil, errors.New("empty domain name")
-	}
+	return c.parsedDNSNames
+}
 
-	if mapEntry, ok := c.parsedDomainsMap[domain]; ok {
-		return mapEntry.Domain, mapEntry.ParseError
+// GetParsedCommonName returns parsed subject CommonName. It is used to cache the parsing result and
+// speed up zlint linters. If invalidateCache is true, then the cache is repopulated with current subject CommonName.
+// This parameter should always be false, unless the Certificate.Subject.CommonName have been modified
+// after calling GetParsedSubjectCommonName the previous time.
+func (c *Certificate) GetParsedSubjectCommonName(invalidateCache bool) ParsedDomainName {
+	if c.parsedCommonName != nil && !invalidateCache {
+		return *c.parsedCommonName
 	}
 
 	var parsedDomain, parseError = publicsuffix.ParseFromListWithOptions(publicsuffix.DefaultList,
-		domain,
+		c.Subject.CommonName,
 		&publicsuffix.FindOptions{IgnorePrivate: true, DefaultRule: publicsuffix.DefaultRule})
 
-	c.parsedDomainsMap[domain] = parsedDomainName{
-		Domain:     parsedDomain,
-		ParseError: parseError,
+	c.parsedCommonName = &ParsedDomainName{
+		DomainString: c.Subject.CommonName,
+		ParsedDomain: parsedDomain,
+		ParseError:   parseError,
 	}
 
-	return parsedDomain, parseError
+	return *c.parsedCommonName
 }
 
 // CertificateRequest represents a PKCS #10, certificate signature request.
