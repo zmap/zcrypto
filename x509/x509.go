@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"github.com/zmap/zcrypto/ct"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
@@ -38,6 +39,13 @@ import (
 type pkixPublicKey struct {
 	Algo      pkix.AlgorithmIdentifier
 	BitString asn1.BitString
+}
+
+// ParsedDomainName is a structure holding a parsed domain name (CommonName or DNS SAN) and a parsing error.
+type ParsedDomainName struct {
+	DomainString string
+	ParsedDomain *publicsuffix.DomainName
+	ParseError   error
 }
 
 // ParsePKIXPublicKey parses a DER encoded public key. These values are
@@ -628,6 +636,11 @@ type Certificate struct {
 
 	// CT
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp
+
+	// Used to speed up the zlint checks. Populated by the GetParsedDNSNames method.
+	parsedDNSNames []ParsedDomainName
+	// Used to speed up the zlint checks. Populated by the GetParsedCommonName method
+	parsedCommonName *ParsedDomainName
 }
 
 // SubjectAndKey represents a (subjecty, subject public key info) tuple.
@@ -1551,6 +1564,7 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 		//	return out, UnhandledCriticalExtension{e.Id}
 		//}
 	}
+
 	return out, nil
 }
 
@@ -2127,6 +2141,51 @@ func (c *Certificate) CreateCRL(rand io.Reader, priv interface{}, revokedCerts [
 		},
 		SignatureValue: asn1.BitString{Bytes: signature, BitLength: len(signature) * 8},
 	})
+}
+
+// GetParsedDNSNames returns a list of parsed SAN DNS names. It is used to cache the parsing result and
+// speed up zlint linters. If invalidateCache is true, then the cache is repopulated with current list of string from
+// Certificate.DNSNames. This parameter should always be false, unless the Certificate.DNSNames have been modified
+// after calling GetParsedDNSNames the previous time.
+func (c *Certificate) GetParsedDNSNames(invalidateCache bool) []ParsedDomainName {
+	if c.parsedDNSNames != nil && !invalidateCache {
+		return c.parsedDNSNames
+	}
+	c.parsedDNSNames = make([]ParsedDomainName, len(c.DNSNames))
+
+	for i := range c.DNSNames {
+		var parsedDomain, parseError = publicsuffix.ParseFromListWithOptions(publicsuffix.DefaultList,
+			c.DNSNames[i],
+			&publicsuffix.FindOptions{IgnorePrivate: true, DefaultRule: publicsuffix.DefaultRule})
+
+		c.parsedDNSNames[i].DomainString = c.DNSNames[i]
+		c.parsedDNSNames[i].ParsedDomain = parsedDomain
+		c.parsedDNSNames[i].ParseError = parseError
+	}
+
+	return c.parsedDNSNames
+}
+
+// GetParsedCommonName returns parsed subject CommonName. It is used to cache the parsing result and
+// speed up zlint linters. If invalidateCache is true, then the cache is repopulated with current subject CommonName.
+// This parameter should always be false, unless the Certificate.Subject.CommonName have been modified
+// after calling GetParsedSubjectCommonName the previous time.
+func (c *Certificate) GetParsedSubjectCommonName(invalidateCache bool) ParsedDomainName {
+	if c.parsedCommonName != nil && !invalidateCache {
+		return *c.parsedCommonName
+	}
+
+	var parsedDomain, parseError = publicsuffix.ParseFromListWithOptions(publicsuffix.DefaultList,
+		c.Subject.CommonName,
+		&publicsuffix.FindOptions{IgnorePrivate: true, DefaultRule: publicsuffix.DefaultRule})
+
+	c.parsedCommonName = &ParsedDomainName{
+		DomainString: c.Subject.CommonName,
+		ParsedDomain: parsedDomain,
+		ParseError:   parseError,
+	}
+
+	return *c.parsedCommonName
 }
 
 // CertificateRequest represents a PKCS #10, certificate signature request.
