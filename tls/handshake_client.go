@@ -515,6 +515,9 @@ func (c *Conn) clientHandshake() error {
 		if err := hs.doFullHandshake(); err != nil {
 			return err
 		}
+
+		return nil
+
 		if err := hs.establishKeys(); err != nil {
 			return err
 		}
@@ -583,6 +586,11 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 
 		c.handshakeLog.ServerCertificates = certMsg.MakeLog()
 
+		if c.config.TLSCertsOnly {
+		  // short circuit!
+  		  return nil
+		}
+
 		if !invalidCert {
 			opts := x509.VerifyOptions{
 				Roots:         c.config.RootCAs,
@@ -603,6 +611,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 			var validation *x509.Validation
 			c.verifiedChains, validation, err = certs[0].ValidateWithStupidDetail(opts)
 			c.handshakeLog.ServerCertificates.addParsed(certs, validation)
+
 
 			// If actually verifying and invalid, reject
 			if !c.config.InsecureSkipVerify {
@@ -661,6 +670,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		if err != nil {
 			return err
 		}
+
 	}
 
 	// If we don't support the cipher, quit before we need to read the hs.suite
