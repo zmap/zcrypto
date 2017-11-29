@@ -496,9 +496,9 @@ type Config struct {
 	// material from the returned config will be used for session tickets.
 	GetConfigForClient func(*ClientHelloInfo) (*Config, error)
 
-	// TLSCertsOnly is used to cause a client to close the TLS connection
+	// CertsOnly is used to cause a client to close the TLS connection
 	// as soon as the server's certificates have been received
-	TLSCertsOnly bool
+	CertsOnly bool
 
 	// mutex protects sessionTicketKeys and originalConfig.
 	mutex sync.RWMutex

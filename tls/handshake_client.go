@@ -515,7 +515,7 @@ func (c *Conn) clientHandshake() error {
 		if err := hs.doFullHandshake(); err != nil {
 			return err
 		}
-		if c.config.TLSCertsOnly {
+		if c.config.CertsOnly {
 			// All done
 			return nil
 		}
@@ -587,7 +587,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 
 		c.handshakeLog.ServerCertificates = certMsg.MakeLog()
 
-		if c.config.TLSCertsOnly {
+		if c.config.CertsOnly {
 			// short circuit!
 			return nil
 		}
