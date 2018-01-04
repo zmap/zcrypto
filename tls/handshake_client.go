@@ -513,6 +513,9 @@ func (c *Conn) clientHandshake() error {
 		}
 	} else {
 		if err := hs.doFullHandshake(); err != nil {
+            if err == ErrCertsOnly {
+                c.sendAlert(alertCloseNotify)
+            }
 			return err
 		}
 		if err := hs.establishKeys(); err != nil {
