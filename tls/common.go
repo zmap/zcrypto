@@ -1269,3 +1269,7 @@ func (config *Config) MarshalJSON() ([]byte, error) {
 func (config *Config) UnmarshalJSON(b []byte) error {
 	panic("unimplemented")
 }
+
+// Error type raised by doFullHandshake() when the CertsOnly option is
+// in use
+var ErrCertsOnly = errors.New("handshake abandoned per TLSCertsOnly option")

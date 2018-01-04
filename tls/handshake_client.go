@@ -515,10 +515,6 @@ func (c *Conn) clientHandshake() error {
 		if err := hs.doFullHandshake(); err != nil {
 			return err
 		}
-		if c.config.CertsOnly {
-			// All done
-			return nil
-		}
 		if err := hs.establishKeys(); err != nil {
 			return err
 		}
@@ -589,7 +585,8 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 
 		if c.config.CertsOnly {
 			// short circuit!
-			return nil
+			err = ErrCertsOnly
+			return err
 		}
 
 		if !invalidCert {
