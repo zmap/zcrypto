@@ -592,7 +592,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 			return err
 		}
 
-		if !c.config.SkipValidation {
+		if !c.config.InsecureSkipValidation {
 			if !invalidCert {
 				opts := x509.VerifyOptions{
 					Roots:         c.config.RootCAs,
