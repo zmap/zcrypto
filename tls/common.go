@@ -500,6 +500,9 @@ type Config struct {
 	// as soon as the server's certificates have been received
 	CertsOnly bool
 
+	// SkipValidation is used to skip certificate parsing and validation
+	SkipValidation bool
+
 	// mutex protects sessionTicketKeys and originalConfig.
 	mutex sync.RWMutex
 	// sessionTicketKeys contains zero or more ticket keys. If the length
