@@ -592,39 +592,41 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 			return err
 		}
 
-		if !invalidCert {
-			opts := x509.VerifyOptions{
-				Roots:         c.config.RootCAs,
-				CurrentTime:   c.config.time(),
-				DNSName:       c.config.ServerName,
-				Intermediates: x509.NewCertPool(),
-			}
+		if !c.config.InsecureSkipValidation {
+			if !invalidCert {
+				opts := x509.VerifyOptions{
+					Roots:         c.config.RootCAs,
+					CurrentTime:   c.config.time(),
+					DNSName:       c.config.ServerName,
+					Intermediates: x509.NewCertPool(),
+				}
 
-			// Always check validity of the certificates
-			for _, cert := range certs {
-				/*
-					if i == 0 {
-						continue
+				// Always check validity of the certificates
+				for _, cert := range certs {
+					/*
+						if i == 0 {
+							continue
+						}
+					*/
+					opts.Intermediates.AddCert(cert)
+				}
+				var validation *x509.Validation
+				c.verifiedChains, validation, err = certs[0].ValidateWithStupidDetail(opts)
+				c.handshakeLog.ServerCertificates.addParsed(certs, validation)
+
+				// If actually verifying and invalid, reject
+				if !c.config.InsecureSkipVerify {
+					if err != nil {
+						c.sendAlert(alertBadCertificate)
+						return err
 					}
-				*/
-				opts.Intermediates.AddCert(cert)
-			}
-			var validation *x509.Validation
-			c.verifiedChains, validation, err = certs[0].ValidateWithStupidDetail(opts)
-			c.handshakeLog.ServerCertificates.addParsed(certs, validation)
-
-			// If actually verifying and invalid, reject
-			if !c.config.InsecureSkipVerify {
-				if err != nil {
-					c.sendAlert(alertBadCertificate)
-					return err
 				}
 			}
-		}
 
-		if invalidCert {
-			c.sendAlert(alertBadCertificate)
-			return errors.New("tls: failed to parse certificate from server: " + invalidCertErr.Error())
+			if invalidCert {
+				c.sendAlert(alertBadCertificate)
+				return errors.New("tls: failed to parse certificate from server: " + invalidCertErr.Error())
+			}
 		}
 
 		c.peerCertificates = certs
