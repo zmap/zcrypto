@@ -513,6 +513,9 @@ func (c *Conn) clientHandshake() error {
 		}
 	} else {
 		if err := hs.doFullHandshake(); err != nil {
+			if err == ErrCertsOnly {
+				c.sendAlert(alertCloseNotify)
+			}
 			return err
 		}
 		if err := hs.establishKeys(); err != nil {
@@ -582,6 +585,12 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 
 		c.handshakeLog.ServerCertificates = certMsg.MakeLog()
+
+		if c.config.CertsOnly {
+			// short circuit!
+			err = ErrCertsOnly
+			return err
+		}
 
 		if !invalidCert {
 			opts := x509.VerifyOptions{
