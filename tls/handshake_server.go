@@ -50,7 +50,9 @@ func (c *Conn) serverHandshake() error {
 	}
 
 	// For an overview of TLS handshaking, see https://tools.ietf.org/html/rfc5246#section-7.3
-	c.buffering = true
+	if !c.config.DontBufferHandshakes {
+		c.buffering = true
+	}
 	if isResume {
 		// The client has included a session ticket and so we do an abbreviated handshake.
 		if err := hs.doResumeHandshake(); err != nil {
@@ -81,7 +83,9 @@ func (c *Conn) serverHandshake() error {
 		if err := hs.readFinished(); err != nil {
 			return err
 		}
-		c.buffering = true
+		if !c.config.DontBufferHandshakes {
+			c.buffering = true
+		}
 		if err := hs.sendSessionTicket(); err != nil {
 			return err
 		}

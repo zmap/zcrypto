@@ -543,3 +543,35 @@ func TestBuffering(t *testing.T) {
 		t.Errorf("expected server handshake to complete with only two writes, but saw %d", n)
 	}
 }
+
+func TestDontBuffer(t *testing.T) {
+	c, s := net.Pipe()
+	done := make(chan bool)
+
+	clientWCC := &writeCountingConn{Conn: c}
+	serverWCC := &writeCountingConn{Conn: s}
+	testConfig.DontBufferHandshakes = true
+	defer func() {
+		testConfig.DontBufferHandshakes = false
+	}()
+	go func() {
+		Server(serverWCC, testConfig).Handshake()
+		serverWCC.Close()
+		done <- true
+	}()
+
+	err := Client(clientWCC, testConfig).Handshake()
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientWCC.Close()
+	<-done
+
+	if n := clientWCC.numWrites; n != 4 {
+		t.Errorf("expected client handshake to complete with only two writes, but saw %d", n)
+	}
+
+	if n := serverWCC.numWrites; n != 6 {
+		t.Errorf("expected server handshake to complete with only two writes, but saw %d", n)
+	}
+}

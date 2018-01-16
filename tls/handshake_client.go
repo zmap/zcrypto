@@ -493,7 +493,9 @@ func (c *Conn) clientHandshake() error {
 	if err != nil {
 		return err
 	}
-	c.buffering = true
+	if !c.config.DontBufferHandshakes {
+		c.buffering = true
+	}
 	if isResume {
 		if c.cipherError != nil {
 			c.sendAlert(alertHandshakeFailure)
