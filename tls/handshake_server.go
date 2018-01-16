@@ -50,6 +50,7 @@ func (c *Conn) serverHandshake() error {
 	}
 
 	// For an overview of TLS handshaking, see https://tools.ietf.org/html/rfc5246#section-7.3
+	c.buffering = true
 	if isResume {
 		// The client has included a session ticket and so we do an abbreviated handshake.
 		if err := hs.doResumeHandshake(); err != nil {
@@ -59,6 +60,9 @@ func (c *Conn) serverHandshake() error {
 			return err
 		}
 		if err := hs.sendFinished(); err != nil {
+			return err
+		}
+		if _, err := c.flush(); err != nil {
 			return err
 		}
 		if err := hs.readFinished(); err != nil {
@@ -77,10 +81,14 @@ func (c *Conn) serverHandshake() error {
 		if err := hs.readFinished(); err != nil {
 			return err
 		}
+		c.buffering = true
 		if err := hs.sendSessionTicket(); err != nil {
 			return err
 		}
 		if err := hs.sendFinished(); err != nil {
+			return err
+		}
+		if _, err := c.flush(); err != nil {
 			return err
 		}
 	}
@@ -380,6 +388,10 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 	helloDone := new(serverHelloDoneMsg)
 	hs.finishedHash.Write(helloDone.marshal())
 	c.writeRecord(recordTypeHandshake, helloDone.marshal())
+
+	if _, err := c.flush(); err != nil {
+		return err
+	}
 
 	var pub crypto.PublicKey // public key for client auth, if any
 
