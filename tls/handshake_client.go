@@ -495,6 +495,7 @@ func (c *Conn) clientHandshake() error {
 	}
 	if !c.config.DontBufferHandshakes {
 		c.buffering = true
+		defer c.flush()
 	}
 	if isResume {
 		if c.cipherError != nil {
