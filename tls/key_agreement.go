@@ -457,10 +457,10 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 	switch ka.sigType {
 	case signatureECDSA:
 		augECDSA, ok := cert.PublicKey.(*x509.AugmentedECDSA)
-		pubKey := augECDSA.Pub
 		if !ok {
 			return errors.New("ECDHE ECDSA: could not covert cert.PublicKey to x509.AugmentedECDSA")
 		}
+		pubKey := augECDSA.Pub
 		ecdsaSig := new(ecdsaSignature)
 		if _, err := asn1.Unmarshal(sig, ecdsaSig); err != nil {
 			return err
