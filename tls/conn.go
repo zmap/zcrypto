@@ -53,6 +53,8 @@ type Conn struct {
 	rawInput *block       // raw input, right off the wire
 	input    *block       // application data waiting to be read
 	hand     bytes.Buffer // handshake data waiting to be read
+	buffering bool        // whether records are buffered in sendBuf
+	sendBuf   []byte      // a buffer of records waiting to be sent
 
 	tmp [16]byte
 
@@ -748,6 +750,28 @@ func (c *Conn) sendAlert(err alert) error {
 	return c.sendAlertLocked(err)
 }
 
+// c.out.Mutex <= L.
+func (c *Conn) write(data []byte) (int, error) {
+	if c.buffering {
+		c.sendBuf = append(c.sendBuf, data...)
+		return len(data), nil
+	}
+
+	n, err := c.conn.Write(data)
+	return n, err
+}
+
+func (c *Conn) flush() (int, error) {
+	if len(c.sendBuf) == 0 {
+		return 0, nil
+	}
+
+	n, err := c.conn.Write(c.sendBuf)
+	c.sendBuf = nil
+	c.buffering = false
+	return n, err
+}
+
 // writeRecord writes a TLS record with the given type and payload
 // to the connection and updates the record layer state.
 // c.out.Mutex <= L.
@@ -809,7 +833,7 @@ func (c *Conn) writeRecord(typ recordType, data []byte) (n int, err error) {
 		}
 		copy(b.data[recordHeaderLen+explicitIVLen:], data)
 		c.out.encrypt(b, explicitIVLen)
-		_, err = c.conn.Write(b.data)
+		_, err = c.write(b.data)
 		if err != nil {
 			break
 		}

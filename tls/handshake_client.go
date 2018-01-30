@@ -493,7 +493,7 @@ func (c *Conn) clientHandshake() error {
 	if err != nil {
 		return err
 	}
-
+	c.buffering = true
 	if isResume {
 		if c.cipherError != nil {
 			c.sendAlert(alertHandshakeFailure)
@@ -511,6 +511,9 @@ func (c *Conn) clientHandshake() error {
 		if err := hs.sendFinished(); err != nil {
 			return err
 		}
+		if _, err := c.flush(); err != nil {
+			return err
+		}
 	} else {
 		if err := hs.doFullHandshake(); err != nil {
 			if err == ErrCertsOnly {
@@ -522,6 +525,9 @@ func (c *Conn) clientHandshake() error {
 			return err
 		}
 		if err := hs.sendFinished(); err != nil {
+			return err
+		}
+		if _, err := c.flush(); err != nil {
 			return err
 		}
 		if err := hs.readSessionTicket(); err != nil {
