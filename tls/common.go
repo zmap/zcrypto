@@ -500,6 +500,9 @@ type Config struct {
 	// as soon as the server's certificates have been received
 	CertsOnly bool
 
+	// DontBufferHandshakes causes Handshake() to act like older versions of the go crypto library, where each TLS packet is sent in a separate Write.
+	DontBufferHandshakes bool
+
 	// mutex protects sessionTicketKeys and originalConfig.
 	mutex sync.RWMutex
 	// sessionTicketKeys contains zero or more ticket keys. If the length
@@ -1224,6 +1227,7 @@ type ConfigJSON struct {
 	ClientRandom                   []byte                          `json:"client_random,omitempty"`
 	ExternalClientHello            []byte                          `json:"external_client_hello,omitempty"`
 	ClientFingerprintConfiguration *ClientFingerprintConfiguration `json:"client_fingerprint_config,omitempty"`
+	DontBufferHandshakes           bool                            `json:"dont_buffer_handshakes"`
 }
 
 func (config *Config) MarshalJSON() ([]byte, error) {
@@ -1262,6 +1266,7 @@ func (config *Config) MarshalJSON() ([]byte, error) {
 	aux.ClientRandom = config.ClientRandom
 	aux.ExternalClientHello = config.ExternalClientHello
 	aux.ClientFingerprintConfiguration = config.ClientFingerprintConfiguration
+	aux.DontBufferHandshakes = config.DontBufferHandshakes
 
 	return json.Marshal(aux)
 }
