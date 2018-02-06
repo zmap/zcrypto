@@ -87,7 +87,6 @@ func (e CertificateInvalidError) Error() string {
 
 const maxIntermediateCount = 10
 
-
 // VerifyOptions contains parameters for Certificate.Verify. It's a structure
 // because other PKIX verification APIs have ended up needing many options.
 type VerifyOptions struct {

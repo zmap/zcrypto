@@ -13,6 +13,7 @@ import (
 )
 
 type InvalidReason int
+
 //
 //const (
 //	// NotAuthorizedToSign results when a certificate is signed by another

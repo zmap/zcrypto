@@ -11,7 +11,6 @@ import (
 	"strings"
 )
 
-
 // AttributeTypeAndValue mirrors the ASN.1 structure of the same name in
 // http://tools.ietf.org/html/rfc5280#section-4.1.2.4
 type AttributeTypeAndValue struct {
@@ -27,7 +26,7 @@ type Name struct {
 	StreetAddress, PostalCode, DomainComponent []string
 	EmailAddress                               []string
 	SerialNumber, CommonName                   string
-	GivenName, Surname			   []string
+	GivenName, Surname                         []string
 	// EV Components
 	JurisdictionLocality, JurisdictionProvince, JurisdictionCountry []string
 
@@ -101,13 +100,13 @@ var (
 	oidOrganization       = []int{2, 5, 4, 10}
 	oidOrganizationalUnit = []int{2, 5, 4, 11}
 	oidCommonName         = []int{2, 5, 4, 3}
-	oidSurname	      = []int{2, 5, 4, 4}
+	oidSurname            = []int{2, 5, 4, 4}
 	oidSerialNumber       = []int{2, 5, 4, 5}
 	oidLocality           = []int{2, 5, 4, 7}
 	oidProvince           = []int{2, 5, 4, 8}
 	oidStreetAddress      = []int{2, 5, 4, 9}
 	oidPostalCode         = []int{2, 5, 4, 17}
-	oidGivenName	      = []int{2, 5, 4, 42}
+	oidGivenName          = []int{2, 5, 4, 42}
 	oidDomainComponent    = []int{0, 9, 2342, 19200300, 100, 1, 25}
 	oidDNEmailAddress     = []int{1, 2, 840, 113549, 1, 9, 1}
 	// EV
@@ -135,7 +134,6 @@ func (n Name) appendRDNs(in RDNSequence, values []string, oid asn1.ObjectIdentif
 
 	return append(in, s)
 }
-
 
 // String returns an RDNSequence as comma seperated list of
 // AttributeTypeAndValues in canonical form.

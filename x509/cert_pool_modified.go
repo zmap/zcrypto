@@ -74,7 +74,6 @@ func (s *CertPool) AddCert(cert *Certificate) {
 	s.bySHA256[sha256fp] = n
 }
 
-
 // Contains returns true if c is in s.
 func (s *CertPool) Contains(c *Certificate) bool {
 	if s == nil {

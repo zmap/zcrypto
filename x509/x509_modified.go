@@ -21,9 +21,9 @@ import (
 	"crypto/rsa"
 	"encoding/asn1"
 	"errors"
+	"fmt"
 	"math/big"
 	"net"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -38,7 +38,6 @@ type ParsedDomainName struct {
 	ParsedDomain *publicsuffix.DomainName
 	ParseError   error
 }
-
 
 func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorithm pkix.AlgorithmIdentifier, err error) {
 	switch pub := pub.(type) {
@@ -76,7 +75,6 @@ func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorith
 	return publicKeyBytes, publicKeyAlgorithm, nil
 }
 
-
 // These structures reflect the ASN.1 structure of X.509 certificates.:
 
 type AugmentedECDSA struct {
@@ -84,10 +82,7 @@ type AugmentedECDSA struct {
 	Raw asn1.BitString
 }
 
-
 type SignatureAlgorithmOID asn1.ObjectIdentifier
-
-
 
 const (
 	UnknownPublicKeyAlgorithm PublicKeyAlgorithm = iota
@@ -139,7 +134,7 @@ var extKeyUsageOIDs = []struct {
 	{ExtKeyUsageCodeSigning, oidExtKeyUsageCodeSigning},
 	{ExtKeyUsageEmailProtection, oidExtKeyUsageEmailProtection},
 	//{ExtKeyUsageIPSECEndSystem, oidExtKeyUsageIPSECEndSystem},
-	{ExtKeyUsageIpsecUser,oidExtKeyUsageIpsecEndSystem},
+	{ExtKeyUsageIpsecUser, oidExtKeyUsageIpsecEndSystem},
 	//{ExtKeyUsageIPSECTunnel, oidExtKeyUsageIPSECTunnel},
 	{ExtKeyUsageIpsecTunnel, oidExtKeyUsageIpsecTunnel},
 	//{ExtKeyUsageIPSECUser, oidExtKeyUsageIPSECUser},
@@ -199,7 +194,7 @@ type Certificate struct {
 	Signature          []byte
 	SignatureAlgorithm SignatureAlgorithm
 
-	SelfSigned         bool
+	SelfSigned bool
 
 	SignatureAlgorithmOID asn1.ObjectIdentifier
 
@@ -409,7 +404,6 @@ func (c *Certificate) SubjectAndKey() *SubjectAndKey {
 	}
 }
 
-
 // CheckSignatureFrom verifies that the signature on c is a valid signature
 // from parent.
 func (c *Certificate) CheckSignatureFrom(parent *Certificate) (err error) {
@@ -529,7 +523,6 @@ func (c *Certificate) CheckCRLSignature(crl *pkix.CertificateList) error {
 	return c.CheckSignature(algo, crl.TBSCertList.Raw, crl.SignatureValue.RightAlign())
 }
 
-
 // UnhandledCriticalExtension results when the certificate contains an
 // unimplemented X.509 extension marked as critical.
 type UnhandledCriticalExtension struct {
@@ -540,7 +533,6 @@ type UnhandledCriticalExtension struct {
 func (h UnhandledCriticalExtension) Error() string {
 	return fmt.Sprintf("x509: unhandled critical extension: %s | %s", h.oid, h.message)
 }
-
 
 // CheckSignature verifies that signature is a valid signature over signed from
 // c's public key.
@@ -1227,7 +1219,6 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 	return out, nil
 }
 
-
 func ParseTBSCertificate(asn1Data []byte) (*Certificate, error) {
 	var tbsCert tbsCertificate
 	rest, err := asn1.Unmarshal(asn1Data, &tbsCert)
@@ -1242,7 +1233,6 @@ func ParseTBSCertificate(asn1Data []byte) (*Certificate, error) {
 		Raw:            tbsCert.Raw,
 		TBSCertificate: tbsCert})
 }
-
 
 var (
 	oidExtensionSubjectKeyId                   = []int{2, 5, 29, 14}
@@ -1520,5 +1510,5 @@ func (c *Certificate) GetParsedSubjectCommonName(invalidateCache bool) ParsedDom
 
 // CheckSignature reports whether the signature on c is valid.
 func (c *CertificateRequest) CheckSignature() error {
-	return CheckSignatureFromKey(c.PublicKey,c.SignatureAlgorithm, c.RawTBSCertificateRequest, c.Signature)
+	return CheckSignatureFromKey(c.PublicKey, c.SignatureAlgorithm, c.RawTBSCertificateRequest, c.Signature)
 }
