@@ -111,23 +111,23 @@ type Extension struct {
 //	oidPostalCode         = []int{2, 5, 4, 17}
 //)
 
-// appendRDNs appends a relativeDistinguishedNameSET to the given RDNSequence
-// and returns the new value. The relativeDistinguishedNameSET contains an
-// attributeTypeAndValue for each of the given values. See RFC 5280, A.1, and
-// search for AttributeTypeAndValue.
-func (n Name) appendRDNs(in RDNSequence, values []string, oid asn1.ObjectIdentifier) RDNSequence {
-	if len(values) == 0 || oidInAttributeTypeAndValue(oid, n.ExtraNames) {
-		return in
-	}
-
-	s := make([]AttributeTypeAndValue, len(values))
-	for i, value := range values {
-		s[i].Type = oid
-		s[i].Value = value
-	}
-
-	return append(in, s)
-}
+//// appendRDNs appends a relativeDistinguishedNameSET to the given RDNSequence
+//// and returns the new value. The relativeDistinguishedNameSET contains an
+//// attributeTypeAndValue for each of the given values. See RFC 5280, A.1, and
+//// search for AttributeTypeAndValue.
+//func (n Name) appendRDNs(in RDNSequence, values []string, oid asn1.ObjectIdentifier) RDNSequence {
+//	if len(values) == 0 || oidInAttributeTypeAndValue(oid, n.ExtraNames) {
+//		return in
+//	}
+//
+//	s := make([]AttributeTypeAndValue, len(values))
+//	for i, value := range values {
+//		s[i].Type = oid
+//		s[i].Value = value
+//	}
+//
+//	return append(in, s)
+//}
 
 //func (n Name) ToRDNSequence() (ret RDNSequence) {
 //	ret = n.appendRDNs(ret, n.Country, oidCountry)

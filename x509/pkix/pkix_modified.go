@@ -116,6 +116,27 @@ var (
 	oidJurisdictionCountry  = []int{1, 3, 6, 1, 4, 1, 311, 60, 2, 1, 3}
 )
 
+// appendRDNs appends a relativeDistinguishedNameSET to the given RDNSequence
+// and returns the new value. The relativeDistinguishedNameSET contains an
+// attributeTypeAndValue for each of the given values. See RFC 5280, A.1, and
+// search for AttributeTypeAndValue.
+func (n Name) appendRDNs(in RDNSequence, values []string, oid asn1.ObjectIdentifier) RDNSequence {
+	// NOTE: stdlib prevents adding if the oid is already present in n.ExtraNames
+	//if len(values) == 0 || oidInAttributeTypeAndValue(oid, n.ExtraNames) {
+	if len(values) == 0 {
+		return in
+	}
+
+	s := make([]AttributeTypeAndValue, len(values))
+	for i, value := range values {
+		s[i].Type = oid
+		s[i].Value = value
+	}
+
+	return append(in, s)
+}
+
+
 // String returns an RDNSequence as comma seperated list of
 // AttributeTypeAndValues in canonical form.
 func (seq RDNSequence) String() string {
