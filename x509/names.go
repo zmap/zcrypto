@@ -4,12 +4,6 @@
 
 package x509
 
-func (s SignatureAlgorithm) String() string {
-	if s >= total_signature_algorithms || s < 0 {
-		s = UnknownSignatureAlgorithm
-	}
-	return signatureAlgorithmNames[s]
-}
 
 func (p PublicKeyAlgorithm) String() string {
 	if p >= total_key_algorithms || p < 0 {
