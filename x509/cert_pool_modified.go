@@ -4,12 +4,6 @@
 
 package x509
 
-import (
-	"encoding/pem"
-	"errors"
-	"runtime"
-)
-
 // CertPool is a set of certificates.
 type CertPool struct {
 	bySubjectKeyId map[string][]int
