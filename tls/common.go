@@ -389,6 +389,11 @@ type Config struct {
 	// This should be used only for testing.
 	InsecureSkipVerify bool
 
+	// InsecureSkipValidation, is like InsecureSkipVerify is used to skip
+	// even attempting to validate the certificate.
+	// Useful for offline processing of scanning results.
+	InsecureSkipValidation bool
+
 	// CipherSuites is a list of supported cipher suites. If CipherSuites
 	// is nil, TLS uses a list of suites supported by the implementation.
 	CipherSuites []uint16
@@ -1207,6 +1212,7 @@ type ConfigJSON struct {
 	ClientAuth                     ClientAuthType                  `json:"client_auth_type"`
 	ClientCAs                      *x509.CertPool                  `json:"client_cas,omitempty"`
 	InsecureSkipVerify             bool                            `json:"skip_verify"`
+	InsecureSkipValidation         bool                            `json:"skip_validation"`
 	CipherSuites                   []CipherSuite                   `json:"cipher_suites,omitempty"`
 	PreferServerCipherSuites       bool                            `json:"prefer_server_cipher_suites"`
 	SessionTicketsDisabled         bool                            `json:"session_tickets_disabled"`
@@ -1240,6 +1246,7 @@ func (config *Config) MarshalJSON() ([]byte, error) {
 	aux.ClientAuth = config.ClientAuth
 	aux.ClientCAs = config.ClientCAs
 	aux.InsecureSkipVerify = config.InsecureSkipVerify
+	aux.InsecureSkipValidation = config.InsecureSkipValidation
 
 	ciphers := config.cipherSuites()
 	aux.CipherSuites = make([]CipherSuite, len(ciphers))
