@@ -389,8 +389,8 @@ type Config struct {
 	// This should be used only for testing.
 	InsecureSkipVerify bool
 
-	// InsecureSkipValidation, is like InsecureSkipVerify is used to skip
-	// even attempting to validate the certificate.
+	// InsecureSkipValidation is like InsecureSkipVerify but it skips even
+	// attempting to validate the certificate.
 	// Useful for offline processing of scanning results.
 	InsecureSkipValidation bool
 
