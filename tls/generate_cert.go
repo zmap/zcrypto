@@ -13,8 +13,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 
-	"github.com/zmap/ztools/x509"
-	"github.com/zmap/ztools/x509/pkix"
+	"github.com/zmap/zgrab/ztools/x509"
+	"github.com/zmap/zgrab/ztools/x509/pkix"
 
 	"encoding/pem"
 	"flag"
