@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/zmap/zgrab/ztools/keys"
+	jsonKeys "github.com/zmap/zcrypto/json"
 )
 
 // SignatureAndHash is a signatureAndHash that implements json.Marshaler and
@@ -43,16 +43,16 @@ func (sh *SignatureAndHash) UnmarshalJSON(b []byte) error {
 	panic("unimplemented")
 }
 
-func (ka *rsaKeyAgreement) RSAParams() *keys.RSAPublicKey {
-	out := new(keys.RSAPublicKey)
+func (ka *rsaKeyAgreement) RSAParams() *jsonKeys.RSAPublicKey {
+	out := new(jsonKeys.RSAPublicKey)
 	out.PublicKey = ka.publicKey
 	return out
 }
 
-func (ka *ecdheKeyAgreement) ECDHParams() *keys.ECDHParams {
-	out := new(keys.ECDHParams)
-	out.TLSCurveID = keys.TLSCurveID(ka.curveID)
-	out.ServerPublic = &keys.ECPoint{}
+func (ka *ecdheKeyAgreement) ECDHParams() *jsonKeys.ECDHParams {
+	out := new(jsonKeys.ECDHParams)
+	out.TLSCurveID = jsonKeys.TLSCurveID(ka.curveID)
+	out.ServerPublic = &jsonKeys.ECPoint{}
 	if ka.x != nil {
 		out.ServerPublic.X = new(big.Int)
 		out.ServerPublic.X.Set(ka.x)
@@ -62,7 +62,7 @@ func (ka *ecdheKeyAgreement) ECDHParams() *keys.ECDHParams {
 		out.ServerPublic.Y.Set(ka.y)
 	}
 	if len(ka.serverPrivKey) > 0 {
-		out.ServerPrivate = new(keys.ECDHPrivateParams)
+		out.ServerPrivate = new(jsonKeys.ECDHPrivateParams)
 		out.ServerPrivate.Length = len(ka.serverPrivKey)
 		out.ServerPrivate.Value = make([]byte, len(ka.serverPrivKey))
 		copy(out.ServerPrivate.Value, ka.serverPrivKey)
@@ -70,10 +70,10 @@ func (ka *ecdheKeyAgreement) ECDHParams() *keys.ECDHParams {
 	return out
 }
 
-func (ka *ecdheKeyAgreement) ClientECDHParams() *keys.ECDHParams {
-	out := new(keys.ECDHParams)
-	out.TLSCurveID = keys.TLSCurveID(ka.curveID)
-	out.ClientPublic = &keys.ECPoint{}
+func (ka *ecdheKeyAgreement) ClientECDHParams() *jsonKeys.ECDHParams {
+	out := new(jsonKeys.ECDHParams)
+	out.TLSCurveID = jsonKeys.TLSCurveID(ka.curveID)
+	out.ClientPublic = &jsonKeys.ECPoint{}
 	if ka.clientX != nil {
 		out.ClientPublic.X = new(big.Int)
 		out.ClientPublic.X.Set(ka.clientX)
@@ -84,7 +84,7 @@ func (ka *ecdheKeyAgreement) ClientECDHParams() *keys.ECDHParams {
 	}
 
 	if len(ka.clientPrivKey) > 0 {
-		out.ClientPrivate = new(keys.ECDHPrivateParams)
+		out.ClientPrivate = new(jsonKeys.ECDHPrivateParams)
 		out.ClientPrivate.Length = len(ka.clientPrivKey)
 		out.ClientPrivate.Value = make([]byte, len(ka.clientPrivKey))
 		copy(out.ClientPrivate.Value, ka.clientPrivKey)
@@ -92,8 +92,8 @@ func (ka *ecdheKeyAgreement) ClientECDHParams() *keys.ECDHParams {
 	return out
 }
 
-func (ka *dheKeyAgreement) DHParams() *keys.DHParams {
-	out := new(keys.DHParams)
+func (ka *dheKeyAgreement) DHParams() *jsonKeys.DHParams {
+	out := new(jsonKeys.DHParams)
 	if ka.p != nil {
 		out.Prime = new(big.Int).Set(ka.p)
 	}
@@ -109,8 +109,8 @@ func (ka *dheKeyAgreement) DHParams() *keys.DHParams {
 	return out
 }
 
-func (ka *dheKeyAgreement) ClientDHParams() *keys.DHParams {
-	out := new(keys.DHParams)
+func (ka *dheKeyAgreement) ClientDHParams() *jsonKeys.DHParams {
+	out := new(jsonKeys.DHParams)
 	if ka.p != nil {
 		out.Prime = new(big.Int).Set(ka.p)
 	}

@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/x509"
 	"encoding/pem"
 	"flag"
 	"fmt"
@@ -28,8 +29,6 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
-
-	"github.com/zmap/zcrypto/x509"
 )
 
 var output = flag.String("output", "root_darwin_armx.go", "file name to write")

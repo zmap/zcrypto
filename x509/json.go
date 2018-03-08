@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
+	jsonKeys "github.com/zmap/zcrypto/json"
 	"github.com/zmap/zcrypto/x509/pkix"
-	"github.com/zmap/zgrab/ztools/keys"
 )
 
 var kMinTime, kMaxTime time.Time
@@ -196,7 +196,7 @@ func (v *validity) UnmarshalJSON(b []byte) error {
 
 type jsonSubjectKeyInfo struct {
 	KeyAlgorithm    PublicKeyAlgorithm     `json:"key_algorithm"`
-	RSAPublicKey    *keys.RSAPublicKey     `json:"rsa_public_key,omitempty"`
+	RSAPublicKey    *jsonKeys.RSAPublicKey `json:"rsa_public_key,omitempty"`
 	DSAPublicKey    interface{}            `json:"dsa_public_key,omitempty"`
 	ECDSAPublicKey  interface{}            `json:"ecdsa_public_key,omitempty"`
 	SPKIFingerprint CertificateFingerprint `json:"fingerprint_sha256"`
@@ -314,7 +314,7 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	jc.SubjectKeyInfo.SPKIFingerprint = c.SPKIFingerprint
 	switch key := c.PublicKey.(type) {
 	case *rsa.PublicKey:
-		rsaKey := new(keys.RSAPublicKey)
+		rsaKey := new(jsonKeys.RSAPublicKey)
 		rsaKey.PublicKey = key
 		jc.SubjectKeyInfo.RSAPublicKey = rsaKey
 	case *dsa.PublicKey:

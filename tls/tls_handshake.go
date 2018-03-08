@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zmap/zcrypto/ct"
+	"github.com/zmap/zcrypto/x509/ct"
+	jsonKeys "github.com/zmap/zcrypto/json"
 	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zgrab/ztools/keys"
 )
 
 var ErrUnimplementedCipher error = errors.New("unimplemented cipher suite")
@@ -84,20 +84,20 @@ type Certificates struct {
 
 // ServerKeyExchange represents the raw key data sent by the server in TLS key exchange message
 type ServerKeyExchange struct {
-	Raw            []byte             `json:"-"`
-	RSAParams      *keys.RSAPublicKey `json:"rsa_params,omitempty"`
-	DHParams       *keys.DHParams     `json:"dh_params,omitempty"`
-	ECDHParams     *keys.ECDHParams   `json:"ecdh_params,omitempty"`
-	Signature      *DigitalSignature  `json:"signature,omitempty"`
-	SignatureError string             `json:"signature_error,omitempty"`
+	Raw            []byte                 `json:"-"`
+	RSAParams      *jsonKeys.RSAPublicKey `json:"rsa_params,omitempty"`
+	DHParams       *jsonKeys.DHParams     `json:"dh_params,omitempty"`
+	ECDHParams     *jsonKeys.ECDHParams   `json:"ecdh_params,omitempty"`
+	Signature      *DigitalSignature      `json:"signature,omitempty"`
+	SignatureError string                 `json:"signature_error,omitempty"`
 }
 
 // ClientKeyExchange represents the raw key data sent by the client in TLS key exchange message
 type ClientKeyExchange struct {
-	Raw        []byte                `json:"-"`
-	RSAParams  *keys.RSAClientParams `json:"rsa_params,omitempty"`
-	DHParams   *keys.DHParams        `json:"dh_params,omitempty"`
-	ECDHParams *keys.ECDHParams      `json:"ecdh_params,omitempty"`
+	Raw        []byte                    `json:"-"`
+	RSAParams  *jsonKeys.RSAClientParams `json:"rsa_params,omitempty"`
+	DHParams   *jsonKeys.DHParams        `json:"dh_params,omitempty"`
+	ECDHParams *jsonKeys.ECDHParams      `json:"ecdh_params,omitempty"`
 }
 
 // Finished represents a TLS Finished message
@@ -493,7 +493,7 @@ func (m *clientKeyExchangeMsg) MakeLog(ka keyAgreement) *ClientKeyExchange {
 
 	switch ka := ka.(type) {
 	case *rsaKeyAgreement:
-		ckx.RSAParams = new(keys.RSAClientParams)
+		ckx.RSAParams = new(jsonKeys.RSAClientParams)
 		ckx.RSAParams.Length = uint16(len(m.ciphertext) - 2) // First 2 bytes are length
 		ckx.RSAParams.EncryptedPMS = make([]byte, len(m.ciphertext)-2)
 		copy(ckx.RSAParams.EncryptedPMS, m.ciphertext[2:])
