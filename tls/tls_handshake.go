@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zmap/zcrypto/ct"
+	"github.com/zmap/zcrypto/x509/ct"
 	jsonKeys "github.com/zmap/zcrypto/json"
 	"github.com/zmap/zcrypto/x509"
 )

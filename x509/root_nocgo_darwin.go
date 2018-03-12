@@ -2,7 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build !cgo
+// Use non-cgo on Darwin to prevent duplicate symbols on cgo
+//// +build !cgo
 
 package x509
 
