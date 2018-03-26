@@ -133,7 +133,7 @@ type KeyMaterial struct {
 // ServerHandshake stores all of the messages sent by the server during a standard TLS Handshake.
 // It implements zgrab.EventData interface
 type ServerHandshake struct {
-	ClientHello        *ClientHello       `json:"client_hello,omitempty"`
+	ClientHello        *ClientHello       `json:"client_hello,omitempty" zgrab:"debug"`
 	ServerHello        *ServerHello       `json:"server_hello,omitempty"`
 	ServerCertificates *Certificates      `json:"server_certificates,omitempty"`
 	ServerKeyExchange  *ServerKeyExchange `json:"server_key_exchange,omitempty"`
