@@ -284,24 +284,25 @@ ExtendedKeyUsage = SubRecordType({
 
     # NOTE: ztag has this commented out, but it is included in the JSON.
     "unknown": ListOf(OID(), doc="A list of the raw OBJECT IDENTIFIERs of any EKUs not recognized by the application."),
-})
+}, category="Extended Key Usage")
 
 # x509/json.go jsonCertificate (mapped from x509.Certificate)
 ParsedCertificate = SubRecordType({
-    "subject": DistinguishedName(doc="The parsed subject name.", required=True),
-    "subject_dn": CensysString(doc="A canonical string representation of the subject name.", examples=["C=US, ST=MI, L=Ann Arbor, OU=Scans, CN=localhost, emailAddress=root@localhost"]),
-    "issuer": DistinguishedName(doc="The parsed issuer name.", required=True),
-    "issuer_dn": CensysString(doc="A canonical string representation of the issuer name.", examples=["C=US, ST=MI, L=Ann Arbor, OU=Certificate authority, CN=CA1, emailAddress=ca1@localhost"]),
-    "version": Unsigned8BitInteger(doc="The x.509 certificate version number."),
+    "subject": DistinguishedName(category="Subject", doc="The parsed subject name.", required=True),
+    "subject_dn": CensysString(category="Basic Information", doc="A canonical string representation of the subject name.", examples=["C=US, ST=MI, L=Ann Arbor, OU=Scans, CN=localhost, emailAddress=root@localhost"]),
+    "issuer": DistinguishedName(category="Issuer", doc="The parsed issuer name.", required=True),
+    "issuer_dn": CensysString(category="Basic Information", doc="A canonical string representation of the issuer name.", examples=["C=US, ST=MI, L=Ann Arbor, OU=Certificate authority, CN=CA1, emailAddress=ca1@localhost"]),
+    "version": Unsigned8BitInteger(category="Misc", doc="The x.509 certificate version number."),
     # NOTE: This is indeed encoded as a base 10 string via math.big.int.Text(10)
     "serial_number": String(doc="Serial number as an signed decimal integer. "\
                                 "Stored as string to support >uint lengths. "\
-                                "Negative values are allowed."),
+                                "Negative values are allowed.",
+                                category="Basic Information"),
     "validity": SubRecord({
         "start": Timestamp(doc="Timestamp of when certificate is first valid. Timezone is UTC."),
         "end": Timestamp(doc="Timestamp of when certificate expires. Timezone is UTC."),
         "length": Signed64BitInteger(),
-    }),
+    }, category="Validity Period"),
     "signature_algorithm": SubRecord({
         "name": String(),
         "oid": String(),
@@ -320,7 +321,7 @@ ParsedCertificate = SubRecordType({
         "rsa_public_key": RSAPublicKey(),
         "dsa_public_key": DSAPublicKey(),
         "ecdsa_public_key": ECDSAPublicKey(),
-    }),
+    }, category="Public Key"),
     "extensions": SubRecord({
         "key_usage": SubRecord({
             "value": Unsigned16BitInteger(doc="Integer value of the bitmask in the extension"),
@@ -333,22 +334,22 @@ ParsedCertificate = SubRecordType({
             "key_agreement": Boolean(),
             "decipher_only": Boolean(),
             "encipher_only": Boolean(),
-        }),
+        }, category="Key Usage"),
         "basic_constraints": SubRecord({
             "is_ca": Boolean(),
             "max_path_len": Signed32BitInteger(),
-        }),
-        "subject_alt_name": GeneralNames(doc="The parsed Subject Alternative Name extension.", required=False),
+        }, category="Basic Constaints"),
+        "subject_alt_name": GeneralNames(category="Subject Alternate Names (SANs)", doc="The parsed Subject Alternative Name extension.", required=False),
         "issuer_alt_name": GeneralNames(doc="The parsed Issuer Alternative Name extension.", required=False),
-        "crl_distribution_points": ListOf(URL()),
-        "authority_key_id": HexString(doc="An identifier of the issuer's public key, encoded as a hexadecimal string."),
-        "subject_key_id": HexString(doc="An identifier of the subject's public key, encoded as a hexadecimal string."),
+        "crl_distribution_points": ListOf(URL(), category="CRL Distribution Points"),
+        "authority_key_id": HexString(category="Authority Key ID (AKID)", doc="An identifier of the issuer's public key, encoded as a hexadecimal string."),
+        "subject_key_id": HexString(category="Subject Key ID (SKID)", doc="An identifier of the subject's public key, encoded as a hexadecimal string."),
         "extended_key_usage": ExtendedKeyUsage(),
-        "certificate_policies": ListOf(CertificatePoliciesData()),
+        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies"),
         "authority_info_access": SubRecord({
             "ocsp_urls": ListOf(URL()),
             "issuer_urls": ListOf(URL())
-        }),
+        }, category="Authority Info Access (AIA)"),
         "name_constraints": SubRecord({
             "critical": Boolean(),
             "permitted_names": ListOf(FQDN()),
@@ -378,11 +379,11 @@ ParsedCertificate = SubRecordType({
             "excluded_directory_names": ListOf(DistinguishedName()),
             "excluded_registered_ids": ListOf(String()),
             "excluded_edi_party_names": ListOf(EDIPartyName()),
-        }),
-        "signed_certificate_timestamps": ListOf(SCTRecord()),
-        "ct_poison": Boolean(doc="This is true if the certificate possesses the Certificate Transparency Precertificate Poison extension (1.3.6.1.4.1.11129.2.4.3).")
+        }, category="Name Constraints"),
+        "signed_certificate_timestamps": ListOf(SCTRecord(), category="Embedded SCTS / CT Poison"),
+        "ct_poison": Boolean(category="Embedded SCTS / CT Poison", doc="This is true if the certificate possesses the Certificate Transparency Precertificate Poison extension (1.3.6.1.4.1.11129.2.4.3).")
     }),
-    "unknown_extensions": ListOf(UnknownExtension(), doc="List of raw extensions that were not recognized by the application."),
+    "unknown_extensions": ListOf(UnknownExtension(), category="Unknown Extensions", doc="List of raw extensions that were not recognized by the application."),
     "signature": SubRecord({
         "signature_algorithm": SubRecord({
             "name": String(),
@@ -391,19 +392,19 @@ ParsedCertificate = SubRecordType({
         "value": IndexedBinary(),
         "valid": Boolean(),
         "self_signed": Boolean(),
-    }),
-    "fingerprint_md5": HexString(doc="The MD5 digest over the DER encoding of the certificate, as a hexadecimal string."),
-    "fingerprint_sha1": HexString(doc="The SHA1 digest over the DER encoding of the certificate, as a hexadecimal string."),
-    "fingerprint_sha256": HexString(doc="The SHA2-256 digest over the DER encoding of the certificate, as a hexadecimal string."),
-    "spki_subject_fingerprint": HexString(doc="The SHA2-256 digest over the DER encoding of the certificate's SubjectPublicKeyInfo, as a hexadecimal string."),
-    "tbs_fingerprint": HexString(doc="The SHA2-256 digest over the DER encoding of the certificate's TBSCertificate, as a hexadecimal string."),
-    "tbs_noct_fingerprint": HexString(doc="The SHA2-256 digest over the DER encoding of the certificate's TBSCertificate, *with any CT extensions omitted*, as a hexadecimal string."),
-    "names": ListOf(FQDN(), doc="A list of subject names in the certificate, including the Subject CommonName and SubjectAltName DNSNames, IPAddresses and URIs."),
+    }, category="Signature"),
+    "fingerprint_md5": HexString(category="Fingerprint", doc="The MD5 digest over the DER encoding of the certificate, as a hexadecimal string."),
+    "fingerprint_sha1": HexString(category="Fingerprint", doc="The SHA1 digest over the DER encoding of the certificate, as a hexadecimal string."),
+    "fingerprint_sha256": HexString(category="Fingerprint", doc="The SHA2-256 digest over the DER encoding of the certificate, as a hexadecimal string."),
+    "spki_subject_fingerprint": HexString(category="Fingerprint", doc="The SHA2-256 digest over the DER encoding of the certificate's SubjectPublicKeyInfo, as a hexadecimal string."),
+    "tbs_fingerprint": HexString(category="Fingerprint", doc="The SHA2-256 digest over the DER encoding of the certificate's TBSCertificate, as a hexadecimal string."),
+    "tbs_noct_fingerprint": HexString(category="Fingerprint", doc="The SHA2-256 digest over the DER encoding of the certificate's TBSCertificate, *with any CT extensions omitted*, as a hexadecimal string."),
+    "names": ListOf(FQDN(), category="Basic Information", doc="A list of subject names in the certificate, including the Subject CommonName and SubjectAltName DNSNames, IPAddresses and URIs."),
     # NOTE: ztag has "__expanded_names": ListOf(String())
     # TODO: What Enum() values?
     # [ "unknown", "DV", "OV", "EV" ]
-    "validation_level": Enum(values=["unknown", "DV", "OV", "EV"]),
-    "redacted": Boolean(doc="This is set if any of the certificate's names start with a '?'."),
+    "validation_level": Enum(values=["unknown", "DV", "OV", "EV"], category="Misc"),
+    "redacted": Boolean(category="Misc", doc="This is set if any of the certificate's names start with a '?'."),
 })
 
 # x509/validation.go: Validation
