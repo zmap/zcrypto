@@ -58,6 +58,7 @@ type ServerHello struct {
 	Random                      []byte            `json:"random"`
 	SessionID                   []byte            `json:"session_id"`
 	CipherSuite                 CipherSuite       `json:"cipher_suite"`
+	// TODO FIXME: Why is this a raw uint8, not a CompressionMethod?
 	CompressionMethod           uint8             `json:"compression_method"`
 	OcspStapling                bool              `json:"ocsp_stapling"`
 	TicketSupported             bool              `json:"ticket"`
