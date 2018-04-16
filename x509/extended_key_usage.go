@@ -264,7 +264,8 @@ AppleSystemIdentity bool `json:"apple_system_identity,omitempty" oid:"1.2.840.11
 MicrosoftKeyRecovery3 bool `json:"microsoft_key_recovery_3,omitempty" oid:"1.3.6.1.4.1.311.10.3.11"`
 MicrosoftCertTrustListSigning bool `json:"microsoft_cert_trust_list_signing,omitempty" oid:"1.3.6.1.4.1.311.10.3.1"`
 MicrosoftDrm bool `json:"microsoft_drm,omitempty" oid:"1.3.6.1.4.1.311.10.5.1"`
-MicrosoftLicenses bool `json:"microsoft_licenses,omitempty" oid:"1.3.6.1.4.1.311.10.5.3"`}
+MicrosoftLicenses bool `json:"microsoft_licenses,omitempty" oid:"1.3.6.1.4.1.311.10.5.3"`
+Unknown []string `json:"unknown,omitempty"`}
 
 func (aux *auxExtendedKeyUsage) populateFromASN1(oid asn1.ObjectIdentifier) {
 s := oid.String()
