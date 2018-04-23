@@ -468,10 +468,12 @@ SignatureAndHash = SubRecordType({
     "hash_algorithm": Enum(values=hash_algorithm_names.values(), doc="The name of the hash algorithm, as defined in RFC5246 section 7.4.1.4.1. Unrecognized values are of the form 'unknown.255'."),
 }, doc="mirrors the TLS 1.2, SignatureAndHashAlgorithm struct. See RFC 5246, section A.4.1.")
 
+# tls_names.go: TLSVersion.String()
+TLSVersionName = Enum.with_args(values=["SSLv3", "TLSv1.0", "TLSv1.1", "TLSv1.2", "unknown"], doc="A human-readable version of the TLS version.")
+
 # tls/tls_handshake.go: type TLSVersion uint16 (marshal -> name/value)
 TLSVersion = SubRecordType({
-    # tls_names.go: TLSVersion.String()
-    "name": Enum(values=["SSLv3", "TLSv1.0", "TLSv1.1", "TLSv1.2", "unknown"], doc="A human-readable version of the TLS version."),
+    "name": TLSVersionName(),
     # Note -- this is an "int" (at least 32 bits) in the go struct, but the value itself is 16 bits.
     "value": Unsigned16BitInteger(doc="The TLS version identifier."),
 })
@@ -626,6 +628,20 @@ KeyMaterial = SubRecordType({
     "master_secret": MasterSecret(),
 }, doc="The cryptographic values negotiated by the client and server.")
 
+# x509/validation.go: type Validation struct
+TLSCertificateValidation = SubRecordType({
+    "matches_domain": Boolean(),
+    #"stores":SubRecord({
+    #    "nss":zgrab_server_certificate_valid,
+    #    "microsoft":zgrab_server_certificate_valid,
+    #    "apple":zgrab_server_certificate_valid,
+    #    "java":zgrab_server_certificate_valid,
+    #    "android":zgrab_server_certificate_valid,
+    #})
+    "browser_trusted": Boolean(),
+    "browser_error": String()
+})
+
 # tls/tls_handshake.go: ServerHandshake
 TLSHandshake = SubRecordType({
     "client_hello": ClientHello(),
@@ -633,13 +649,7 @@ TLSHandshake = SubRecordType({
     "server_certificates": SubRecord({
         "certificate": SimpleCertificate(),
         "chain": ListOf(SimpleCertificate()),
-        # x509/validation.go: type Validation struct
-        "validation": SubRecord({
-            "matches_domain": Boolean(),
-            # "stores" does not seem to be present here?
-            "browser_trusted": Boolean(),
-            "browser_error": String()
-        }),
+        "validation": TLSCertificateValidation(),
     }, doc="The certificates returned by the server, and their validation information."),
     "server_key_exchange": ServerKeyExchange(),
     "server_finished": SubRecord({
