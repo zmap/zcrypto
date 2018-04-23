@@ -203,68 +203,68 @@ ExtKeyUsageIpsecUser
 ExtKeyUsageMicrosoftQualifiedSubordinate
 )
 type auxExtendedKeyUsage struct {
-EapOverPpp bool `json:"eap_over_ppp,omitempty"`
-OcspSigning bool `json:"ocsp_signing,omitempty"`
-AppleSoftwareUpdateSigning bool `json:"apple_software_update_signing,omitempty"`
-AppleCryptoTestEnv bool `json:"apple_crypto_test_env,omitempty"`
-MicrosoftEmbeddedNtCrypto bool `json:"microsoft_embedded_nt_crypto,omitempty"`
-MicrosoftDrmIndividualization bool `json:"microsoft_drm_individualization,omitempty"`
-MicrosoftKeyRecovery21 bool `json:"microsoft_key_recovery_21,omitempty"`
-AppleCryptoProductionEnv bool `json:"apple_crypto_production_env,omitempty"`
-AppleCryptoTier1Qos bool `json:"apple_crypto_tier1_qos,omitempty"`
-ClientAuth bool `json:"client_auth,omitempty"`
-CodeSigning bool `json:"code_signing,omitempty"`
-AppleCryptoDevelopmentEnv bool `json:"apple_crypto_development_env,omitempty"`
-AppleCryptoTier0Qos bool `json:"apple_crypto_tier0_qos,omitempty"`
-AppleCryptoTier2Qos bool `json:"apple_crypto_tier2_qos,omitempty"`
-MicrosoftMobileDeviceSoftware bool `json:"microsoft_mobile_device_software,omitempty"`
-MicrosoftNt5Crypto bool `json:"microsoft_nt5_crypto,omitempty"`
-AppleCodeSigningThirdParty bool `json:"apple_code_signing_third_party,omitempty"`
-MicrosoftTimestampSigning bool `json:"microsoft_timestamp_signing,omitempty"`
-MicrosoftRootListSigner bool `json:"microsoft_root_list_signer,omitempty"`
-MicrosoftSystemHealth bool `json:"microsoft_system_health,omitempty"`
-TimeStamping bool `json:"time_stamping,omitempty"`
-AppleCodeSigningDevelopment bool `json:"apple_code_signing_development,omitempty"`
-AppleCryptoQos bool `json:"apple_crypto_qos,omitempty"`
-MicrosoftDocumentSigning bool `json:"microsoft_document_signing,omitempty"`
-MicrosoftEncryptedFileSystem bool `json:"microsoft_encrypted_file_system,omitempty"`
-MicrosoftWhqlCrypto bool `json:"microsoft_whql_crypto,omitempty"`
-NetscapeServerGatedCrypto bool `json:"netscape_server_gated_crypto,omitempty"`
-AppleCryptoTier3Qos bool `json:"apple_crypto_tier3_qos,omitempty"`
-MicrosoftSmartDisplay bool `json:"microsoft_smart_display,omitempty"`
-MicrosoftEfsRecovery bool `json:"microsoft_efs_recovery,omitempty"`
-MicrosoftKernelModeCodeSigning bool `json:"microsoft_kernel_mode_code_signing,omitempty"`
-ServerAuth bool `json:"server_auth,omitempty"`
-IpsecEndSystem bool `json:"ipsec_end_system,omitempty"`
-IpsecUser bool `json:"ipsec_user,omitempty"`
-MicrosoftQualifiedSubordinate bool `json:"microsoft_qualified_subordinate,omitempty"`
-AppleResourceSigning bool `json:"apple_resource_signing,omitempty"`
-MicrosoftOemWhqlCrypto bool `json:"microsoft_oem_whql_crypto,omitempty"`
-MicrosoftSmartcardLogon bool `json:"microsoft_smartcard_logon,omitempty"`
-EmailProtection bool `json:"email_protection,omitempty"`
-MicrosoftServerGatedCrypto bool `json:"microsoft_server_gated_crypto,omitempty"`
-MicrosoftCaExchange bool `json:"microsoft_ca_exchange,omitempty"`
-Dvcs bool `json:"dvcs,omitempty"`
-AppleIchatSigning bool `json:"apple_ichat_signing,omitempty"`
-AppleIchatEncryption bool `json:"apple_ichat_encryption,omitempty"`
-AppleCodeSigning bool `json:"apple_code_signing,omitempty"`
-AppleCryptoEnv bool `json:"apple_crypto_env,omitempty"`
-MicrosoftSystemHealthLoophole bool `json:"microsoft_system_health_loophole,omitempty"`
-Any bool `json:"any,omitempty"`
-AppleCryptoMaintenanceEnv bool `json:"apple_crypto_maintenance_env,omitempty"`
-IpsecTunnel bool `json:"ipsec_tunnel,omitempty"`
-MicrosoftLifetimeSigning bool `json:"microsoft_lifetime_signing,omitempty"`
-MicrosoftCspSignature bool `json:"microsoft_csp_signature,omitempty"`
-MicrosoftSgcSerialized bool `json:"microsoft_sgc_serialized,omitempty"`
-SbgpCertAaServiceAuth bool `json:"sbgp_cert_aa_service_auth,omitempty"`
-EapOverLan bool `json:"eap_over_lan,omitempty"`
-MicrosoftLicenseServer bool `json:"microsoft_license_server,omitempty"`
-MicrosoftEnrollmentAgent bool `json:"microsoft_enrollment_agent,omitempty"`
-AppleSystemIdentity bool `json:"apple_system_identity,omitempty"`
-MicrosoftKeyRecovery3 bool `json:"microsoft_key_recovery_3,omitempty"`
-MicrosoftCertTrustListSigning bool `json:"microsoft_cert_trust_list_signing,omitempty"`
-MicrosoftDrm bool `json:"microsoft_drm,omitempty"`
-MicrosoftLicenses bool `json:"microsoft_licenses,omitempty"`
+EapOverPpp bool `json:"eap_over_ppp,omitempty" oid:"1.3.6.1.5.5.7.3.13"`
+OcspSigning bool `json:"ocsp_signing,omitempty" oid:"1.3.6.1.5.5.7.3.9"`
+AppleSoftwareUpdateSigning bool `json:"apple_software_update_signing,omitempty" oid:"1.2.840.113635.100.4.1.2"`
+AppleCryptoTestEnv bool `json:"apple_crypto_test_env,omitempty" oid:"1.2.840.113635.100.4.5.3"`
+MicrosoftEmbeddedNtCrypto bool `json:"microsoft_embedded_nt_crypto,omitempty" oid:"1.3.6.1.4.1.311.10.3.8"`
+MicrosoftDrmIndividualization bool `json:"microsoft_drm_individualization,omitempty" oid:"1.3.6.1.4.1.311.10.5.2"`
+MicrosoftKeyRecovery21 bool `json:"microsoft_key_recovery_21,omitempty" oid:"1.3.6.1.4.1.311.21.6"`
+AppleCryptoProductionEnv bool `json:"apple_crypto_production_env,omitempty" oid:"1.2.840.113635.100.4.5.1"`
+AppleCryptoTier1Qos bool `json:"apple_crypto_tier1_qos,omitempty" oid:"1.2.840.113635.100.4.6.2"`
+ClientAuth bool `json:"client_auth,omitempty" oid:"1.3.6.1.5.5.7.3.2"`
+CodeSigning bool `json:"code_signing,omitempty" oid:"1.3.6.1.5.5.7.3.3"`
+AppleCryptoDevelopmentEnv bool `json:"apple_crypto_development_env,omitempty" oid:"1.2.840.113635.100.4.5.4"`
+AppleCryptoTier0Qos bool `json:"apple_crypto_tier0_qos,omitempty" oid:"1.2.840.113635.100.4.6.1"`
+AppleCryptoTier2Qos bool `json:"apple_crypto_tier2_qos,omitempty" oid:"1.2.840.113635.100.4.6.3"`
+MicrosoftMobileDeviceSoftware bool `json:"microsoft_mobile_device_software,omitempty" oid:"1.3.6.1.4.1.311.10.3.14"`
+MicrosoftNt5Crypto bool `json:"microsoft_nt5_crypto,omitempty" oid:"1.3.6.1.4.1.311.10.3.6"`
+AppleCodeSigningThirdParty bool `json:"apple_code_signing_third_party,omitempty" oid:"1.2.840.113635.100.4.1.3"`
+MicrosoftTimestampSigning bool `json:"microsoft_timestamp_signing,omitempty" oid:"1.3.6.1.4.1.311.10.3.2"`
+MicrosoftRootListSigner bool `json:"microsoft_root_list_signer,omitempty" oid:"1.3.6.1.4.1.311.10.3.9"`
+MicrosoftSystemHealth bool `json:"microsoft_system_health,omitempty" oid:"1.3.6.1.4.1.311.47.1.1"`
+TimeStamping bool `json:"time_stamping,omitempty" oid:"1.3.6.1.5.5.7.3.8"`
+AppleCodeSigningDevelopment bool `json:"apple_code_signing_development,omitempty" oid:"1.2.840.113635.100.4.1.1"`
+AppleCryptoQos bool `json:"apple_crypto_qos,omitempty" oid:"1.2.840.113635.100.4.6"`
+MicrosoftDocumentSigning bool `json:"microsoft_document_signing,omitempty" oid:"1.3.6.1.4.1.311.10.3.12"`
+MicrosoftEncryptedFileSystem bool `json:"microsoft_encrypted_file_system,omitempty" oid:"1.3.6.1.4.1.311.10.3.4"`
+MicrosoftWhqlCrypto bool `json:"microsoft_whql_crypto,omitempty" oid:"1.3.6.1.4.1.311.10.3.5"`
+NetscapeServerGatedCrypto bool `json:"netscape_server_gated_crypto,omitempty" oid:"2.16.840.1.113730.4.1"`
+AppleCryptoTier3Qos bool `json:"apple_crypto_tier3_qos,omitempty" oid:"1.2.840.113635.100.4.6.4"`
+MicrosoftSmartDisplay bool `json:"microsoft_smart_display,omitempty" oid:"1.3.6.1.4.1.311.10.3.15"`
+MicrosoftEfsRecovery bool `json:"microsoft_efs_recovery,omitempty" oid:"1.3.6.1.4.1.311.10.3.4.1"`
+MicrosoftKernelModeCodeSigning bool `json:"microsoft_kernel_mode_code_signing,omitempty" oid:"1.3.6.1.4.1.311.61.1.1"`
+ServerAuth bool `json:"server_auth,omitempty" oid:"1.3.6.1.5.5.7.3.1"`
+IpsecEndSystem bool `json:"ipsec_end_system,omitempty" oid:"1.3.6.1.5.5.7.3.5"`
+IpsecUser bool `json:"ipsec_user,omitempty" oid:"1.3.6.1.5.5.7.3.7"`
+MicrosoftQualifiedSubordinate bool `json:"microsoft_qualified_subordinate,omitempty" oid:"1.3.6.1.4.1.311.10.3.10"`
+AppleResourceSigning bool `json:"apple_resource_signing,omitempty" oid:"1.2.840.113635.100.4.1.4"`
+MicrosoftOemWhqlCrypto bool `json:"microsoft_oem_whql_crypto,omitempty" oid:"1.3.6.1.4.1.311.10.3.7"`
+MicrosoftSmartcardLogon bool `json:"microsoft_smartcard_logon,omitempty" oid:"1.3.6.1.4.1.311.20.2.2"`
+EmailProtection bool `json:"email_protection,omitempty" oid:"1.3.6.1.5.5.7.3.4"`
+MicrosoftServerGatedCrypto bool `json:"microsoft_server_gated_crypto,omitempty" oid:"1.3.6.1.4.1.311.10.3.3"`
+MicrosoftCaExchange bool `json:"microsoft_ca_exchange,omitempty" oid:"1.3.6.1.4.1.311.21.5"`
+Dvcs bool `json:"dvcs,omitempty" oid:"1.3.6.1.5.5.7.3.10"`
+AppleIchatSigning bool `json:"apple_ichat_signing,omitempty" oid:"1.2.840.113635.100.4.2"`
+AppleIchatEncryption bool `json:"apple_ichat_encryption,omitempty" oid:"1.2.840.113635.100.4.3"`
+AppleCodeSigning bool `json:"apple_code_signing,omitempty" oid:"1.2.840.113635.100.4.1"`
+AppleCryptoEnv bool `json:"apple_crypto_env,omitempty" oid:"1.2.840.113635.100.4.5"`
+MicrosoftSystemHealthLoophole bool `json:"microsoft_system_health_loophole,omitempty" oid:"1.3.6.1.4.1.311.47.1.3"`
+Any bool `json:"any,omitempty" oid:"2.5.29.37.0"`
+AppleCryptoMaintenanceEnv bool `json:"apple_crypto_maintenance_env,omitempty" oid:"1.2.840.113635.100.4.5.2"`
+IpsecTunnel bool `json:"ipsec_tunnel,omitempty" oid:"1.3.6.1.5.5.7.3.6"`
+MicrosoftLifetimeSigning bool `json:"microsoft_lifetime_signing,omitempty" oid:"1.3.6.1.4.1.311.10.3.13"`
+MicrosoftCspSignature bool `json:"microsoft_csp_signature,omitempty" oid:"1.3.6.1.4.1.311.10.3.16"`
+MicrosoftSgcSerialized bool `json:"microsoft_sgc_serialized,omitempty" oid:"1.3.6.1.4.1.311.10.3.3.1"`
+SbgpCertAaServiceAuth bool `json:"sbgp_cert_aa_service_auth,omitempty" oid:"1.3.6.1.5.5.7.3.11"`
+EapOverLan bool `json:"eap_over_lan,omitempty" oid:"1.3.6.1.5.5.7.3.14"`
+MicrosoftLicenseServer bool `json:"microsoft_license_server,omitempty" oid:"1.3.6.1.4.1.311.10.5.4"`
+MicrosoftEnrollmentAgent bool `json:"microsoft_enrollment_agent,omitempty" oid:"1.3.6.1.4.1.311.20.2.1"`
+AppleSystemIdentity bool `json:"apple_system_identity,omitempty" oid:"1.2.840.113635.100.4.4"`
+MicrosoftKeyRecovery3 bool `json:"microsoft_key_recovery_3,omitempty" oid:"1.3.6.1.4.1.311.10.3.11"`
+MicrosoftCertTrustListSigning bool `json:"microsoft_cert_trust_list_signing,omitempty" oid:"1.3.6.1.4.1.311.10.3.1"`
+MicrosoftDrm bool `json:"microsoft_drm,omitempty" oid:"1.3.6.1.4.1.311.10.5.1"`
+MicrosoftLicenses bool `json:"microsoft_licenses,omitempty" oid:"1.3.6.1.4.1.311.10.5.3"`
 Unknown []string `json:"unknown,omitempty"`}
 
 func (aux *auxExtendedKeyUsage) populateFromASN1(oid asn1.ObjectIdentifier) {

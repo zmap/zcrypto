@@ -16,12 +16,16 @@ var clientAuthTypeNames map[int]string
 var signatureSchemeNames map[uint16]string
 
 func init() {
+	// RFC 5246 7.4.1.4.1
 	signatureNames = make(map[uint8]string, 8)
+	// TODO FIXME: the RFC also defines anonymous(0) and (255).
 	signatureNames[signatureRSA] = "rsa"
 	signatureNames[signatureDSA] = "dsa"
 	signatureNames[signatureECDSA] = "ecdsa"
 
+	// RFC 5246 7.4.1.4.1
 	hashNames = make(map[uint8]string, 16)
+	// TODO FIXME: the RFC also defines none(0) and (255).
 	hashNames[hashMD5] = "md5"
 	hashNames[hashSHA1] = "sha1"
 	hashNames[hashSHA224] = "sha224"
