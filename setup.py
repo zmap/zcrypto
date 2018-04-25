@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 
 setup(
-  name="schemas.zcrypto",
+  name="zcrypto-schemas",
   version="0.0.1",
   description="ZSchema definitions for zcrypto's JSON output.",
   classifiers=[
@@ -12,10 +12,10 @@ setup(
     "Natural Language :: English"
   ],
   author="ZMap Team",
-  author_email="zmap-team@umich.edu",
+  author_email="team@zmap.io",
   url="https://github.com/zmap/zcrypto",
-  keywords="zmap censys ztag internet-wide scanning",
-  packages=["schemas"],
+  keywords="zmap censys zcrypto internet-wide scanning",
+  packages=find_packages(),
   include_package_data=True,
   zip_safe=False,
   install_requires = [
