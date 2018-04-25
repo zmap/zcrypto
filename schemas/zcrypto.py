@@ -377,7 +377,7 @@ ParsedCertificate = SubRecordType({
             "excluded_email_addresses": ListOf(CensysString()),
             "excluded_ip_addresses": ListOf(GeneralSubtreeIP()),
             "excluded_directory_names": ListOf(DistinguishedName()),
-            "excluded_registered_ids": ListOf(String()),
+            "excluded_registered_ids": ListOf(OID()),
             "excluded_edi_party_names": ListOf(EDIPartyName()),
         }, category="Name Constraints"),
         "signed_certificate_timestamps": ListOf(SCTRecord(), category="Embedded SCTS / CT Poison"),
