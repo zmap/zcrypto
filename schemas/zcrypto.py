@@ -174,10 +174,13 @@ ECDSAPublicKey = SubRecordType({
     # "asn1_oid":OID(),
 }, doc="The public portion of an ECDSA asymmetric key.")
 
+# x509/ct/types.go: type Version uint8; "represents the Version enum from section 3.2 of the RFC: enum { v1(0), (255) } Version;"
+SCTVersion = Unsigned8BitInteger().with_args(doc="Version of the protocol to which the SCT conforms.", examples=[0, 255])
+
 # x509/ct/types.go: SignedCertificateTimestamp.
 # Note: ztag_sct has "log_name": String(), which is not present in the go.
 SCTRecord = SubRecordType({
-    "version": Unsigned32BitInteger(doc="Version of the protocol to which the SCT conforms.", required=True),
+    "version": SCTVersion(required=True),
     "log_id": IndexedBinary(doc="The SHA-256 hash of the log's public key, calculated over the DER encoding of the key's SubjectPublicKeyInfo.", required=True),
     "timestamp": Timestamp(doc="Timestamp at which the SCT was issued.", required=False),
     "extensions": Binary(doc="For future extensions to the protocol.", required=False),
@@ -211,6 +214,8 @@ UserNoticeData = SubRecordType({
 CertificatePoliciesData = SubRecordType({
     "id": OID(doc="The OBJECT IDENTIFIER identifying the policy."),
     "cps": ListOf(URL(), doc="List of URIs to the policies"),
+    # NOTE: In ztag, this was a single UserNoticeData, not a ListOf(UserNoticeData).
+    # Chris's validation of ESLoader errors confirmed that this should in fact be a list.
     "user_notice": ListOf(UserNoticeData(), doc="List of textual notices to display relying parties."),
 })
 
@@ -286,6 +291,24 @@ ExtendedKeyUsage = SubRecordType({
     "unknown": ListOf(OID(), doc="A list of the raw OBJECT IDENTIFIERs of any EKUs not recognized by the application."),
 }, category="Extended Key Usage")
 
+# x509/json.go: auxPublicKeyAlgorithm (via PublicKeyAlgorithm)
+PublicKeyAlgorithm = SubRecordType({
+    "name": String(doc="Name of public key type, e.g., RSA or ECDSA. "\
+                       "More information is available the named SubRecord "\
+                       "(e.g., RSAPublicKey())."),
+    "oid": OID(doc="OID of the public key on the certificate. "\
+                   "This is helpful when an unknown type is present. "\
+                   "This field is reserved and not currently populated.")
+})
+
+# x509/json.go: auxSignatureAlgorithm (via SignatureAlgorithm)
+SignatureAlgorithm = SubRecordType({
+    "name": String(doc="Name of signature algorithm, e.g., SHA1-RSA or "\
+                       "ECDSA-SHA512. Unknown algorithms get an integer id."),
+    "oid": OID(doc="The OBJECT IDENTIFIER of the signature algorithm, in "\
+                   "dotted-decimal notation.")
+})
+
 # x509/json.go jsonCertificate (mapped from x509.Certificate)
 ParsedCertificate = SubRecordType({
     "subject": DistinguishedName(category="Subject", doc="The parsed subject name.", required=True),
@@ -303,21 +326,10 @@ ParsedCertificate = SubRecordType({
         "end": Timestamp(doc="Timestamp of when certificate expires. Timezone is UTC."),
         "length": Signed64BitInteger(),
     }, category="Validity Period"),
-    "signature_algorithm": SubRecord({
-        "name": String(),
-        "oid": String(),
-    }),
+    "signature_algorithm": SignatureAlgorithm(),
     "subject_key_info": SubRecord({
         "fingerprint_sha256": HexString(),
-        # x509/json.go: auxPublicKeyAlgorithm
-        "key_algorithm": SubRecord({
-            "name": String(doc="Name of public key type, e.g., RSA or ECDSA. "\
-                               "More information is available the named SubRecord "\
-                               "(e.g., RSAPublicKey())."),
-            "oid": OID(doc="OID of the public key on the certificate. "\
-                           "This is helpful when an unknown type is present. "\
-                           "This field is reserved and not currently populated.")
-        }),
+        "key_algorithm": PublicKeyAlgorithm(),
         "rsa_public_key": RSAPublicKey(),
         "dsa_public_key": DSAPublicKey(),
         "ecdsa_public_key": ECDSAPublicKey(),
@@ -377,7 +389,7 @@ ParsedCertificate = SubRecordType({
             "excluded_email_addresses": ListOf(CensysString()),
             "excluded_ip_addresses": ListOf(GeneralSubtreeIP()),
             "excluded_directory_names": ListOf(DistinguishedName()),
-            "excluded_registered_ids": ListOf(String()),
+            "excluded_registered_ids": ListOf(OID()),
             "excluded_edi_party_names": ListOf(EDIPartyName()),
         }, category="Name Constraints"),
         "signed_certificate_timestamps": ListOf(SCTRecord(), category="Embedded SCTS / CT Poison"),
@@ -385,10 +397,7 @@ ParsedCertificate = SubRecordType({
     }),
     "unknown_extensions": ListOf(UnknownExtension(), category="Unknown Extensions", doc="List of raw extensions that were not recognized by the application."),
     "signature": SubRecord({
-        "signature_algorithm": SubRecord({
-            "name": String(),
-            "oid": OID(),
-        }),
+        "signature_algorithm": SignatureAlgorithm(),
         "value": IndexedBinary(),
         "valid": Boolean(),
         "self_signed": Boolean(),
@@ -590,7 +599,7 @@ ServerHello = SubRecordType({
 # tls/tls_handshake.go: ServerKeyExchange
 ServerKeyExchange = SubRecordType({
     "ecdh_params": ECDHParams(),
-    "rsa_params": RSAClientParams(),
+    "rsa_params": RSAPublicKey(),
     "dh_params": DHParams(),
     "digest": Binary(doc="The digest that is signed."),
     "signature": SubRecord({
