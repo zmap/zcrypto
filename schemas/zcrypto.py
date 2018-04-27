@@ -309,6 +309,9 @@ SignatureAlgorithm = SubRecordType({
                    "dotted-decimal notation.")
 })
 
+# x509/extensions.go: type SubjAuthKeyId []byte (but, its MarshalJSON returns json.Marshal(hex.EncodeToString(kid)))
+SubjAuthKeyId = HexString.with_args(doc="A key identifier, usually a digest of the DER encoding of a SubjectPublicKeyInfo. This is the hex encoding of the OCTET STRING value.")
+
 # x509/json.go jsonCertificate (mapped from x509.Certificate)
 ParsedCertificate = SubRecordType({
     "subject": DistinguishedName(category="Subject", doc="The parsed subject name.", required=True),
@@ -354,8 +357,8 @@ ParsedCertificate = SubRecordType({
         "subject_alt_name": GeneralNames(category="Subject Alternate Names (SANs)", doc="The parsed Subject Alternative Name extension.", required=False),
         "issuer_alt_name": GeneralNames(doc="The parsed Issuer Alternative Name extension.", required=False),
         "crl_distribution_points": ListOf(URL(), category="CRL Distribution Points"),
-        "authority_key_id": HexString(category="Authority Key ID (AKID)", doc="An identifier of the issuer's public key, encoded as a hexadecimal string."),
-        "subject_key_id": HexString(category="Subject Key ID (SKID)", doc="An identifier of the subject's public key, encoded as a hexadecimal string."),
+        "authority_key_id": SubjAuthKeyId(category="Authority Key ID (AKID)"),
+        "subject_key_id": SubjAuthKeyId(category="Subject Key ID (SKID)"),
         "extended_key_usage": ExtendedKeyUsage(),
         "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies"),
         "authority_info_access": SubRecord({
