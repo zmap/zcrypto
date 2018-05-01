@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/mreiferson/go-httpclient"
-	"github.com/zmap/zcrypto/ct"
+	"github.com/teamnsrg/zcrypto/ct"
 	"golang.org/x/net/context"
 )
 
@@ -380,6 +380,7 @@ func (c *LogClient) GetEntries(start, end int64) ([]ct.LogEntry, error) {
 			return nil, err
 		}
 		entries[index].Leaf = *leaf
+		entries[index].Server = c.Uri
 		chainBytes, err := base64.StdEncoding.DecodeString(entry.ExtraData)
 
 		var chain []ct.ASN1Cert

@@ -13,8 +13,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 
-	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zcrypto/x509/pkix"
+	"github.com/teamnsrg/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509/pkix"
 
 	"encoding/pem"
 	"flag"

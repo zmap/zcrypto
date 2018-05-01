@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/teamnsrg/zcrypto/x509"
 	"github.com/zmap/zcertificate"
-	"github.com/zmap/zcrypto/x509"
 )
 
 // subjectAndKeyFingerprint is a SHA256 fingerprint of (public key, subject).

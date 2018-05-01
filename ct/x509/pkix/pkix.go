@@ -8,7 +8,7 @@ package pkix
 
 import (
 	// START CT CHANGES
-	"github.com/zmap/zcrypto/ct/asn1"
+	"github.com/teamnsrg/zcrypto/ct/asn1"
 	"strings"
 	// END CT CHANGES
 	"math/big"

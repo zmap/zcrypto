@@ -10,9 +10,9 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/zmap/zcrypto/ct"
-	"github.com/zmap/zcrypto/ct/client"
-	"github.com/zmap/zcrypto/ct/x509"
+	"github.com/teamnsrg/zcrypto/ct"
+	"github.com/teamnsrg/zcrypto/ct/client"
+	"github.com/teamnsrg/zcrypto/ct/x509"
 )
 
 // Clients wishing to implement their own Matchers should implement this interface:

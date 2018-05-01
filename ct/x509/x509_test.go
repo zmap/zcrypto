@@ -14,8 +14,8 @@ import (
 	_ "crypto/sha256"
 	_ "crypto/sha512"
 	// START CT CHANGES
-	"github.com/zmap/zcrypto/ct/asn1"
-	"github.com/zmap/zcrypto/ct/x509/pkix"
+	"github.com/teamnsrg/zcrypto/ct/asn1"
+	"github.com/teamnsrg/zcrypto/ct/x509/pkix"
 	// END CT CHANGES
 	"encoding/base64"
 	"encoding/hex"

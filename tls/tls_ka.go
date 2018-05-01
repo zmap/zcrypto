@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strconv"
 
-	jsonKeys "github.com/zmap/zcrypto/json"
+	jsonKeys "github.com/teamnsrg/zcrypto/json"
 )
 
 // SignatureAndHash is a signatureAndHash that implements json.Marshaler and

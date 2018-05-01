@@ -20,7 +20,7 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/zmap/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509"
 )
 
 var errClientKeyExchange = errors.New("tls: invalid ClientKeyExchange message")

@@ -17,7 +17,7 @@ package verifier
 import (
 	"time"
 
-	"github.com/zmap/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509"
 )
 
 // VerificationResult contains the result of a verification of a certificate

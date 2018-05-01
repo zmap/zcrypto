@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/zmap/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509"
 )
 
 type clientHandshakeState struct {

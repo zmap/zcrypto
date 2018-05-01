@@ -8,7 +8,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	// START CT CHANGES
-	"github.com/zmap/zcrypto/ct/asn1"
+	"github.com/teamnsrg/zcrypto/ct/asn1"
 	// START CT CHANGES
 	"errors"
 	"fmt"

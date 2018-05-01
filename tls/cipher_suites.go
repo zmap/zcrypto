@@ -17,7 +17,7 @@ import (
 	"hash"
 
 	"github.com/zmap/rc2"
-	"github.com/zmap/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
