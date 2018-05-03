@@ -44,12 +44,14 @@ DistinguishedName = SubRecordType({
     "email_address": ListOf(CensysString()),
     "given_name": ListOf(CensysString()),
     # EV Fields
-    # Commented out 2017-08-18 due to ES analyzer mismatch:
+    # Commented out 2017-08-18 due to ES analyzer mismatch
+    # Changed to String from CensysString 2018-04-26 for ESLoader data validation
     # Data with these fields got into the IPv4 index before the ES mapping
     # was updated, and ES automatically chose a different analyzer.
-    # "jurisdiction_country":ListOf(CensysString()),
-    # "jurisdiction_locality":ListOf(CensysString()),
-    # "jurisdiction_province":ListOf(CensysString()),
+    # If/when we reindex in the future, this should change to CensysString
+    "jurisdiction_country":ListOf(String()),
+    "jurisdiction_locality":ListOf(String()),
+    "jurisdiction_province":ListOf(String()),
 })
 
 # x509/pkix/pkix.go: Extension
@@ -289,7 +291,7 @@ ExtendedKeyUsage = SubRecordType({
 
     # NOTE: ztag has this commented out, but it is included in the JSON.
     "unknown": ListOf(OID(), doc="A list of the raw OBJECT IDENTIFIERs of any EKUs not recognized by the application."),
-}, category="Extended Key Usage")
+}, category="Extended Key Usage", validation_policy="warn")
 
 # x509/json.go: auxPublicKeyAlgorithm (via PublicKeyAlgorithm)
 PublicKeyAlgorithm = SubRecordType({
@@ -298,7 +300,8 @@ PublicKeyAlgorithm = SubRecordType({
                        "(e.g., RSAPublicKey())."),
     "oid": OID(doc="OID of the public key on the certificate. "\
                    "This is helpful when an unknown type is present. "\
-                   "This field is reserved and not currently populated.")
+                   "This field is reserved and not currently populated.",
+               validation_policy="warn")
 })
 
 # x509/json.go: auxSignatureAlgorithm (via SignatureAlgorithm)
@@ -306,7 +309,7 @@ SignatureAlgorithm = SubRecordType({
     "name": String(doc="Name of signature algorithm, e.g., SHA1-RSA or "\
                        "ECDSA-SHA512. Unknown algorithms get an integer id."),
     "oid": OID(doc="The OBJECT IDENTIFIER of the signature algorithm, in "\
-                   "dotted-decimal notation.")
+                   "dotted-decimal notation.", validation_policy="warn")
 })
 
 # x509/extensions.go: type SubjAuthKeyId []byte (but, its MarshalJSON returns json.Marshal(hex.EncodeToString(kid)))
@@ -358,9 +361,9 @@ ParsedCertificate = SubRecordType({
         "issuer_alt_name": GeneralNames(doc="The parsed Issuer Alternative Name extension.", required=False),
         "crl_distribution_points": ListOf(URL(), category="CRL Distribution Points"),
         "authority_key_id": SubjAuthKeyId(category="Authority Key ID (AKID)"),
-        "subject_key_id": SubjAuthKeyId(category="Subject Key ID (SKID)"),
+        "subject_key_id": SubjAuthKeyId(category="Subject Key ID (SKID)", validation_policy="warn"),
         "extended_key_usage": ExtendedKeyUsage(),
-        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies"),
+        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies", validation_policy="warn"),
         "authority_info_access": SubRecord({
             "ocsp_urls": ListOf(URL()),
             "issuer_urls": ListOf(URL())
