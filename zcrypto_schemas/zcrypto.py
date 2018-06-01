@@ -87,8 +87,8 @@ GeneralNames = SubRecordType({
 
 # json/dhe.go: cryptoParameter / auxCryptoParameter
 CryptoParameter = SubRecordType({
-    "value": IndexedBinary(required=True),
-    "length": Unsigned16BitInteger(required=True),
+    "value": IndexedBinary(required=False),
+    "length": Unsigned16BitInteger(required=False),
 })
 
 # json/dhe.go: DHParams / auxDHParams:
@@ -133,8 +133,8 @@ TLSCurveID = SubRecordType({
 
 # json/ecdhe.go: ECPoint.MarshalJSON()
 ECPoint = SubRecordType({
-    "x": CryptoParameter(required=True),
-    "y": CryptoParameter(required=True),
+    "x": CryptoParameter(required=False),
+    "y": CryptoParameter(required=False),
 }, doc="An elliptic curve point.")
 
 # json/ecdhe.go: ECDHPrivateParams
@@ -362,8 +362,8 @@ ParsedCertificate = SubRecordType({
         "crl_distribution_points": ListOf(URL(), category="CRL Distribution Points"),
         "authority_key_id": SubjAuthKeyId(category="Authority Key ID (AKID)"),
         "subject_key_id": SubjAuthKeyId(category="Subject Key ID (SKID)", validation_policy="warn"),
-        "extended_key_usage": ExtendedKeyUsage(),
-        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies", validation_policy="warn"),
+        "extended_key_usage": ExtendedKeyUsage(exclude=["bigquery"]),
+        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies", validation_policy="warn", exclude=["bigquery"]),
         "authority_info_access": SubRecord({
             "ocsp_urls": ListOf(URL()),
             "issuer_urls": ListOf(URL())
