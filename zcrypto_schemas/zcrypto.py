@@ -54,11 +54,12 @@ DistinguishedName = SubRecordType({
     "jurisdiction_province":ListOf(String()),
 })
 
-# x509/pkix/pkix.go: Extension
+# x509/pkix/pkix.go: Extension (via auxExtension in x509/json.go)
 UnknownExtension = SubRecordType({
-    "id": OID(doc="The OBJECT IDENTIFIER identifying the extension.", required=True),
+    # both id and value are omitempty
+    "id": OID(doc="The OBJECT IDENTIFIER identifying the extension."),
     "critical": Boolean(doc="Certificates should be rejected if they have critical extensions the validator does not recognize."),
-    "value": IndexedBinary(doc="The raw value of the extnValue OCTET STREAM.", required=True),
+    "value": IndexedBinary(doc="The raw value of the extnValue OCTET STREAM."),
 }, doc="An unparsed X.509 extension value.")
 
 # x509/pkix/pkix.go: type EDIPartyName struct
