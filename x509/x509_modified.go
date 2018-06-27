@@ -519,7 +519,7 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 
 // CheckCRLSignature checks that the signature in crl is from c.
 func (c *Certificate) CheckCRLSignature(crl *pkix.CertificateList) error {
-	algo := getSignatureAlgorithmFromAI(crl.SignatureAlgorithm)
+	algo := GetSignatureAlgorithmFromAI(crl.SignatureAlgorithm)
 	return c.CheckSignature(algo, crl.TBSCertList.Raw, crl.SignatureValue.RightAlign())
 }
 
@@ -806,7 +806,7 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 
 	out.Signature = in.SignatureValue.RightAlign()
 	out.SignatureAlgorithm =
-		getSignatureAlgorithmFromAI(in.TBSCertificate.SignatureAlgorithm)
+		GetSignatureAlgorithmFromAI(in.TBSCertificate.SignatureAlgorithm)
 
 	out.SignatureAlgorithmOID = in.TBSCertificate.SignatureAlgorithm.Algorithm
 
