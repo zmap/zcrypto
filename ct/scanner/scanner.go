@@ -9,13 +9,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/op/go-logging"
+	log "github.com/sirupsen/logrus"
 	"github.com/zmap/zcrypto/ct"
 	"github.com/zmap/zcrypto/ct/client"
 	"github.com/zmap/zcrypto/ct/x509"
 )
-
-var log *logging.Logger
 
 // Clients wishing to implement their own Matchers should implement this interface:
 type Matcher interface {
@@ -172,6 +170,8 @@ type Scanner struct {
 
 	unparsableEntries         int64
 	entriesWithNonFatalErrors int64
+
+	logger *log.Logger
 }
 
 // matcherJob represents the context for an individual matcher job.
@@ -205,10 +205,10 @@ func (s *Scanner) handleParseEntryError(err error, entryType ct.LogEntryType, in
 	case x509.NonFatalErrors:
 		s.entriesWithNonFatalErrors++
 		// We'll make a note, but continue.
-		s.LogWarn(fmt.Sprintf("Non-fatal error in %+v at index %d of log at %s: %s", entryType, index, s.logClient.Uri, err.Error()))
+		s.logger.Warnf("Non-fatal error in %+v at index %d of log at %s: %s", entryType, index, s.logClient.Uri, err)
 	default:
 		s.unparsableEntries++
-		s.LogError(fmt.Sprintf("Failed to parse in %+v at index %d of log at %s: %s", entryType, index, s.logClient.Uri, err.Error()))
+		s.logger.Warnf("Failed to parse in %+v at index %d of log at %s: %s", entryType, index, s.logClient.Uri, err)
 		return err
 	}
 	return nil
@@ -257,7 +257,7 @@ func (s *Scanner) matcherJob(id int, entries <-chan matcherJob, foundCert func(*
 	for e := range entries {
 		s.processEntry(e.entry, foundCert, foundPrecert)
 	}
-	s.Log(fmt.Sprintf("Matcher %d finished", id))
+	s.logger.Debugf("Matcher %d finished", id)
 	wg.Done()
 }
 
@@ -274,14 +274,14 @@ func (s *Scanner) fetcherJob(id int, ranges <-chan fetchRange, entries chan<- ma
 		for !success {
 			logEntries, err := s.logClient.GetEntries(r.start, r.end)
 			if err != nil {
-				s.Log(fmt.Sprintf("Problem fetching from log: %s", err.Error()))
+				s.logger.Infof("Problem fetching from log: %s", err)
 				if err.Error() == "HTTP error: 500 Internal Server Error" {
 					time.Sleep(500 * time.Millisecond)
 				}
 				continue
 			}
 			if len(logEntries) == 0 {
-				s.Log(fmt.Sprintf("Log %s gave empty slice of certificates for range %d-%d", s.logClient.Uri, r.start, r.end))
+				s.logger.Debugf("Log %s gave empty slice of certificates for range %d-%d", s.logClient.Uri, r.start, r.end)
 				time.Sleep(500 * time.Millisecond)
 				continue
 			}
@@ -298,7 +298,7 @@ func (s *Scanner) fetcherJob(id int, ranges <-chan fetchRange, entries chan<- ma
 			}
 		}
 	}
-	s.Log(fmt.Sprintf("Fetcher %d finished", id))
+	s.logger.Debugf("Fetcher %d finished", id)
 	wg.Done()
 }
 
@@ -342,24 +342,6 @@ func humanTime(seconds int) string {
 	return s
 }
 
-func (s Scanner) Log(msg string) {
-	if !s.opts.Quiet {
-		log.Info(msg)
-	}
-}
-
-func (s Scanner) LogWarn(msg string) {
-	if !s.opts.Quiet {
-		log.Warning(msg)
-	}
-}
-
-func (s Scanner) LogError(msg string) {
-	if !s.opts.Quiet {
-		log.Error(msg)
-	}
-}
-
 // Performs a scan against the Log.
 // For each x509 certificate found, |foundCert| will be called with the
 // index of the entry and certificate itself as arguments.  For each precert
@@ -369,7 +351,7 @@ func (s Scanner) LogError(msg string) {
 // This method blocks until the scan is complete.
 func (s *Scanner) Scan(foundCert func(*ct.LogEntry, string),
 	foundPrecert func(*ct.LogEntry, string), updater chan int64) (int64, error) {
-	s.Log("Starting up...\n")
+	s.logger.Info("Starting up...\n")
 	s.certsProcessed = 0
 	s.precertsSeen = 0
 	s.unparsableEntries = 0
@@ -379,7 +361,7 @@ func (s *Scanner) Scan(foundCert func(*ct.LogEntry, string),
 	if err != nil {
 		return 0, err
 	}
-	s.Log(fmt.Sprintf("Got %s STH with %d certs", s.opts.Name, latestSth.TreeSize))
+	s.logger.Infof("Got %s STH with %d certs", s.opts.Name, latestSth.TreeSize)
 
 	stopIndex := s.opts.MaximumIndex
 	if s.opts.MaximumIndex == 0 {
@@ -405,8 +387,8 @@ func (s *Scanner) Scan(foundCert func(*ct.LogEntry, string),
 
 			remainingSeconds := int(float64(remainingCerts) / throughput)
 			remainingString := humanTime(remainingSeconds)
-			s.Log(fmt.Sprintf("Processed: %d %s certs (to index %d). Throughput: %3.2f ETA: %s\n", s.certsProcessed, s.opts.Name,
-				s.opts.StartIndex+int64(s.certsProcessed), throughput, remainingString))
+			s.logger.Infof("Processed: %d %s certs (to index %d). Throughput: %3.2f ETA: %s\n", s.certsProcessed, s.opts.Name,
+				s.opts.StartIndex+int64(s.certsProcessed), throughput, remainingString)
 
 			updater <- int64(stopIndex) - remainingCerts
 		}
@@ -439,15 +421,15 @@ func (s *Scanner) Scan(foundCert func(*ct.LogEntry, string),
 	matcherWG.Wait()
 	ticker.Stop()
 
-	s.Log(fmt.Sprintf("Completed %d %s certs in %s", s.certsProcessed, s.opts.Name, humanTime(int(time.Since(startTime).Seconds()))))
-	s.Log(fmt.Sprintf("Saw %d precerts", s.precertsSeen))
-	s.Log(fmt.Sprintf("%d unparsable entries, %d non-fatal errors", s.unparsableEntries, s.entriesWithNonFatalErrors))
+	s.logger.Infof("Completed %d %s certs in %s", s.certsProcessed, s.opts.Name, humanTime(int(time.Since(startTime).Seconds())))
+	s.logger.Infof("Saw %d precerts", s.precertsSeen)
+	s.logger.Infof("%d unparsable entries, %d non-fatal errors", s.unparsableEntries, s.entriesWithNonFatalErrors)
 	return int64(s.opts.StartIndex) + s.certsProcessed, nil
 }
 
 // Creates a new Scanner instance using |client| to talk to the log, and taking
 // configuration options from |opts|.
-func NewScanner(client *client.LogClient, opts ScannerOptions, scanLog *logging.Logger) *Scanner {
+func NewScanner(client *client.LogClient, opts ScannerOptions, logger *log.Logger) *Scanner {
 	var scanner Scanner
 	scanner.logClient = client
 	// Set a default match-everything regex if none was provided:
@@ -455,6 +437,6 @@ func NewScanner(client *client.LogClient, opts ScannerOptions, scanLog *logging.
 		opts.Matcher = &MatchAll{}
 	}
 	scanner.opts = opts
-	log = scanLog
+	scanner.logger = logger
 	return &scanner
 }
