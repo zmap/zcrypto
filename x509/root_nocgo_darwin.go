@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Use non-cgo on Darwin to prevent duplicate symbols on cgo
-//// +build !cgo
 
 package x509
 
