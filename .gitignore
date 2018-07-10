@@ -1,5 +1,15 @@
 *.swp
 *.idea
 *.iml
+.project
+.pydevproject
+
+.DS_Store
+venv/*
 *.test
 ct/client/main/main
+
+*.pyc
+zcrypto_schemas.egg-info/*
+build/*
+dist/*
