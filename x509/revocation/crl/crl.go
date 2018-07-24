@@ -86,6 +86,7 @@ type RevocationData struct {
 	NextUpdate                    time.Time `asn1:"optional"`
 	CRLExtensions                 ListExtensionData
 	UnknownCRLExtensions          []pkix.Extension `asn1:"tag:0,optional,explicit"`
+	UnknownCriticalCRLExtensions  []pkix.Extension `asn1:"tag:0,optional,explicit"`
 	IsRevoked                     bool
 	RevocationTime                time.Time
 	CertificateEntryExtensions    RevokedCertExtensionData
@@ -110,6 +111,8 @@ func gatherListExtensionInfo(certList *pkix.CertificateList, ret *RevocationData
 			var ext crlNumberExtension
 			asn1.Unmarshal(extension.Value, &ext.CRLNumber)
 			ret.CRLExtensions.CRLNumber = ext.CRLNumber
+		} else if extension.Critical {
+			ret.UnknownCriticalCRLExtensions = append(ret.UnknownCriticalCRLExtensions, extension)
 		} else {
 			ret.UnknownCRLExtensions = append(ret.UnknownCRLExtensions, extension)
 		}
