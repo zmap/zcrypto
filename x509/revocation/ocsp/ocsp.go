@@ -281,6 +281,39 @@ var hashOIDs = map[crypto.Hash]asn1.ObjectIdentifier{
 	crypto.SHA512: asn1.ObjectIdentifier([]int{2, 16, 840, 1, 101, 3, 4, 2, 3}),
 }
 
+// ValidateResponse - Checks to see that the signature on the OCSP resposne is valid
+// From RFC 6960 Section 4.2.2.2:
+// 		The key that signs a certificate's [OCSP Response] need not be the
+// 		same key that signed the certificate.  It is necessary, however, to
+// 		ensure that the entity signing this information is authorized to do
+// 		so.  Therefore, a certificate's issuer MUST do one of the following:
+// 						- sign the OCSP responses itself, or
+// 						- explicitly designate this authority to another entity [delegation certificate]
+//
+// If a delegation certificate is used, it must be explicitly provided in
+// the OCSP response. We parse this if provided and assign it
+// to resp.ResponseIssuingCertificate
+func ValidateResponse(resp *Response, basicResp *BasicOCSPResponse, issuer *x509.Certificate) bool {
+	var err error
+	if len(basicResp.Certs) > 0 { // if delegation certificate is provided
+		resp.ResponseIssuingCertificate, err = x509.ParseCertificate(basicResp.Certs[0].FullBytes)
+		if err != nil {
+			return false
+		}
+		// check to see that OCSP resp has valid sig from delegation cert
+		if err = resp.CheckSignatureFrom(resp.ResponseIssuingCertificate); err != nil {
+			err = errors.New("bad signature on embedded certificate: " + err.Error())
+			return false
+		}
+		// check to see that delegation cert is signed by CA for original cert (target of OCSP query)
+		err = issuer.CheckSignature(resp.ResponseIssuingCertificate.SignatureAlgorithm, resp.ResponseIssuingCertificate.RawTBSCertificate, resp.ResponseIssuingCertificate.Signature)
+		return (err == nil)
+	}
+	// no delegation cert provided, check OCSP resp sig with original CA key
+	err = resp.CheckSignatureFrom(issuer)
+	return (err == nil)
+}
+
 // ParseResponseForCert parses an OCSP response in DER form and searches for a
 // Response relating to cert. If such a Response is found and the OCSP response
 // contains a certificate then the signature over the response is checked. If
@@ -353,6 +386,8 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 		NextUpdate:         singleResp.NextUpdate,
 	}
 
+	ret.IsValidSignature = ValidateResponse(ret, &basicResp, issuer)
+
 	// Handle the ResponderID CHOICE tag. ResponderID can be flattened into
 	// TBSResponseData once https://go-review.googlesource.com/34503 has been
 	// released.
@@ -373,39 +408,6 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 	default:
 		err = errors.New("invalid responder id tag")
 		return nil, err
-	}
-
-	if len(basicResp.Certs) > 0 {
-		// Responders should only send a single certificate (if they
-		// send any) that connects the responder's certificate to the
-		// original issuer. We accept responses with multiple
-		// certificates due to a number responders sending them[1], but
-		// ignore all but the first.
-		//
-		// [1] https://github.com/golang/go/issues/21527
-		ret.ResponseIssuingCertificate, err = x509.ParseCertificate(basicResp.Certs[0].FullBytes)
-		if err != nil {
-			return nil, err
-		}
-
-		if err = ret.CheckSignatureFrom(ret.ResponseIssuingCertificate); err != nil {
-			err = errors.New("bad signature on embedded certificate: " + err.Error())
-			return nil, err
-		}
-
-		if issuer != nil {
-			if err = issuer.CheckSignature(ret.ResponseIssuingCertificate.SignatureAlgorithm, ret.ResponseIssuingCertificate.RawTBSCertificate, ret.ResponseIssuingCertificate.Signature); err != nil {
-				ret.IsValidSignature = false
-			} else {
-				ret.IsValidSignature = true
-			}
-		}
-	} else if issuer != nil {
-		if err = ret.CheckSignatureFrom(issuer); err != nil {
-			ret.IsValidSignature = false
-		} else {
-			ret.IsValidSignature = true
-		}
 	}
 
 	for _, ext := range singleResp.SingleExtensions {
