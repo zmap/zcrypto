@@ -14,60 +14,37 @@ import (
 	"github.com/zmap/zcrypto/x509/revocation/crl"
 )
 
-// Request represents an OCSP request. See RFC 6960.
-type Request struct {
-	HashAlgorithm  crypto.Hash
-	IssuerNameHash []byte
-	IssuerKeyHash  []byte
-	SerialNumber   *big.Int
+// RequestASN1 - corresponds to OCSPRequest struct in 4.1.1 of RFC 6960
+type RequestASN1 struct {
+	TBSRequest TBSRequest
+	// optionalSignature - not used by this library
 }
 
-// https://tools.ietf.org/html/rfc2560#section-4.1.1
-type ocspRequest struct {
-	TBSRequest tbsRequest
-}
-
-type tbsRequest struct {
+// TBSRequest - represents to-be-signed OCSP Request. See RFC 6960 4.1.1.
+type TBSRequest struct {
 	Version       int              `asn1:"explicit,tag:0,default:0,optional"`
 	RequestorName pkix.RDNSequence `asn1:"explicit,tag:1,optional"`
-	RequestList   []request
+	RequestList   []Request
+	// requestExtensions - not used by this library
 }
 
-type request struct {
-	Cert certID
+// Request - wrapper for single OCSP Request. See RFC 6960 4.1.1.
+type Request struct {
+	Cert CertID
+	// singleRequestExtensions - not used by this library
 }
 
-type certID struct {
+// CertID - struct for ocsp data request for single cert. See RFC 6960 4.1.1
+type CertID struct {
 	HashAlgorithm pkix.AlgorithmIdentifier
 	NameHash      []byte
 	IssuerKeyHash []byte
 	SerialNumber  *big.Int
 }
 
-// Marshal marshals the OCSP request to ASN.1 DER encoded form.
-func (req *Request) Marshal() ([]byte, error) {
-	sha1HashOID := asn1.ObjectIdentifier([]int{1, 3, 14, 3, 2, 26})
-	return asn1.Marshal(ocspRequest{
-		tbsRequest{
-			Version: 0,
-			RequestList: []request{
-				{
-					Cert: certID{
-						pkix.AlgorithmIdentifier{
-							Algorithm:  sha1HashOID,
-							Parameters: asn1.RawValue{Tag: 5 /* ASN.1 NULL */},
-						},
-						req.IssuerNameHash,
-						req.IssuerKeyHash,
-						req.SerialNumber,
-					},
-				},
-			},
-		},
-	})
-}
-
-type publicKeyInfo struct {
+// PublicKeyInfo - struct for public key data when creating hash, see GetKeyHash
+// and RFC 6960
+type PublicKeyInfo struct {
 	Algorithm pkix.AlgorithmIdentifier
 	PublicKey asn1.BitString
 }
@@ -76,7 +53,7 @@ type publicKeyInfo struct {
 // the specified hash algorithm
 func GetKeyHash(cert *x509.Certificate, hInstance hash.Hash) ([]byte, error) {
 	hInstance.Reset()
-	var keyInfo publicKeyInfo
+	var keyInfo PublicKeyInfo
 	if _, err := asn1.Unmarshal(cert.RawSubjectPublicKeyInfo, &keyInfo); err != nil {
 		return nil, err
 	}
@@ -103,16 +80,34 @@ func CreateRequest(cert *x509.Certificate, issuer *x509.Certificate) ([]byte, er
 
 	issuerNameHash := GetNameHash(issuer, h)
 
-	req := &Request{
-		HashAlgorithm:  hashFunc,
-		IssuerNameHash: issuerNameHash,
-		IssuerKeyHash:  issuerKeyHash,
-		SerialNumber:   cert.SerialNumber,
+	sha1HashOID := asn1.ObjectIdentifier([]int{1, 3, 14, 3, 2, 26})
+	algID := &pkix.AlgorithmIdentifier{
+		Algorithm:  sha1HashOID,
+		Parameters: asn1.RawValue{Tag: 5 /* ASN.1 NULL */},
 	}
-	return req.Marshal()
+
+	certID := &CertID{
+		HashAlgorithm: *algID,
+		NameHash:      issuerNameHash,
+		IssuerKeyHash: issuerKeyHash,
+		SerialNumber:  cert.SerialNumber,
+	}
+	return asn1.Marshal(RequestASN1{
+		TBSRequest{
+			Version: 0,
+			RequestList: []Request{
+				{
+					Cert: *certID,
+				},
+			},
+		},
+	})
 }
 
-// Response represents an OCSP response. See RFC 6960.
+// Response represents an OCSP response, flattened for easy manipulation
+// of data. DOES NOT CORRESPOND TO TRUE OCSP RESPONSE STRUCTURE.
+// API functions below parse OCSP responses and fill in this
+// data structure for client use.
 type Response struct {
 	// Status is one of {Good, Revoked, Unknown}
 	CertificateStatus                             string
@@ -179,12 +174,14 @@ func (resp *Response) CheckSignatureFrom(issuer *x509.Certificate) error {
 	return issuer.CheckSignature(resp.SignatureAlgorithm, resp.TBSResponseData, resp.Signature)
 }
 
-type responseASN1 struct {
-	Status   asn1.Enumerated
-	Response responseBytes `asn1:"explicit,tag:0,optional"`
+// ResponseASN1 -  corresponds to OCSPResponse struct in 4.2.1 of RFC 6960
+type ResponseASN1 struct {
+	ResponseStatus asn1.Enumerated
+	ResponseBytes  ResponseBytes `asn1:"explicit,tag:0,optional"`
 }
 
-type responseBytes struct {
+// ResponseBytes - ASN1 struct for storing response data
+type ResponseBytes struct {
 	ResponseType asn1.ObjectIdentifier
 	Response     []byte
 }
@@ -238,32 +235,39 @@ func (r ResponseError) Error() string {
 	return "ocsp: error from server: " + r.Status.String()
 }
 
+// response type identifier for the basic-ocsp-response, see RFC 6960 4.2.1
 var idPKIXOCSPBasic = asn1.ObjectIdentifier([]int{1, 3, 6, 1, 5, 5, 7, 48, 1, 1})
 
-type basicResponse struct {
-	TBSResponseData    responseData
+// BasicOCSPResponse - ASN1 struct for OCSP Response corresponding to
+// idPKIXOCSPBasic, see RFC 6960 4.2.1
+type BasicOCSPResponse struct {
+	TBSResponseData    ResponseData
 	SignatureAlgorithm pkix.AlgorithmIdentifier
 	Signature          asn1.BitString
-	Certificates       []asn1.RawValue `asn1:"explicit,tag:0,optional"`
+	Certs              []asn1.RawValue `asn1:"explicit,tag:0,optional"`
 }
 
-type responseData struct {
-	Raw            asn1.RawContent
-	Version        int `asn1:"optional,default:0,explicit,tag:0"`
+// ResponseData - ASN1 struct defined in RFC 6960 4.2.1
+type ResponseData struct {
+	Raw            asn1.RawContent // added for our use
+	Version        int             `asn1:"optional,default:0,explicit,tag:0"`
 	RawResponderID asn1.RawValue
 	ProducedAt     time.Time `asn1:"generalized"`
-	Responses      []singleResponse
+	Responses      []SingleResponse
+	// ResponseExtensions - unused by this library
 }
 
-type revokedInfo struct {
-	RevocationTime time.Time       `asn1:"generalized"`
-	Reason         asn1.Enumerated `asn1:"explicit,tag:0,optional"`
+// RevokedInfo - ASN1 struct defined in RFC 6960 4.2.1
+type RevokedInfo struct {
+	RevocationTime   time.Time       `asn1:"generalized"`
+	RevocationReason asn1.Enumerated `asn1:"explicit,tag:0,optional"`
 }
 
-type singleResponse struct {
-	CertID           certID
+// SingleResponse - ASN1 struct defined in RFC 6960 4.2.1
+type SingleResponse struct {
+	CertID           CertID
 	Good             asn1.Flag        `asn1:"tag:0,optional"`
-	Revoked          revokedInfo      `asn1:"tag:1,optional"`
+	Revoked          RevokedInfo      `asn1:"tag:1,optional"`
 	Unknown          asn1.Flag        `asn1:"tag:2,optional"`
 	ThisUpdate       time.Time        `asn1:"generalized"`
 	NextUpdate       time.Time        `asn1:"generalized,explicit,tag:0,optional"`
@@ -286,7 +290,7 @@ var hashOIDs = map[crypto.Hash]asn1.ObjectIdentifier{
 // Invalid responses and parse failures will result in a ParseError.
 // Error responses will result in a ResponseError.
 func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Certificate) (*Response, error) {
-	var resp responseASN1
+	var resp ResponseASN1
 	rest, err := asn1.Unmarshal(bytes, &resp)
 	if err != nil {
 		fullErr := errors.New("This response is malformed: " + err.Error())
@@ -297,20 +301,20 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 		return nil, err
 	}
 
-	if status := ResponseStatus(resp.Status); status != Success {
+	if status := ResponseStatus(resp.ResponseStatus); status != Success {
 		badResponse := &Response{
 			CertificateStatus: "OCSP Responder Error: " + status.String(),
 		}
 		return badResponse, nil
 	}
 
-	if !resp.Response.ResponseType.Equal(idPKIXOCSPBasic) {
+	if !resp.ResponseBytes.ResponseType.Equal(idPKIXOCSPBasic) {
 		err = errors.New("bad OCSP response type")
 		return nil, err
 	}
 
-	var basicResp basicResponse
-	_, err = asn1.Unmarshal(resp.Response.Response, &basicResp)
+	var basicResp BasicOCSPResponse
+	_, err = asn1.Unmarshal(resp.ResponseBytes.Response, &basicResp)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +324,7 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 		return nil, err
 	}
 
-	var singleResp singleResponse
+	var singleResp SingleResponse
 	if cert == nil {
 		singleResp = basicResp.TBSResponseData.Responses[0]
 	} else {
@@ -371,7 +375,7 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 		return nil, err
 	}
 
-	if len(basicResp.Certificates) > 0 {
+	if len(basicResp.Certs) > 0 {
 		// Responders should only send a single certificate (if they
 		// send any) that connects the responder's certificate to the
 		// original issuer. We accept responses with multiple
@@ -379,7 +383,7 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 		// ignore all but the first.
 		//
 		// [1] https://github.com/golang/go/issues/21527
-		ret.ResponseIssuingCertificate, err = x509.ParseCertificate(basicResp.Certificates[0].FullBytes)
+		ret.ResponseIssuingCertificate, err = x509.ParseCertificate(basicResp.Certs[0].FullBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -430,7 +434,7 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 	default:
 		ret.CertificateStatus = "Revoked"
 		ret.RevokedAt = singleResp.Revoked.RevocationTime
-		ret.RevocationReason = crl.RevocationReasonCode(singleResp.Revoked.Reason).String()
+		ret.RevocationReason = crl.RevocationReasonCode(singleResp.Revoked.RevocationReason).String()
 	}
 
 	return ret, nil
