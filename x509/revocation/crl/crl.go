@@ -121,7 +121,7 @@ func gatherListExtensionInfo(certList *pkix.CertificateList, ret *RevocationData
 
 // CheckCRLForCert - parses through a given CRL and to see if a given certificate
 // is present, and returns data on the revocation and CRL in general
-func CheckCRLForCert(certList *pkix.CertificateList, cert *x509.Certificate) (*RevocationData, error) {
+func CheckCRLForCert(certList *pkix.CertificateList, cert *x509.Certificate, cache map[string]*pkix.RevokedCertificate) (*RevocationData, error) {
 	ret := &RevocationData{
 		CRLSignatureAlgorithm: x509.GetSignatureAlgorithmFromAI(certList.SignatureAlgorithm),
 		CRLSignatureValue:     certList.SignatureValue.Bytes,
@@ -134,6 +134,15 @@ func CheckCRLForCert(certList *pkix.CertificateList, cert *x509.Certificate) (*R
 
 	gatherListExtensionInfo(certList, ret)
 
+	if cache != nil {
+		if val, ok := cache[cert.SerialNumber.String()]; ok {
+			ret.IsRevoked = true
+			ret.RevocationTime = val.RevocationTime
+		}
+		return ret, nil
+	}
+
+	// else no cache was given, must linear search through
 	revokedCerts := certList.TBSCertList.RevokedCertificates
 	for i := range revokedCerts {
 		if revokedCerts[i].SerialNumber == cert.SerialNumber {
