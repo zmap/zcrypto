@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"encoding/asn1"
 	"errors"
+	"hash"
 	"math/big"
 	"strconv"
 	"time"
@@ -66,27 +67,41 @@ func (req *Request) Marshal() ([]byte, error) {
 	})
 }
 
+type publicKeyInfo struct {
+	Algorithm pkix.AlgorithmIdentifier
+	PublicKey asn1.BitString
+}
+
+// GetKeyHash - compute hash of the certificate's public key, using
+// the specified hash algorithm
+func GetKeyHash(cert *x509.Certificate, hInstance hash.Hash) ([]byte, error) {
+	hInstance.Reset()
+	var keyInfo publicKeyInfo
+	if _, err := asn1.Unmarshal(cert.RawSubjectPublicKeyInfo, &keyInfo); err != nil {
+		return nil, err
+	}
+	hInstance.Write(keyInfo.PublicKey.RightAlign())
+	return hInstance.Sum(nil), nil
+}
+
+// GetNameHash - compute hash of the certificate's subject field, using
+// the specified hash algorithm
+func GetNameHash(cert *x509.Certificate, hInstance hash.Hash) []byte {
+	hInstance.Reset()
+	hInstance.Write(cert.RawSubject)
+	return hInstance.Sum(nil)
+}
+
 // CreateRequest returns a DER-encoded, OCSP request for the status of cert
 func CreateRequest(cert *x509.Certificate, issuer *x509.Certificate) ([]byte, error) {
 	hashFunc := crypto.SHA1
-
 	h := hashFunc.New()
-
-	var publicKeyInfo struct {
-		Algorithm pkix.AlgorithmIdentifier
-		PublicKey asn1.BitString
-	}
-
-	if _, err := asn1.Unmarshal(issuer.RawSubjectPublicKeyInfo, &publicKeyInfo); err != nil {
+	issuerKeyHash, err := GetKeyHash(issuer, h)
+	if err != nil {
 		return nil, err
 	}
 
-	h.Write(publicKeyInfo.PublicKey.RightAlign())
-	issuerKeyHash := h.Sum(nil)
-
-	h.Reset()
-	h.Write(issuer.RawSubject)
-	issuerNameHash := h.Sum(nil)
+	issuerNameHash := GetNameHash(issuer, h)
 
 	req := &Request{
 		HashAlgorithm:  hashFunc,
