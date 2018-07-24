@@ -314,15 +314,9 @@ func ValidateResponse(resp *Response, basicResp *BasicOCSPResponse, issuer *x509
 	return (err == nil)
 }
 
-// ParseResponseForCert parses an OCSP response in DER form and searches for a
-// Response relating to cert. If such a Response is found and the OCSP response
-// contains a certificate then the signature over the response is checked. If
-// issuer is not nil then it will be used to validate the signature or embedded
-// certificate.
-//
-// Invalid responses and parse failures will result in a ParseError.
-// Error responses will result in a ResponseError.
-func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Certificate) (*Response, error) {
+// ParseResponse - Ensures that OCSP response ASN1 is properly formatted,
+// performs basic error checking, then returns BasicResponse type
+func ParseResponse(bytes []byte) (*BasicOCSPResponse, error) {
 	var resp ResponseASN1
 	rest, err := asn1.Unmarshal(bytes, &resp)
 	if err != nil {
@@ -335,10 +329,7 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 	}
 
 	if status := ResponseStatus(resp.ResponseStatus); status != Success {
-		badResponse := &Response{
-			CertificateStatus: "OCSP Responder Error: " + status.String(),
-		}
-		return badResponse, nil
+		return nil, errors.New("OCSP Responder Error: " + status.String())
 	}
 
 	if !resp.ResponseBytes.ResponseType.Equal(idPKIXOCSPBasic) {
@@ -351,12 +342,30 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 	if err != nil {
 		return nil, err
 	}
+	return &basicResp, nil
+}
+
+// ParseResponseForCert parses an OCSP response in DER form and searches for a
+// Response relating to cert. If such a Response is found and the OCSP response
+// contains a certificate then the signature over the response is checked. If
+// issuer is not nil then it will be used to validate the signature or embedded
+// certificate.
+//
+// Invalid responses and parse failures will result in a ParseError.
+// Error responses will result in a ResponseError.
+func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Certificate) (*Response, error) {
+	basicResp, err := ParseResponse(bytes)
+	if err != nil {
+		return nil, err
+	}
 
 	if n := len(basicResp.TBSResponseData.Responses); n == 0 || cert == nil && n > 1 {
 		err = errors.New("OCSP response contains bad number of responses")
 		return nil, err
 	}
 
+	// check to see if this OCSP response contains information about
+	// the certificate in question (cert)
 	var singleResp SingleResponse
 	if cert == nil {
 		singleResp = basicResp.TBSResponseData.Responses[0]
@@ -386,12 +395,13 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 		NextUpdate:         singleResp.NextUpdate,
 	}
 
-	ret.IsValidSignature = ValidateResponse(ret, &basicResp, issuer)
+	ret.IsValidSignature = ValidateResponse(ret, basicResp, issuer)
 
 	// Handle the ResponderID CHOICE tag. ResponderID can be flattened into
 	// TBSResponseData once https://go-review.googlesource.com/34503 has been
 	// released.
 	rawResponderID := basicResp.TBSResponseData.RawResponderID
+	var rest []byte
 	switch rawResponderID.Tag {
 	case 1: // Name
 		var rdn pkix.RDNSequence
