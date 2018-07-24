@@ -197,7 +197,7 @@ type ResponseStatus int
 // Malformed - Illegal confirmation request
 // InternalError - Internal Error in Issuer
 // Trylater - Try Again Later
-// SignatureRequired - Must Sign the Request
+// SigRequired - Must Sign the Request
 // Unauthorized - Request Unauthorized
 // See https://tools.ietf.org/html/rfc6960#section-4.2.1
 const (
@@ -206,8 +206,8 @@ const (
 	InternalError ResponseStatus = 2
 	TryLater      ResponseStatus = 3
 	// STATUS CODE 4 IS UNUSED IN OCSP
-	SignatureRequired ResponseStatus = 5
-	Unauthorized      ResponseStatus = 6
+	SigRequired  ResponseStatus = 5
+	Unauthorized ResponseStatus = 6
 )
 
 func (r ResponseStatus) String() string {
@@ -215,13 +215,13 @@ func (r ResponseStatus) String() string {
 	case Success:
 		return "success"
 	case Malformed:
-		return "malformed"
+		return "malformedRequest"
 	case InternalError:
-		return "internal error"
+		return "internalError"
 	case TryLater:
-		return "try later"
-	case SignatureRequired:
-		return "signature required"
+		return "tryLater"
+	case SigRequired:
+		return "sigRequired"
 	case Unauthorized:
 		return "unauthorized"
 	default:
