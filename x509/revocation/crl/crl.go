@@ -9,7 +9,7 @@ import (
 	"github.com/zmap/zcrypto/x509/pkix"
 )
 
-// RevocationReasonCode - status codes that explain revocation reason see RFC 5620
+// RevocationReasonCode - status codes that explain revocation reason see RFC 5280, Section 5.3.1
 type RevocationReasonCode int
 
 const (
@@ -29,26 +29,26 @@ const (
 func (r RevocationReasonCode) String() string {
 	switch r {
 	case Unspecified:
-		return "Unspecified"
+		return "unspecified"
 	case KeyCompromise:
-		return "Key Compromise"
+		return "keyCompromise"
 	case CACompromise:
-		return "CA Compromise"
+		return "cACompromise"
 	case AffiliationChanged:
-		return "Affiliation Changed"
+		return "affiliationChanged"
 	case Superseded:
-		return "Superseded"
+		return "superseded"
 	case CessationOfOperation:
-		return "Cessation Of Operation"
+		return "cessationOfOperation"
 	case CertificateHold:
-		return "Certificate Hold"
+		return "certificateHold"
 		// STATUS CODE 7 IS NOT USED
 	case RemoveFromCRL:
-		return "Remove From CRL"
+		return "removeFromCRL"
 	case PrivilegeWithdrawn:
-		return "PrivilegeWithdrawn"
+		return "privilegeWithdrawn"
 	case AACompromise:
-		return "AA Compromise"
+		return "aACompromise"
 	default:
 		return "Unknown revocation reason code: " + strconv.Itoa(int(r))
 	}
