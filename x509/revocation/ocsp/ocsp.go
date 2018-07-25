@@ -300,6 +300,17 @@ func ValidateResponse(resp *Response, basicResp *BasicOCSPResponse, issuer *x509
 		if err != nil {
 			return false
 		}
+
+		isAuthorized := false
+		for _, eku := range resp.ResponseIssuingCertificate.ExtKeyUsage {
+			if eku == x509.ExtKeyUsageOcspSigning {
+				isAuthorized = true
+			}
+		}
+		if isAuthorized == false { // this certificate does not have proper id-kp-OCSPSigning authorization
+			return false
+		}
+
 		// check to see that OCSP resp has valid sig from delegation cert
 		if err = resp.CheckSignatureFrom(resp.ResponseIssuingCertificate); err != nil {
 			err = errors.New("bad signature on embedded certificate: " + err.Error())
