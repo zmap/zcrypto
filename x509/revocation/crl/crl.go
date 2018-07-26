@@ -2,7 +2,7 @@ package crl
 
 import (
 	"encoding/asn1"
-	"strconv"
+	"encoding/json"
 	"time"
 
 	"github.com/zmap/zcrypto/x509"
@@ -12,46 +12,49 @@ import (
 // RevocationReasonCode - status codes that explain revocation reason see RFC 5280, Section 5.3.1
 type RevocationReasonCode int
 
-const (
-	Unspecified          RevocationReasonCode = 0
-	KeyCompromise        RevocationReasonCode = 1
-	CACompromise         RevocationReasonCode = 2
-	AffiliationChanged   RevocationReasonCode = 3
-	Superseded           RevocationReasonCode = 4
-	CessationOfOperation RevocationReasonCode = 5
-	CertificateHold      RevocationReasonCode = 6
-	// STATUS CODE 7 IS NOT USED
-	RemoveFromCRL      RevocationReasonCode = 8
-	PrivilegeWithdrawn RevocationReasonCode = 9
-	AACompromise       RevocationReasonCode = 10
-)
+var reasonCodeNames map[RevocationReasonCode]string
 
-func (r RevocationReasonCode) String() string {
-	switch r {
-	case Unspecified:
-		return "unspecified"
-	case KeyCompromise:
-		return "keyCompromise"
-	case CACompromise:
-		return "cACompromise"
-	case AffiliationChanged:
-		return "affiliationChanged"
-	case Superseded:
-		return "superseded"
-	case CessationOfOperation:
-		return "cessationOfOperation"
-	case CertificateHold:
-		return "certificateHold"
-		// STATUS CODE 7 IS NOT USED
-	case RemoveFromCRL:
-		return "removeFromCRL"
-	case PrivilegeWithdrawn:
-		return "privilegeWithdrawn"
-	case AACompromise:
-		return "aACompromise"
-	default:
-		return "Unknown revocation reason code: " + strconv.Itoa(int(r))
+func init() {
+	reasonCodeNames[0] = "unspecified"
+	reasonCodeNames[1] = "keyCompromise"
+	reasonCodeNames[2] = "cACompromise"
+	reasonCodeNames[3] = "affiliationChanged"
+	reasonCodeNames[4] = "superseded"
+	reasonCodeNames[5] = "cessationOfOperation"
+	reasonCodeNames[6] = "certificateHold"
+	// STATUS CODE 7 IS NOT USED
+	reasonCodeNames[8] = "removeFromCRL"
+	reasonCodeNames[9] = "privilegeWithdrawn"
+	reasonCodeNames[10] = "aACompromise"
+}
+
+// MarshalJSON implements the json.Marshler interface
+func (code *RevocationReasonCode) MarshalJSON() ([]byte, error) {
+	aux := struct {
+		Code  int
+		Value string
+	}{
+		Code:  int(*code),
+		Value: code.String(),
 	}
+	return json.Marshal(&aux)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (code *RevocationReasonCode) UnmarshalJSON(b []byte) error {
+	aux := struct {
+		Code  int
+		Value string
+	}{}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+	*code = RevocationReasonCode(aux.Code)
+	return nil
+}
+
+func (code *RevocationReasonCode) String() string {
+	return reasonCodeNames[*code]
 }
 
 var (

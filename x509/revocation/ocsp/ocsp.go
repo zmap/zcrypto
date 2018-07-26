@@ -3,16 +3,69 @@ package ocsp
 import (
 	"crypto"
 	"encoding/asn1"
+	"encoding/json"
 	"errors"
 	"hash"
 	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/zmap/zcrypto/x509"
 	"github.com/zmap/zcrypto/x509/pkix"
 	"github.com/zmap/zcrypto/x509/revocation/crl"
 )
+
+// ResponseStatus contains the result of an OCSP request. See
+// https://tools.ietf.org/html/rfc6960#section-2.3
+type ResponseStatus int
+
+// Success - OCSP Responder signals that response is successful
+const Success ResponseStatus = 0
+
+var responseStatusNames map[ResponseStatus]string
+var hashOIDs map[crypto.Hash]asn1.ObjectIdentifier
+
+func init() {
+	responseStatusNames[0] = "success"
+	responseStatusNames[1] = "malformedRequest"
+	responseStatusNames[2] = "internalError"
+	responseStatusNames[3] = "tryLater"
+	responseStatusNames[5] = "sigRequired"
+	responseStatusNames[6] = "unauthorized"
+
+	hashOIDs[crypto.SHA1] = asn1.ObjectIdentifier([]int{1, 3, 14, 3, 2, 26})
+	hashOIDs[crypto.SHA256] = asn1.ObjectIdentifier([]int{2, 16, 840, 1, 101, 3, 4, 2, 1})
+	hashOIDs[crypto.SHA384] = asn1.ObjectIdentifier([]int{2, 16, 840, 1, 101, 3, 4, 2, 2})
+	hashOIDs[crypto.SHA512] = asn1.ObjectIdentifier([]int{2, 16, 840, 1, 101, 3, 4, 2, 3})
+}
+
+// MarshalJSON implements the json.Marshler interface
+func (code *ResponseStatus) MarshalJSON() ([]byte, error) {
+	aux := struct {
+		Code  int
+		Value string
+	}{
+		Code:  int(*code),
+		Value: code.String(),
+	}
+	return json.Marshal(&aux)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (code *ResponseStatus) UnmarshalJSON(b []byte) error {
+	aux := struct {
+		Code  int
+		Value string
+	}{}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+	*code = ResponseStatus(aux.Code)
+	return nil
+}
+
+func (code *ResponseStatus) String() string {
+	return responseStatusNames[*code]
+}
 
 // RequestASN1 - corresponds to OCSPRequest struct in 4.1.1 of RFC 6960
 type RequestASN1 struct {
@@ -113,7 +166,7 @@ type Response struct {
 	CertificateStatus                             string
 	SerialNumber                                  string
 	ProducedAt, ThisUpdate, NextUpdate, RevokedAt time.Time
-	RevocationReason                              string
+	RevocationReason                              crl.RevocationReasonCode
 	ResponseIssuingCertificate                    *x509.Certificate
 	// TBSResponseData contains the raw bytes of the signed response. If
 	// Certificate is nil then this can be used to verify Signature.
@@ -186,46 +239,6 @@ type ResponseBytes struct {
 	Response     []byte
 }
 
-// ResponseStatus contains the result of an OCSP request. See
-// https://tools.ietf.org/html/rfc6960#section-2.3
-type ResponseStatus int
-
-// Success - Response has valid confirmations
-// Malformed - Illegal confirmation request
-// InternalError - Internal Error in Issuer
-// Trylater - Try Again Later
-// SigRequired - Must Sign the Request
-// Unauthorized - Request Unauthorized
-// See https://tools.ietf.org/html/rfc6960#section-4.2.1
-const (
-	Success       ResponseStatus = 0
-	Malformed     ResponseStatus = 1
-	InternalError ResponseStatus = 2
-	TryLater      ResponseStatus = 3
-	// STATUS CODE 4 IS UNUSED IN OCSP
-	SigRequired  ResponseStatus = 5
-	Unauthorized ResponseStatus = 6
-)
-
-func (r ResponseStatus) String() string {
-	switch r {
-	case Success:
-		return "success"
-	case Malformed:
-		return "malformedRequest"
-	case InternalError:
-		return "internalError"
-	case TryLater:
-		return "tryLater"
-	case SigRequired:
-		return "sigRequired"
-	case Unauthorized:
-		return "unauthorized"
-	default:
-		return "unknown OCSP status: " + strconv.Itoa(int(r))
-	}
-}
-
 // ResponseError respresents OCSP response status codes
 type ResponseError struct {
 	Status ResponseStatus
@@ -272,13 +285,6 @@ type SingleResponse struct {
 	ThisUpdate       time.Time        `asn1:"generalized"`
 	NextUpdate       time.Time        `asn1:"generalized,explicit,tag:0,optional"`
 	SingleExtensions []pkix.Extension `asn1:"explicit,tag:1,optional"`
-}
-
-var hashOIDs = map[crypto.Hash]asn1.ObjectIdentifier{
-	crypto.SHA1:   asn1.ObjectIdentifier([]int{1, 3, 14, 3, 2, 26}),
-	crypto.SHA256: asn1.ObjectIdentifier([]int{2, 16, 840, 1, 101, 3, 4, 2, 1}),
-	crypto.SHA384: asn1.ObjectIdentifier([]int{2, 16, 840, 1, 101, 3, 4, 2, 2}),
-	crypto.SHA512: asn1.ObjectIdentifier([]int{2, 16, 840, 1, 101, 3, 4, 2, 3}),
 }
 
 // ValidateResponse - Checks to see that the signature on the OCSP resposne is valid
@@ -457,7 +463,7 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 	default:
 		ret.CertificateStatus = "Revoked"
 		ret.RevokedAt = singleResp.Revoked.RevocationTime
-		ret.RevocationReason = crl.RevocationReasonCode(singleResp.Revoked.RevocationReason).String()
+		ret.RevocationReason = crl.RevocationReasonCode(singleResp.Revoked.RevocationReason)
 	}
 
 	return ret, nil
