@@ -104,7 +104,7 @@ type ListExtensionData struct {
 
 // RevokedCertExtensionData - Data from optional, non-critical pkix.RevokedCertificate extensions
 type RevokedCertExtensionData struct {
-	Reason         string `json:"revocation_reason,omitempty"`
+	Reason         *RevocationReasonCode
 	invalidityDate time.Time
 }
 
