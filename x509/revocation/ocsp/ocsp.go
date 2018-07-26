@@ -301,30 +301,23 @@ type SingleResponse struct {
 // to resp.ResponseIssuingCertificate
 func ValidateResponse(resp *Response, basicResp *BasicOCSPResponse, issuer *x509.Certificate) bool {
 	var err error
-	if len(basicResp.Certs) > 0 { // if delegation certificate is provided
+	if len(basicResp.Certs) > 0 { // if additional certs are provided (which could include a delegation cert)
 		resp.ResponseIssuingCertificate, err = x509.ParseCertificate(basicResp.Certs[0].FullBytes)
 		if err != nil {
 			return false
-		}
-
-		isAuthorized := false
+		} // delegation cert must be directly issued, so we only check certs[0]
 		for _, eku := range resp.ResponseIssuingCertificate.ExtKeyUsage {
-			if eku == x509.ExtKeyUsageOcspSigning {
-				isAuthorized = true
+			if eku == x509.ExtKeyUsageOcspSigning { // this is a valid delegation certificate with id-kp-OCSPSigning authorization
+				// check to see that OCSP resp has valid sig from delegation cert
+				if err = resp.CheckSignatureFrom(resp.ResponseIssuingCertificate); err != nil {
+					err = errors.New("bad signature on embedded certificate: " + err.Error())
+					return false
+				}
+				// check to see that delegation cert is signed by CA for original cert (target of OCSP query)
+				err = issuer.CheckSignature(resp.ResponseIssuingCertificate.SignatureAlgorithm, resp.ResponseIssuingCertificate.RawTBSCertificate, resp.ResponseIssuingCertificate.Signature)
+				return (err == nil)
 			}
-		}
-		if isAuthorized == false { // this certificate does not have proper id-kp-OCSPSigning authorization
-			return false
-		}
-
-		// check to see that OCSP resp has valid sig from delegation cert
-		if err = resp.CheckSignatureFrom(resp.ResponseIssuingCertificate); err != nil {
-			err = errors.New("bad signature on embedded certificate: " + err.Error())
-			return false
-		}
-		// check to see that delegation cert is signed by CA for original cert (target of OCSP query)
-		err = issuer.CheckSignature(resp.ResponseIssuingCertificate.SignatureAlgorithm, resp.ResponseIssuingCertificate.RawTBSCertificate, resp.ResponseIssuingCertificate.Signature)
-		return (err == nil)
+		} // if for loop completes, then none of the provided certs[] are delegation certs
 	}
 	// no delegation cert provided, check OCSP resp sig with original CA key
 	err = resp.CheckSignatureFrom(issuer)
