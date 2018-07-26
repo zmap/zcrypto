@@ -31,11 +31,11 @@ func init() {
 // MarshalJSON implements the json.Marshler interface
 func (code *RevocationReasonCode) MarshalJSON() ([]byte, error) {
 	aux := struct {
-		Code  int
-		Value string
+		Value int    `json:"value"`
+		Name  string `json:"name"`
 	}{
-		Code:  int(*code),
-		Value: code.String(),
+		Value: int(*code),
+		Name:  code.String(),
 	}
 	return json.Marshal(&aux)
 }
@@ -43,13 +43,13 @@ func (code *RevocationReasonCode) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements the json.Unmarshaler interface
 func (code *RevocationReasonCode) UnmarshalJSON(b []byte) error {
 	aux := struct {
-		Code  int
-		Value string
+		Value int    `json:"value"`
+		Name  string `json:"name"`
 	}{}
 	if err := json.Unmarshal(b, &aux); err != nil {
 		return err
 	}
-	*code = RevocationReasonCode(aux.Code)
+	*code = RevocationReasonCode(aux.Value)
 	return nil
 }
 
