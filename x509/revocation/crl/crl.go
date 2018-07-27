@@ -149,7 +149,7 @@ func CheckCRLForCert(certList *pkix.CertificateList, cert *x509.Certificate, cac
 	// else no cache was given, must linear search through
 	revokedCerts := certList.TBSCertList.RevokedCertificates
 	for i := range revokedCerts {
-		if revokedCerts[i].SerialNumber == cert.SerialNumber {
+		if revokedCerts[i].SerialNumber.Cmp(cert.SerialNumber) == 0 {
 			ret.IsRevoked = true
 			ret.RevocationTime = revokedCerts[i].RevocationTime
 			break
