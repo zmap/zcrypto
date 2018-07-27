@@ -15,6 +15,7 @@ type RevocationReasonCode int
 var reasonCodeNames map[RevocationReasonCode]string
 
 func init() {
+	reasonCodeNames = make(map[RevocationReasonCode]string)
 	reasonCodeNames[0] = "unspecified"
 	reasonCodeNames[1] = "keyCompromise"
 	reasonCodeNames[2] = "cACompromise"

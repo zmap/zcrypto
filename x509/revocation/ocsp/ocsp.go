@@ -25,6 +25,7 @@ var responseStatusNames map[ResponseStatus]string
 var hashOIDs map[crypto.Hash]asn1.ObjectIdentifier
 
 func init() {
+	responseStatusNames = make(map[ResponseStatus]string)
 	responseStatusNames[0] = "success"
 	responseStatusNames[1] = "malformedRequest"
 	responseStatusNames[2] = "internalError"
@@ -32,6 +33,7 @@ func init() {
 	responseStatusNames[5] = "sigRequired"
 	responseStatusNames[6] = "unauthorized"
 
+	hashOIDs = make(map[crypto.Hash]asn1.ObjectIdentifier)
 	hashOIDs[crypto.SHA1] = asn1.ObjectIdentifier([]int{1, 3, 14, 3, 2, 26})
 	hashOIDs[crypto.SHA256] = asn1.ObjectIdentifier([]int{2, 16, 840, 1, 101, 3, 4, 2, 1})
 	hashOIDs[crypto.SHA384] = asn1.ObjectIdentifier([]int{2, 16, 840, 1, 101, 3, 4, 2, 2})
