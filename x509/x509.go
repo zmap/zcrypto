@@ -30,7 +30,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/zmap/zcrypto/x509/pkix"
+	"github.com/smallstep/zcrypto/x509/pkix"
 	"golang.org/x/crypto/ed25519"
 )
 

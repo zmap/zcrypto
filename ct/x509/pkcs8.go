@@ -6,8 +6,8 @@ package x509
 
 import (
 	// START CT CHANGES
-	"github.com/zmap/zcrypto/ct/asn1"
-	"github.com/zmap/zcrypto/ct/x509/pkix"
+	"github.com/smallstep/zcrypto/ct/asn1"
+	"github.com/smallstep/zcrypto/ct/x509/pkix"
 	// END CT CHANGES
 	"errors"
 	"fmt"

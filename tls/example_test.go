@@ -5,8 +5,8 @@
 package tls_test
 
 import (
-	"github.com/zmap/zcrypto/tls"
-	"github.com/zmap/zcrypto/x509"
+	"github.com/smallstep/zcrypto/tls"
+	"github.com/smallstep/zcrypto/x509"
 )
 
 func ExampleDial() {

@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zmap/zcrypto/x509/ct"
-	"github.com/zmap/zcrypto/x509/pkix"
+	"github.com/smallstep/zcrypto/x509/ct"
+	"github.com/smallstep/zcrypto/x509/pkix"
 )
 
 var (
@@ -400,7 +400,7 @@ func (c *CertValidationLevel) MarshalJSON() ([]byte, error) {
 }
 
 // TODO: All of validation-level maps should be auto-generated from
-// https://github.com/zmap/constants.
+// https://github.com/smallstep/constants.
 
 // ExtendedValidationOIDs contains the UNION of Chromium
 // (https://chromium.googlesource.com/chromium/src/net/+/master/cert/ev_root_ca_metadata.cc)

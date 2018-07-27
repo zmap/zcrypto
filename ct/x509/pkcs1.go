@@ -7,7 +7,7 @@ package x509
 import (
 	"crypto/rsa"
 	// START CT CHANGES
-	"github.com/zmap/zcrypto/ct/asn1"
+	"github.com/smallstep/zcrypto/ct/asn1"
 	// END CT CHANGES
 	"errors"
 	"math/big"

@@ -244,7 +244,7 @@ func main() {
 	defer out.Close()
 	writeHeader(out)
 
-	resp, err := http.Get("https://raw.githubusercontent.com/zmap/constants/master/x509/extended_key_usage.csv")
+	resp, err := http.Get("https://raw.githubusercontent.com/smallstep/constants/master/x509/extended_key_usage.csv")
 	if err != nil {
 		panic(err.Error())
 	}

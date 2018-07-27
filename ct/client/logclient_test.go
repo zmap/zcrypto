@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zmap/zcrypto/ct"
+	"github.com/smallstep/zcrypto/ct"
 	"golang.org/x/net/context"
 )
 
