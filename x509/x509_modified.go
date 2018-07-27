@@ -30,6 +30,7 @@ import (
 	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"github.com/zmap/zcrypto/x509/ct"
 	"github.com/zmap/zcrypto/x509/pkix"
+	"golang.org/x/crypto/ed25519"
 )
 
 // ParsedDomainName is a structure holding a parsed domain name (CommonName or DNS SAN) and a parsing error.
@@ -68,8 +69,14 @@ func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorith
 		publicKeyAlgorithm.Parameters.FullBytes = paramBytes
 	case *AugmentedECDSA:
 		return marshalPublicKey(pub.Pub)
+	case ed25519.PublicKey:
+		publicKeyAlgorithm.Algorithm = oidKeyEd25519
+		return []byte(pub), publicKeyAlgorithm, nil
+	case X25519PublicKey:
+		publicKeyAlgorithm.Algorithm = oidKeyX25519
+		return []byte(pub), publicKeyAlgorithm, nil
 	default:
-		return nil, pkix.AlgorithmIdentifier{}, errors.New("x509: only RSA and ECDSA public keys supported")
+		return nil, pkix.AlgorithmIdentifier{}, errors.New("x509: only RSA, ECDSA, ed25519, or X25519 public keys supported")
 	}
 
 	return publicKeyBytes, publicKeyAlgorithm, nil
@@ -89,6 +96,8 @@ const (
 	RSA
 	DSA
 	ECDSA
+	ED25519
+	X25519
 	total_key_algorithms
 )
 
@@ -97,6 +106,8 @@ var keyAlgorithmNames = []string{
 	"RSA",
 	"DSA",
 	"ECDSA",
+	"Ed25519",
+	"X25519",
 }
 
 func maxValidationLevel(a, b CertValidationLevel) CertValidationLevel {
@@ -436,6 +447,16 @@ func (c *Certificate) CheckSignatureFrom(parent *Certificate) (err error) {
 	return parent.CheckSignature(c.SignatureAlgorithm, c.RawTBSCertificate, c.Signature)
 }
 
+func hash(hashFunc crypto.Hash, raw []byte) []byte {
+	digest := raw
+	if hashFunc != 0 {
+		h := hashFunc.New()
+		h.Write(raw)
+		digest = h.Sum(nil)
+	}
+	return digest
+}
+
 func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signed, signature []byte) (err error) {
 	var hashType crypto.Hash
 
@@ -454,17 +475,16 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 	//case MD2WithRSA, MD5WithRSA:
 	case MD2WithRSA:
 		return InsecureAlgorithmError(algo)
+	case ED25519SIG:
+		hashType = 0
 	default:
 		return ErrUnsupportedAlgorithm
 	}
 
-	if !hashType.Available() {
+	if hashType != 0 && !hashType.Available() {
 		return ErrUnsupportedAlgorithm
 	}
-	h := hashType.New()
-
-	h.Write(signed)
-	digest := h.Sum(nil)
+	digest := hash(hashType, signed)
 
 	switch pub := publicKey.(type) {
 	case *rsa.PublicKey:
@@ -513,7 +533,13 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 			return errors.New("x509: ECDSA verification failure")
 		}
 		return
+	case ed25519.PublicKey:
+		if !ed25519.Verify(pub, digest, signature) {
+			return errors.New("x509: ED25519 verification failure")
+		}
+		return
 	}
+
 	return ErrUnsupportedAlgorithm
 }
 
@@ -664,6 +690,18 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 			Raw: keyData.PublicKey,
 		}
 		return pub, nil
+	case ED25519:
+		p := ed25519.PublicKey(asn1Data)
+		if len(p) > ed25519.PublicKeySize {
+			return nil, errors.New("x509: trailing data after Ed25519 data")
+		}
+		return p, nil
+	case X25519:
+		p := X25519PublicKey(asn1Data)
+		if len(p) > 32 {
+			return nil, errors.New("x509: trailing data after X25519 public key")
+		}
+		return p, nil
 	default:
 		return nil, nil
 	}

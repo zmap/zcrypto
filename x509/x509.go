@@ -18,6 +18,7 @@ import (
 	_ "crypto/sha1"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
+
 	//"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
@@ -30,6 +31,7 @@ import (
 	"time"
 
 	"github.com/zmap/zcrypto/x509/pkix"
+	"golang.org/x/crypto/ed25519"
 )
 
 // pkixPublicKey reflects a PKIX public key structure. See SubjectPublicKeyInfo
@@ -184,6 +186,7 @@ const (
 	SHA256WithRSAPSS
 	SHA384WithRSAPSS
 	SHA512WithRSAPSS
+	ED25519SIG
 )
 
 func (algo SignatureAlgorithm) isRSAPSS() bool {
@@ -211,6 +214,7 @@ var algoName = [...]string{
 	ECDSAWithSHA256:  "ECDSA-SHA256",
 	ECDSAWithSHA384:  "ECDSA-SHA384",
 	ECDSAWithSHA512:  "ECDSA-SHA512",
+	ED25519SIG:       "Ed25519",
 }
 
 func (algo SignatureAlgorithm) String() string {
@@ -228,6 +232,9 @@ type PublicKeyAlgorithm int
 //	DSA
 //	ECDSA
 //)
+
+// curve25519 package does not expose key types
+type X25519PublicKey []byte
 
 // OIDs for signature algorithms
 //
@@ -328,6 +335,7 @@ var signatureAlgorithmDetails = []struct {
 	{ECDSAWithSHA256, oidSignatureECDSAWithSHA256, ECDSA, crypto.SHA256},
 	{ECDSAWithSHA384, oidSignatureECDSAWithSHA384, ECDSA, crypto.SHA384},
 	{ECDSAWithSHA512, oidSignatureECDSAWithSHA512, ECDSA, crypto.SHA512},
+	{ED25519SIG, oidKeyEd25519, ED25519, crypto.Hash(0)},
 }
 
 // pssParameters reflects the parameters in an AlgorithmIdentifier that
@@ -466,6 +474,10 @@ func getPublicKeyAlgorithmFromOID(oid asn1.ObjectIdentifier) PublicKeyAlgorithm 
 		return DSA
 	case oid.Equal(oidPublicKeyECDSA):
 		return ECDSA
+	case oid.Equal(oidKeyEd25519):
+		return ED25519
+	case oid.Equal(oidKeyX25519):
+		return X25519
 	}
 	return UnknownPublicKeyAlgorithm
 }
@@ -491,6 +503,14 @@ var (
 	oidNamedCurveP256 = asn1.ObjectIdentifier{1, 2, 840, 10045, 3, 1, 7}
 	oidNamedCurveP384 = asn1.ObjectIdentifier{1, 3, 132, 0, 34}
 	oidNamedCurveP521 = asn1.ObjectIdentifier{1, 3, 132, 0, 35}
+)
+
+// https://datatracker.ietf.org/doc/draft-ietf-curdle-pkix/?include_text=1
+// id-X25519    OBJECT IDENTIFIER ::= { 1 3 101 110 }
+// id-Ed25519   OBJECT IDENTIFIER ::= { 1 3 101 112 }
+var (
+	oidKeyX25519  = asn1.ObjectIdentifier{1, 3, 101, 110}
+	oidKeyEd25519 = asn1.ObjectIdentifier{1, 3, 101, 112}
 )
 
 func namedCurveFromOID(oid asn1.ObjectIdentifier) elliptic.Curve {
@@ -1670,6 +1690,7 @@ func subjectBytes(cert *Certificate) ([]byte, error) {
 // signature algorithm.
 func signingParamsForPublicKey(pub interface{}, requestedSigAlgo SignatureAlgorithm) (hashFunc crypto.Hash, sigAlgo pkix.AlgorithmIdentifier, err error) {
 	var pubType PublicKeyAlgorithm
+	shouldHash := true
 
 	switch pub := pub.(type) {
 	case *rsa.PublicKey:
@@ -1695,8 +1716,15 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo SignatureAlgori
 			err = errors.New("x509: unknown elliptic curve")
 		}
 
+	case ed25519.PublicKey:
+		// ed25519.PublicKey doesn't return a pointer to the key so we check for both
+		pubType = ED25519
+		hashFunc = 0
+		shouldHash = false
+		sigAlgo.Algorithm = oidKeyEd25519
+
 	default:
-		err = errors.New("x509: only RSA and ECDSA keys supported")
+		err = errors.New("x509: only RSA, ECDSA, Ed25519, and X25519 keys supported")
 	}
 
 	if err != nil {
@@ -1715,7 +1743,7 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo SignatureAlgori
 				return
 			}
 			sigAlgo.Algorithm, hashFunc = details.oid, details.hash
-			if hashFunc == 0 {
+			if hashFunc == 0 && shouldHash {
 				err = errors.New("x509: cannot sign with hash function requested")
 				return
 			}
@@ -1809,12 +1837,9 @@ func CreateCertificate(rand io.Reader, template, parent *Certificate, pub, priv 
 	if err != nil {
 		return
 	}
-
 	c.Raw = tbsCertContents
 
-	h := hashFunc.New()
-	h.Write(tbsCertContents)
-	digest := h.Sum(nil)
+	digest := hash(hashFunc, c.Raw)
 
 	var signerOpts crypto.SignerOpts
 	signerOpts = hashFunc
@@ -1916,9 +1941,7 @@ func (c *Certificate) CreateCRL(rand io.Reader, priv interface{}, revokedCerts [
 		return
 	}
 
-	h := hashFunc.New()
-	h.Write(tbsCertListContents)
-	digest := h.Sum(nil)
+	digest := hash(hashFunc, tbsCertListContents)
 
 	var signature []byte
 	signature, err = key.Sign(rand, digest, hashFunc)
@@ -2195,9 +2218,7 @@ func CreateCertificateRequest(rand io.Reader, template *CertificateRequest, priv
 	}
 	tbsCSR.Raw = tbsCSRContents
 
-	h := hashFunc.New()
-	h.Write(tbsCSRContents)
-	digest := h.Sum(nil)
+	digest := hash(hashFunc, tbsCSRContents)
 
 	var signature []byte
 	signature, err = key.Sign(rand, digest, hashFunc)
