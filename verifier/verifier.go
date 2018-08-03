@@ -87,6 +87,10 @@ type VerificationResult struct {
 	// ParentSPKISubjectFingerprint is the SHA256 of the (SPKI, Subject) for
 	// parents of this certificate.
 	ParentSPKISubjectFingerprint x509.CertificateFingerprint
+
+	// ParentSPKI is the raw bytes of the subject public key info of the parent. It
+	// is the SPKI used as part of the ParentSPKISubjectFingerprint.
+	ParentSPKI []byte
 }
 
 // MatchesDomain returns true if NameError == nil and Name != "".
@@ -215,13 +219,16 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 		res.CertificateType = x509.CertificateTypeUnknown
 	}
 
-	// Set the ParentSPKISubjectFingerprint
+	// Set the ParentSPKISubjectFingerprint and ParentSPKI
 	if len(res.Parents) > 0 {
 		// All parents should have the same (SPKI, Subject) fingerprint. If not,
 		// there's a bug.
 		fp := res.Parents[0].SPKISubjectFingerprint
 		res.ParentSPKISubjectFingerprint = make([]byte, len(fp))
 		copy(res.ParentSPKISubjectFingerprint, fp)
+		parentSPKI := res.Parents[0].RawSubjectPublicKeyInfo
+		res.ParentSPKI = make([]byte, len(parentSPKI))
+		copy(res.ParentSPKI, parentSPKI)
 	}
 
 	return
