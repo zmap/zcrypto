@@ -295,8 +295,7 @@ PublicKeyAlgorithm = SubRecordType({
                        "(e.g., RSAPublicKey())."),
     "oid": OID(doc="OID of the public key on the certificate. "\
                    "This is helpful when an unknown type is present. "\
-                   "This field is reserved and not currently populated.",
-               validation_policy="warn")
+                   "This field is reserved and not currently populated.")
 })
 
 # x509/json.go: auxSignatureAlgorithm (via SignatureAlgorithm)
@@ -304,7 +303,7 @@ SignatureAlgorithm = SubRecordType({
     "name": String(doc="Name of signature algorithm, e.g., SHA1-RSA or "\
                        "ECDSA-SHA512. Unknown algorithms get an integer id."),
     "oid": OID(doc="The OBJECT IDENTIFIER of the signature algorithm, in "\
-                   "dotted-decimal notation.", validation_policy="warn")
+                   "dotted-decimal notation.")
 })
 
 # x509/extensions.go: type SubjAuthKeyId []byte (but, its MarshalJSON returns json.Marshal(hex.EncodeToString(kid)))
