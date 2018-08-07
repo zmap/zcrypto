@@ -24,7 +24,7 @@ var kMinTime, kMaxTime time.Time
 
 func init() {
 	var err error
-	kMinTime, err = time.Parse(time.RFC3339, "0001-01-01T00:00:00Z")
+	kMinTime, err = time.Parse(time.RFC3339, "1970-01-01T00:00:00Z")
 	if err != nil {
 		panic(err)
 	}
