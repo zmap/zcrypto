@@ -398,7 +398,9 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 		NextUpdate:         singleResp.NextUpdate,
 	}
 
-	ret.IsValidSignature = ValidateResponse(ret, basicResp, issuer)
+	if issuer != nil {
+		ret.IsValidSignature = ValidateResponse(ret, basicResp, issuer)
+	}
 
 	// Handle the ResponderID CHOICE tag. ResponderID can be flattened into
 	// TBSResponseData once https://go-review.googlesource.com/34503 has been
