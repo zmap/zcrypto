@@ -8,14 +8,6 @@ import zschema.registry
 # recent changes from ztag, then converted sub_records into
 # SubRecordTypes.
 
-
-# TODO FIXME: zcrypto is not the right place for this. Was previously
-# defined in ztag.
-class CensysString(WhitespaceAnalyzedString):
-    "default type for any strings in Censys"
-    INCLUDE_RAW = True
-
-
 # Helper function for types where unknown values have a special value.
 # known are the known values, range generates the keys, and unknown is
 # either a static value or a function mapping unknown keys to values.
@@ -31,21 +23,21 @@ def getUnknowns(known, range, unknown="unknown"):
 # x509/pkix/pkix.go: Name
 DistinguishedName = SubRecordType({
     "serial_number": ListOf(String()),
-    "common_name": ListOf(CensysString()),
-    "surname": ListOf(CensysString()),
-    "country": ListOf(CensysString()),
-    "locality": ListOf(CensysString()),
-    "province": ListOf(CensysString()),
-    "street_address": ListOf(CensysString()),
-    "organization": ListOf(CensysString()),
-    "organizational_unit": ListOf(CensysString()),
+    "common_name": ListOf(WhitespaceAnalyzedString()),
+    "surname": ListOf(WhitespaceAnalyzedString()),
+    "country": ListOf(WhitespaceAnalyzedString()),
+    "locality": ListOf(WhitespaceAnalyzedString()),
+    "province": ListOf(WhitespaceAnalyzedString()),
+    "street_address": ListOf(WhitespaceAnalyzedString()),
+    "organization": ListOf(WhitespaceAnalyzedString()),
+    "organizational_unit": ListOf(WhitespaceAnalyzedString()),
     "postal_code": ListOf(String()),
-    "domain_component": ListOf(CensysString()),
-    "email_address": ListOf(CensysString()),
-    "given_name": ListOf(CensysString()),
-    "jurisdiction_country":ListOf(CensysString()),
-    "jurisdiction_locality":ListOf(CensysString()),
-    "jurisdiction_province":ListOf(CensysString()),
+    "domain_component": ListOf(WhitespaceAnalyzedString()),
+    "email_address": ListOf(WhitespaceAnalyzedString()),
+    "given_name": ListOf(WhitespaceAnalyzedString()),
+    "jurisdiction_country":ListOf(WhitespaceAnalyzedString()),
+    "jurisdiction_locality":ListOf(WhitespaceAnalyzedString()),
+    "jurisdiction_province":ListOf(WhitespaceAnalyzedString()),
 })
 
 # x509/pkix/pkix.go: Extension (via auxExtension in x509/json.go)
@@ -58,8 +50,8 @@ UnknownExtension = SubRecordType({
 
 # x509/pkix/pkix.go: type EDIPartyName struct
 EDIPartyName = SubRecordType({
-    "name_assigner": CensysString(doc="The nameAssigner (a DirectoryString)", required=False),
-    "party_name": CensysString(doc="The partyName (a DirectoryString)", required=True),
+    "name_assigner": WhitespaceAnalyzedString(doc="The nameAssigner (a DirectoryString)", required=False),
+    "party_name": WhitespaceAnalyzedString(doc="The partyName (a DirectoryString)", required=True),
 }, doc="An X.400 generalName representing an Electronic Data Interchange (EDI) entity.")
 
 # x509/pkix/json.go: auxOtherName / OtherName
@@ -195,7 +187,7 @@ GeneralSubtreeIP = SubRecordType({
 # x509/extensions.go: type NoticeReference struct
 NoticeReference = SubRecordType({
     # Note: these are both omitempty in the go code, but required in the ASN.1 spec.
-    "organization": CensysString(doc="The organization that prepared the notice.", required=False),
+    "organization": WhitespaceAnalyzedString(doc="The organization that prepared the notice.", required=False),
     "notice_numbers": ListOf(Signed32BitInteger(), required=False, doc="The numeric identifier(s) of the notice."),
 }, doc="A reference to a textual notice statement provided by an organization.")
 
@@ -313,9 +305,9 @@ SubjAuthKeyId = HexString.with_args(doc="A key identifier, usually a digest of t
 # x509/json.go jsonCertificate (mapped from x509.Certificate)
 ParsedCertificate = SubRecordType({
     "subject": DistinguishedName(category="Subject", doc="The parsed subject name.", required=True),
-    "subject_dn": CensysString(category="Basic Information", doc="A canonical string representation of the subject name.", examples=["C=US, ST=MI, L=Ann Arbor, OU=Scans, CN=localhost, emailAddress=root@localhost"]),
+    "subject_dn": WhitespaceAnalyzedString(category="Basic Information", doc="A canonical string representation of the subject name.", examples=["C=US, ST=MI, L=Ann Arbor, OU=Scans, CN=localhost, emailAddress=root@localhost"]),
     "issuer": DistinguishedName(category="Issuer", doc="The parsed issuer name.", required=True),
-    "issuer_dn": CensysString(category="Basic Information", doc="A canonical string representation of the issuer name.", examples=["C=US, ST=MI, L=Ann Arbor, OU=Certificate authority, CN=CA1, emailAddress=ca1@localhost"]),
+    "issuer_dn": WhitespaceAnalyzedString(category="Basic Information", doc="A canonical string representation of the issuer name.", examples=["C=US, ST=MI, L=Ann Arbor, OU=Certificate authority, CN=CA1, emailAddress=ca1@localhost"]),
     "version": Unsigned8BitInteger(category="Misc", doc="The x.509 certificate version number."),
     # NOTE: This is indeed encoded as a base 10 string via math.big.int.Text(10)
     "serial_number": String(doc="Serial number as an signed decimal integer. "\
@@ -381,13 +373,13 @@ ParsedCertificate = SubRecordType({
             # URIs).  For example, ".example.com" indicates all the Internet mail
             # addresses in the domain "example.com", but not Internet mail
             # addresses on the host "example.com".
-            "permitted_email_addresses": ListOf(CensysString()),
+            "permitted_email_addresses": ListOf(WhitespaceAnalyzedString()),
             "permitted_ip_addresses": ListOf(GeneralSubtreeIP()),
             "permitted_directory_names": ListOf(DistinguishedName()),
             "permitted_registered_ids": ListOf(OID()),
             "permitted_edi_party_names": ListOf(EDIPartyName()),
             "excluded_names": ListOf(FQDN()),
-            "excluded_email_addresses": ListOf(CensysString()),
+            "excluded_email_addresses": ListOf(WhitespaceAnalyzedString()),
             "excluded_ip_addresses": ListOf(GeneralSubtreeIP()),
             "excluded_directory_names": ListOf(DistinguishedName()),
             "excluded_registered_ids": ListOf(OID()),
@@ -433,7 +425,7 @@ SimpleCertificate = SubRecordType({
 
 ###### END ztag/zgrab ######
 
-# TODO: Should any of these be IndexedBinary() / CensysString()?
+# TODO: Should any of these be IndexedBinary() / WhitespaceAnalyzedString()?
 
 GoInt = Signed32BitInteger
 
