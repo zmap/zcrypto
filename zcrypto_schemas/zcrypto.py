@@ -13,7 +13,7 @@ import zschema.registry
 # defined in ztag.
 class CensysString(WhitespaceAnalyzedString):
     "default type for any strings in Censys"
-    INCLUDE_RAW = True
+    ES_INCLUDE_RAW = True
 
 
 # Helper function for types where unknown values have a special value.
