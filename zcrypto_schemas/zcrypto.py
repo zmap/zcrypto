@@ -391,7 +391,7 @@ ParsedCertificate = SubRecordType({
     "unknown_extensions": ListOf(UnknownExtension(), category="Unknown Extensions", doc="List of raw extensions that were not recognized by the application."),
     "signature": SubRecord({
         "signature_algorithm": SignatureAlgorithm(),
-        "value": IndexedBinary(),
+        "value": Binary(),
         "valid": Boolean(),
         "self_signed": Boolean(),
     }, category="Signature"),
