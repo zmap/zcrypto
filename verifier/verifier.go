@@ -44,6 +44,10 @@ type VerificationResult struct {
 	// in the revocation set that is part of the Verifier (e.g. in OneCRL).
 	InRevocationSet bool
 
+	// OCSPRevoked is true if the certificate has been revoked through OCSP,
+	// which is only checked if VerificationOptions.ShouldCheckOCSP flag is set
+	OCSPRevoked bool
+
 	// ValiditionError will be non-nil when there was some sort of error during
 	// validation not involving a name mismatch, e.g. if a chain could not be
 	// built.
@@ -120,9 +124,10 @@ type VerifyProcedure interface {
 // VerificationOptions contains settings for Verifier.Verify().
 // VerificationOptions should be safely copyable.
 type VerificationOptions struct {
-	VerifyTime     time.Time
-	Name           string
-	PresentedChain *Graph // XXX: Unused
+	VerifyTime      time.Time
+	Name            string
+	PresentedChain  *Graph // XXX: Unused
+	ShouldCheckOCSP bool
 }
 
 func (opt *VerificationOptions) clean() {
@@ -200,6 +205,19 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 		res.Parents = parentsFromChains(res.ValidAtExpirationChains)
 	} else {
 		res.Parents = parentsFromChains(res.CurrentChains)
+	}
+
+	if opts.ShouldCheckOCSP {
+		var issuer *x509.Certificate
+		if res.Parents != nil {
+			issuer = res.Parents[0] // only need issuer SPKI, so any parent will do
+		} else {
+			issuer = nil
+		}
+		isRevoked, err := CheckOCSP(c, issuer)
+		if err == nil {
+			res.OCSPRevoked = isRevoked
+		}
 	}
 
 	// Determine certificate type.

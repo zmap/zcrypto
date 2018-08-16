@@ -195,7 +195,7 @@ func TestOCSPForRevoked(t *testing.T) {
 	if err != nil {                                                          // should fail because no matching cert in respBytes
 		t.Error(err.Error())
 	}
-	if respParsed.CertificateStatus != "Revoked" {
+	if respParsed.CertificateStatus != "Revoked" || respParsed.IsRevoked != true {
 		t.Fail()
 	}
 }
