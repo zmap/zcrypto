@@ -147,7 +147,12 @@ func parseCertPEM(t *testing.T) (cert *x509.Certificate, revoked *x509.Certifica
 
 func TestOCSPCreateRequest(t *testing.T) {
 	cert, _, issuer := parseCertPEM(t)
-	requestBytes, err := ocsp.CreateRequest(cert, issuer)
+	issuerKeyHash, err := ocsp.GetKeyHashSHA1(issuer)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	issuerNameHash := ocsp.GetNameHashSHA1(issuer)
+	requestBytes, err := ocsp.CreateRequest(cert, issuerKeyHash, issuerNameHash)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -224,9 +229,9 @@ func TestStatusCode(t *testing.T) {
 }
 
 func TestBadIssuerHash(t *testing.T) {
-	cert, _, issuer := parseCertPEM(t)
+	_, _, issuer := parseCertPEM(t)
 	issuer.RawSubjectPublicKeyInfo = issuer.RawSubjectPublicKeyInfo[0:5] // mess up issuer key
-	_, err := ocsp.CreateRequest(cert, issuer)                           // this should fail when unmarshaling key
+	_, err := ocsp.GetKeyHashSHA1(issuer)                                // this should fail when unmarshaling key
 	if err == nil {
 		t.Fail()
 	}

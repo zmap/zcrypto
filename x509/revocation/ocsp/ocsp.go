@@ -5,7 +5,6 @@ import (
 	"encoding/asn1"
 	"encoding/json"
 	"errors"
-	"hash"
 	"math/big"
 	"time"
 
@@ -104,37 +103,29 @@ type PublicKeyInfo struct {
 	PublicKey asn1.BitString
 }
 
-// GetKeyHash - compute hash of the certificate's public key, using
-// the specified hash algorithm
-func GetKeyHash(cert *x509.Certificate, hInstance hash.Hash) ([]byte, error) {
-	hInstance.Reset()
+// GetKeyHashSHA1 - compute hash of the certificate's public key, using SHA-1
+func GetKeyHashSHA1(cert *x509.Certificate) ([]byte, error) {
+	hashFunc := crypto.SHA1
+	h := hashFunc.New()
 	var keyInfo PublicKeyInfo
 	if _, err := asn1.Unmarshal(cert.RawSubjectPublicKeyInfo, &keyInfo); err != nil {
 		return nil, err
 	}
-	hInstance.Write(keyInfo.PublicKey.RightAlign())
-	return hInstance.Sum(nil), nil
+	h.Write(keyInfo.PublicKey.RightAlign())
+	return h.Sum(nil), nil
 }
 
-// GetNameHash - compute hash of the certificate's subject field, using
-// the specified hash algorithm
-func GetNameHash(cert *x509.Certificate, hInstance hash.Hash) []byte {
-	hInstance.Reset()
-	hInstance.Write(cert.RawSubject)
-	return hInstance.Sum(nil)
+// GetNameHashSHA1 - compute hash of the certificate's subject field, using SHA-1
+func GetNameHashSHA1(cert *x509.Certificate) []byte {
+	hashFunc := crypto.SHA1
+	h := hashFunc.New()
+	h.Write(cert.RawSubject)
+	return h.Sum(nil)
 }
 
 // CreateRequest returns a DER-encoded, OCSP request for the status of cert
-func CreateRequest(cert *x509.Certificate, issuer *x509.Certificate) ([]byte, error) {
-	hashFunc := crypto.SHA1
-	h := hashFunc.New()
-	issuerKeyHash, err := GetKeyHash(issuer, h)
-	if err != nil {
-		return nil, err
-	}
-
-	issuerNameHash := GetNameHash(issuer, h)
-
+// keyhash and namehash must be computed with SHA-1, use functions above
+func CreateRequest(cert *x509.Certificate, issuerKeyHash []byte, issuerNameHash []byte) ([]byte, error) {
 	sha1HashOID := asn1.ObjectIdentifier([]int{1, 3, 14, 3, 2, 26})
 	algID := &pkix.AlgorithmIdentifier{
 		Algorithm:  sha1HashOID,
@@ -407,7 +398,9 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 		NextUpdate:         singleResp.NextUpdate,
 	}
 
-	ret.IsValidSignature = ValidateResponse(ret, basicResp, issuer)
+	if issuer != nil {
+		ret.IsValidSignature = ValidateResponse(ret, basicResp, issuer)
+	}
 
 	// Handle the ResponderID CHOICE tag. ResponderID can be flattened into
 	// TBSResponseData once https://go-review.googlesource.com/34503 has been
