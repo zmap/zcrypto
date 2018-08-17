@@ -17,6 +17,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
+	"io/ioutil"
 	"math/big"
 	"net"
 	"os/exec"
@@ -169,58 +170,6 @@ var matchHostnamesTests = []matchHostnamesTest{
 	{"*.www.*.com", "xyz.www.example.com", true},
 }
 
-func TestMatchHostnames(t *testing.T) {
-	for i, test := range matchHostnamesTests {
-		r := matchHostnames(test.pattern, test.host)
-		if r != test.ok {
-			t.Errorf("#%d mismatch got: %t want: %t", i, r, test.ok)
-		}
-	}
-}
-
-func TestMatchIP(t *testing.T) {
-	// Check that pattern matching is working.
-	c := &Certificate{
-		DNSNames: []string{"*.foo.bar.baz"},
-		Subject: pkix.Name{
-			CommonName: "*.foo.bar.baz",
-		},
-	}
-	err := c.VerifyHostname("quux.foo.bar.baz")
-	if err != nil {
-		t.Fatalf("VerifyHostname(quux.foo.bar.baz): %v", err)
-	}
-
-	// But check that if we change it to be matching against an IP address,
-	// it is rejected.
-	c = &Certificate{
-		DNSNames: []string{"*.2.3.4"},
-		Subject: pkix.Name{
-			CommonName: "*.2.3.4",
-		},
-	}
-	err = c.VerifyHostname("1.2.3.4")
-	if err == nil {
-		t.Fatalf("VerifyHostname(1.2.3.4) should have failed, did not")
-	}
-
-	c = &Certificate{
-		IPAddresses: []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")},
-	}
-	err = c.VerifyHostname("127.0.0.1")
-	if err != nil {
-		t.Fatalf("VerifyHostname(127.0.0.1): %v", err)
-	}
-	err = c.VerifyHostname("::1")
-	if err != nil {
-		t.Fatalf("VerifyHostname(::1): %v", err)
-	}
-	err = c.VerifyHostname("[::1]")
-	if err != nil {
-		t.Fatalf("VerifyHostname([::1]): %v", err)
-	}
-}
-
 func TestCertificateParse(t *testing.T) {
 	s, _ := hex.DecodeString(certBytes)
 	certs, err := ParseCertificates(s)
@@ -234,10 +183,6 @@ func TestCertificateParse(t *testing.T) {
 
 	err = certs[0].CheckSignatureFrom(certs[1])
 	if err != nil {
-		t.Error(err)
-	}
-
-	if err := certs[0].VerifyHostname("mail.google.com"); err != nil {
 		t.Error(err)
 	}
 
@@ -1194,7 +1139,9 @@ func TestParseGeneralNamesAll(t *testing.T) {
 }
 
 func TestTimeInValidityPeriod(t *testing.T) {
-	c, err := certificateFromPEM(zcryptoRoot)
+	fileBytes, _ := ioutil.ReadFile("testdata/davidadrian.org.cert")
+	p, _ := pem.Decode(fileBytes)
+	c, err := ParseCertificate(p.Bytes)
 	if err != nil {
 		t.Fatalf("unable to parse PEM: %s", err)
 	}
@@ -1215,7 +1162,7 @@ func TestTimeInValidityPeriod(t *testing.T) {
 			expected: false,
 		},
 		{
-			unixTime: 1735689600, // 2025-01-01 00:00:00
+			unixTime: 1420070400, // 2015-01-01 00:00:00
 			expected: true,
 		},
 	}
