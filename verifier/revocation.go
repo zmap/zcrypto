@@ -5,8 +5,11 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/pkix"
+	"github.com/zmap/zcrypto/x509/revocation/crl"
 	"github.com/zmap/zcrypto/x509/revocation/ocsp"
 )
 
@@ -61,4 +64,48 @@ func CheckOCSP(c *x509.Certificate, issuer *x509.Certificate) (isRevoked bool, e
 		return false, errors.New("Failed to parse OCSP Response: " + err.Error())
 	}
 	return ocspResp.IsRevoked, nil
+}
+
+// CheckCRL - check whether the provided certificate has been revoked through
+// a CRL. If no certList is provided, function will attempt to fetch it
+// through the GetCRL function. If performing repeated calls to this function,
+// independently calling GetCRL and caching the list between calls to
+// CheckCRL is highly recommended (otherwise the CRL will be fetched on every
+// single call to CheckCRL!).
+func CheckCRL(c *x509.Certificate, certList *pkix.CertificateList) (isRevoked bool, err error) {
+	if certList == nil {
+		certList, err = GetCRL(c.CRLDistributionPoints[0])
+	}
+	if err != nil {
+		return false, err
+	}
+	crlData, err := crl.CheckCRLForCert(certList, c, nil)
+	if err != nil {
+		return false, err
+	}
+	return crlData.IsRevoked, nil
+}
+
+// GetCRL - fetch and parse the CRL from the provided distrution point
+func GetCRL(distributionPoint string) (*pkix.CertificateList, error) {
+	if strings.HasPrefix(distributionPoint, "ldap") {
+		return nil, errors.New("This CRL distributionPointribution point operates over LDAP - could not access")
+	}
+
+	crlResp, err := http.Get(distributionPoint)
+	if err != nil {
+		return nil, errors.New("failed to send HTTP Request for CRL: " + err.Error())
+	}
+
+	crlRespBody, err := ioutil.ReadAll(crlResp.Body)
+	if err != nil {
+		return nil, errors.New("Failed to read HTTP Response for CRL")
+	}
+	crlResp.Body.Close()
+
+	certList, err := x509.ParseCRL(crlRespBody)
+	if err != nil {
+		return nil, errors.New("Failed to parse CRL" + err.Error())
+	}
+	return certList, nil
 }

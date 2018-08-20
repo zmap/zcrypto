@@ -3,6 +3,7 @@ package verifier
 import (
 	"encoding/hex"
 	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/zmap/zcrypto/x509"
@@ -119,24 +120,60 @@ TRttQBVSK/eHiXgSgW7ZTaoteNTCLD0IX4eRnh8OsN4wUmSGiaqdZpwOdgyA8nTY
 Kvi4Os7X1g8RvmurFPW9QaAiY4nxug9vKWNmLT+sjHLF+8fk1A/yO0+MKcc=
 -----END CERTIFICATE-----`
 
+const crlRevokedCert = `
+-----BEGIN CERTIFICATE-----
+MIIG+DCCBeCgAwIBAgIRAN9wJmL1kVzLsW66G9WlG+8wDQYJKoZIhvcNAQELBQAw
+djELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAk1JMRIwEAYDVQQHEwlBbm4gQXJib3Ix
+EjAQBgNVBAoTCUludGVybmV0MjERMA8GA1UECxMISW5Db21tb24xHzAdBgNVBAMT
+FkluQ29tbW9uIFJTQSBTZXJ2ZXIgQ0EwHhcNMTgwNDE3MDAwMDAwWhcNMjAwNDE2
+MjM1OTU5WjCBqzELMAkGA1UEBhMCVVMxDjAMBgNVBBETBTAyMjE1MQswCQYDVQQI
+EwJNQTEPMA0GA1UEBxMGQm9zdG9uMRcwFQYDVQQJEw5PbmUgU2lsYmVyIFdheTEm
+MCQGA1UEChMdVFJVU1RFRVMgT0YgQk9TVE9OIFVOSVZFUlNJVFkxEDAOBgNVBAsT
+B0luZm9TZWMxGzAZBgNVBAMTEnd3dy1mZS10ZXN0LmJ1LmVkdTCCASIwDQYJKoZI
+hvcNAQEBBQADggEPADCCAQoCggEBAKWvgRHP6F/2e5aEKiKkkbxiqiij7i7Pg2zC
+F4O+eyRALIydPh97JpCVhK0C8WG5uKclooI4tey/5fIKXBKug2HTXVNtVhupu9Wb
+9wuFWA2xvw6PxRYlQSLaGEVnWPkJwMzbeVXiUYwHK7HRbc8dP9ivOLKHotAVaguf
+iON0O//jU4mpllSH76PquYtJewZW7AgXO1K49WAYmJ6vX2D3fQTw69iSoxbdNZbN
+0zx3qsQQCl4d79aSj+m0ZPzkncUVwLoNN78g030zjluiH2bo8dM2L78bPlA4mijp
+sBPHal+5B18ReS51FwUCj6n7qaU7kxY81fuMvBw5jfopQ9hodesCAwEAAaOCA0kw
+ggNFMB8GA1UdIwQYMBaAFB4Fo3ePbJbiW4dLprSGrHEADOc4MB0GA1UdDgQWBBS3
+MLkqHskB1rVge+hV6/3yF2S/9zAOBgNVHQ8BAf8EBAMCBaAwDAYDVR0TAQH/BAIw
+ADAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwZwYDVR0gBGAwXjBSBgwr
+BgEEAa4jAQQDAQEwQjBABggrBgEFBQcCARY0aHR0cHM6Ly93d3cuaW5jb21tb24u
+b3JnL2NlcnQvcmVwb3NpdG9yeS9jcHNfc3NsLnBkZjAIBgZngQwBAgIwRAYDVR0f
+BD0wOzA5oDegNYYzaHR0cDovL2NybC5pbmNvbW1vbi1yc2Eub3JnL0luQ29tbW9u
+UlNBU2VydmVyQ0EuY3JsMHUGCCsGAQUFBwEBBGkwZzA+BggrBgEFBQcwAoYyaHR0
+cDovL2NydC51c2VydHJ1c3QuY29tL0luQ29tbW9uUlNBU2VydmVyQ0FfMi5jcnQw
+JQYIKwYBBQUHMAGGGWh0dHA6Ly9vY3NwLnVzZXJ0cnVzdC5jb20wHQYDVR0RBBYw
+FIISd3d3LWZlLXRlc3QuYnUuZWR1MIIBfwYKKwYBBAHWeQIEAgSCAW8EggFrAWkA
+dgDuS723dc5guuFCaR+r4Z5mow9+X7By2IMAxHuJeqj9ywAAAWLUrlzRAAAEAwBH
+MEUCIQCaaruMLPu0LBKeFsHiXVrcIu2ZPbQhJsv1uBZMdh2n9gIgFjUKIowL6qeX
+5rcMmk/kdW+Zs/1niiACbXd4zCNDrHMAdgBep3P531bA57U2SH3QSeAyepGaDISh
+EhKEGHWWgXFFWAAAAWLUrl5wAAAEAwBHMEUCIQDew814X7qOkBIV71mzsg7wgOlS
+roQpUPKHRFluUjGvtAIgB2DhnbAg2ZzuXahjpbSoN4Mgu9BG1OGkj/1QwMDiBPcA
+dwBvU3asMfAxGdiZAKRRFf93FRwR2QLBACkGjbIImjfZEwAAAWLUrly8AAAEAwBI
+MEYCIQCPz2gxJlSoNaj/r0jPL7ZYg2trpzHyGpxWkVT+TRgw+AIhAO5SH33jBTeY
+JPQrNm+zOEsc6HmyFtp2hbxFf+Ao9n8QMA0GCSqGSIb3DQEBCwUAA4IBAQBhV+I+
+R/LVRV4dPTmUy5WRa3PGQ6KMGjQUrujrU53ubHKDQl7QmhBX79xGAsb7P4krz2Tc
+O1GVV11vQMP0HQQ3IPyERuiHLOL14EygUsIZeYX+/KbuKJpErMlXZY7urxmnMSGv
+k2eajyCSqEqLxnJNd0oIJHPEz9r/q7XfK9lgIV8pwgW5pqwmM4dpEvHYJLkIlXOp
+7RnANs0LtBstKQa/T+zAlxsV1nUM6yu9wAJu996ToSNgc2ap+y+M7nh6o2VWPMfa
+rBME9QyQdbHgGm22ukrANHwZOHB7Kv9y6RDFokBNnIHlW7/jsGXstDpUKK+DFZTN
+e5qqPa6xjlp5+zXa
+-----END CERTIFICATE-----`
+
 const ocspResponseHex = `308206450a0100a082063e3082063a06092b06010505073001010482062b3082062730819ea2160414545919db6531e1afcfc6014c8e1409324c87be4a180f32303138303732373038313733345a307330713049300906052b0e03021a05000414d1b1648b8c9f0dd16ba38acd2b5017d5f9cfc06404145f60cf619055df8443148a602ab2f57af44318ef021040516923bfde812659b57646b0694e248000180f32303138303732373038313733345aa011180f32303138303830333038313733345a300d06092a864886f70d0101050500038201010012b0b7fdc3366bd2bf9db3f93bf61ac583132d2aeec4ace34fb7701bbfa1f90999a3f13c4ce91c8c8fdf5ac9ff05e67e1a86fcd7fc9a3ab446289f7cc9ed8bc54ff4ac93e62b088920b927c4dc3f58ac45c22d673ec8af15ecf42a6a876302839703b1584e08413a1aba9a9acc5a4bcee12e9d81e5e9e74539f0bada540643ec804565e89f40399bf6ec489512c4d1347b6eb591ef234cbfe3ae3cc322b14b0930d91c7126aad1a69a0892941fa5c90069a10162d1a1cd9d2b95050dbf7306c87fedae324d3b77686841007502869705899c952318a59a7cd016739c7a6c86f0bc18f88f0619ed82c1bef416d6c060726f70643aeab8fedb7c30fcffa851f957a082046e3082046a308204663082034ea003020102021010ae53bdb9affdeadcff94233538ffb8300d06092a864886f70d01010b0500307e310b3009060355040613025553311d301b060355040a131453796d616e74656320436f72706f726174696f6e311f301d060355040b131653796d616e746563205472757374204e6574776f726b312f302d0603550403132653796d616e74656320436c61737320332053656375726520536572766572204341202d204734301e170d3138303631303030303030305a170d3138303930383233353935395a3040313e303c0603550403133553796d616e74656320436c61737320332053656375726520536572766572204341202d204734204f43535020526573706f6e64657230820122300d06092a864886f70d01010105000382010f003082010a02820101008348ee9c1ee04b882ef2b5285e5f6121d121920834fdf0f90b912b56126c0152279f15209adc620c21ff511b181c170580d52cfeea24cb8eb877743fce22f2e16fa91acd12948ec36a454998cb7c70bc6916ad1ed28eff57c23f7233c8d88fb9e2da9171187a69aa8eb965e4d8f177e6c44ea507afc3f6c5c5fa730d371d4921b2428c5550c27bd3eaf44b9d099111a604d678ddfbfbb73b37570574ce6fb943332d72f6f7a47a04d703fb957c2c244f9098e29714c787abc1d83f8b2fc95d798dc59c4403021714b40e694c921dcab8b59a8cacf1ed0a3bb33f382ce3eade89736a396690f46b1e725bd558b06bcbeaeb67da11859059d3d24e2985fdf0b4b10203010001a382011c30820118300f06092b06010505073001050402050030220603551d11041b3019a4173015311330110603550403130a5447562d462d32323831301f0603551d230418301680145f60cf619055df8443148a602ab2f57af44318ef301d0603551d0e04160414545919db6531e1afcfc6014c8e1409324c87be4a300c0603551d130101ff04023000306e0603551d20046730653063060b6086480186f845010717033054302606082b06010505070201161a687474703a2f2f7777772e73796d617574682e636f6d2f637073302a06082b06010505070202301e1a1c2020687474703a2f2f7777772e73796d617574682e636f6d2f72706130130603551d25040c300a06082b06010505070309300e0603551d0f0101ff040403020780300d06092a864886f70d01010b0500038201010022d3cfb4fe8e4c760ff9cfe2ac30d9025a2a52873ec1feeb5744792388240df905fce0ef778dea6249200c78dc89d81263d125570a11c55ab8251c3977d22307f9df717d574bddc3a57aa94ec01e442e070a2247fffd77b7f309bcdcac37cd715840b3e7091308a1aeaf9bc53459fc1305dbc6cff03620e8f5f92489dd15579fb1dd18a052090886d5a99447f2e63c3283a78b3ce09b62d2f44565b68b4a4bfc67192a44256fb481b00a625c6e2559af945e6cd3f2196e35cee7b7a79736c02877f0b4a06acb7dd9da802e74fec75465facb94c260a25556bbe6b683c1674342f5687605dbdff4c4c384e263d640f5e4efd22a52e9e2ebe77b628ccb0b9deca1`
 
 const ocspRevokedHex = `3082065d0a0100a08206563082065206092b0601050507300101048206433082063f3081b6a2160414545919db6531e1afcfc6014c8e1409324c87be4a180f32303138303733313032343031355a30818a3081873049300906052b0e03021a05000414d1b1648b8c9f0dd16ba38acd2b5017d5f9cfc06404145f60cf619055df8443148a602ab2f57af44318ef0210009e79e98f8373ac096b08ca05b5365ca116180f32303137303930383031303934395aa0030a0105180f32303138303733313032343031355aa011180f32303138303830373032343031355a300d06092a864886f70d0101050500038201010063c6159aef3b79ced6c09e32a910928537a980455a83a0a985757d04aa911d2da930f06ce9e5c7af635b140d511358f574d9b08360bb38efe3a9788b3773915d208526521cac654ea4c215e5c833fbe3e24bf47d131a05a32f509f26207fa3cecbf165555b2d2902f2fccd297ee11c88e0b867435d5c1291d1fa3a8ef6d55abb827972bafff68b2de746ceec2d75f8bfee610599d921dcc4fc6da34e6226946f2248cd75f886b2ca11eb5228217c7a1f8d106c9e97c1ec6959d20b6d249ca8f2b49fd4b2ac6d9fbf0ab6d34f99743b75c5c2fd2a6697e7fa46234992b2e0ac6874d9ce76a77eefad9a29676fc4a180ffd3321b1c90dd82e6ec30a6e9942bb5d4a082046e3082046a308204663082034ea003020102021010ae53bdb9affdeadcff94233538ffb8300d06092a864886f70d01010b0500307e310b3009060355040613025553311d301b060355040a131453796d616e74656320436f72706f726174696f6e311f301d060355040b131653796d616e746563205472757374204e6574776f726b312f302d0603550403132653796d616e74656320436c61737320332053656375726520536572766572204341202d204734301e170d3138303631303030303030305a170d3138303930383233353935395a3040313e303c0603550403133553796d616e74656320436c61737320332053656375726520536572766572204341202d204734204f43535020526573706f6e64657230820122300d06092a864886f70d01010105000382010f003082010a02820101008348ee9c1ee04b882ef2b5285e5f6121d121920834fdf0f90b912b56126c0152279f15209adc620c21ff511b181c170580d52cfeea24cb8eb877743fce22f2e16fa91acd12948ec36a454998cb7c70bc6916ad1ed28eff57c23f7233c8d88fb9e2da9171187a69aa8eb965e4d8f177e6c44ea507afc3f6c5c5fa730d371d4921b2428c5550c27bd3eaf44b9d099111a604d678ddfbfbb73b37570574ce6fb943332d72f6f7a47a04d703fb957c2c244f9098e29714c787abc1d83f8b2fc95d798dc59c4403021714b40e694c921dcab8b59a8cacf1ed0a3bb33f382ce3eade89736a396690f46b1e725bd558b06bcbeaeb67da11859059d3d24e2985fdf0b4b10203010001a382011c30820118300f06092b06010505073001050402050030220603551d11041b3019a4173015311330110603550403130a5447562d462d32323831301f0603551d230418301680145f60cf619055df8443148a602ab2f57af44318ef301d0603551d0e04160414545919db6531e1afcfc6014c8e1409324c87be4a300c0603551d130101ff04023000306e0603551d20046730653063060b6086480186f845010717033054302606082b06010505070201161a687474703a2f2f7777772e73796d617574682e636f6d2f637073302a06082b06010505070202301e1a1c2020687474703a2f2f7777772e73796d617574682e636f6d2f72706130130603551d25040c300a06082b06010505070309300e0603551d0f0101ff040403020780300d06092a864886f70d01010b0500038201010022d3cfb4fe8e4c760ff9cfe2ac30d9025a2a52873ec1feeb5744792388240df905fce0ef778dea6249200c78dc89d81263d125570a11c55ab8251c3977d22307f9df717d574bddc3a57aa94ec01e442e070a2247fffd77b7f309bcdcac37cd715840b3e7091308a1aeaf9bc53459fc1305dbc6cff03620e8f5f92489dd15579fb1dd18a052090886d5a99447f2e63c3283a78b3ce09b62d2f44565b68b4a4bfc67192a44256fb481b00a625c6e2559af945e6cd3f2196e35cee7b7a79736c02877f0b4a06acb7dd9da802e74fec75465facb94c260a25556bbe6b683c1674342f5687605dbdff4c4c384e263d640f5e4efd22a52e9e2ebe77b628ccb0b9deca1`
 
-var isRunning bool
-
-func startServer(t *testing.T, issuer *x509.Certificate) {
-	if isRunning {
-		return
-	}
-	isRunning = true
+func startServer(issuer *x509.Certificate, wg *sync.WaitGroup) {
 	goodResp, err := hex.DecodeString(ocspResponseHex)
 	if err != nil {
-		t.Error(err.Error())
+		panic(err)
 	}
 	badResp, err := hex.DecodeString(ocspRevokedHex)
 	if err != nil {
-		t.Error(err.Error())
+		panic(err)
 	}
 	http.HandleFunc("/issuer", func(w http.ResponseWriter, r *http.Request) {
 		w.Write(issuer.Raw)
@@ -153,32 +190,51 @@ func startServer(t *testing.T, issuer *x509.Certificate) {
 	http.HandleFunc("/malformedresponse", func(w http.ResponseWriter, r *http.Request) {
 		w.Write(badResp[0:30])
 	})
+	http.HandleFunc("/revlist", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./testdata/test.crl")
+	})
+	http.HandleFunc("/revlistmalformed", func(w http.ResponseWriter, r *http.Request) {
+		w.Write(badResp[0:30]) // intentionally send the wrong type, and truncated
+	})
+	wg.Done()
 	http.ListenAndServe(":8080", nil)
 }
 
-func parseCertPEM(t *testing.T) (cert *x509.Certificate, revoked *x509.Certificate, issuer *x509.Certificate) {
+func init() {
+	_, _, issuer, _ := parseCertPEM()
+	var bootWG sync.WaitGroup
+	bootWG.Add(1)
+	go startServer(issuer, &bootWG)
+	bootWG.Wait()
+}
+
+func parseCertPEM() (cert *x509.Certificate, revoked *x509.Certificate, issuer *x509.Certificate, crlRevoked *x509.Certificate) {
 	certPool := x509.NewCertPool()
 	ok := certPool.AppendCertsFromPEM([]byte(exampleCertWithOCSPDelegation))
 	if !ok {
-		t.Fail()
+		panic("failed to parse testing cert")
 	}
 	ok = certPool.AppendCertsFromPEM([]byte(issuerCert))
 	if !ok {
-		t.Fail()
+		panic("failed to parse testing cert")
 	}
 	ok = certPool.AppendCertsFromPEM([]byte(revokedCert))
 	if !ok {
-		t.Fail()
+		panic("failed to parse testing cert")
+	}
+	ok = certPool.AppendCertsFromPEM([]byte(crlRevokedCert))
+	if !ok {
+		panic("failed to parse testing cert")
 	}
 	cert = certPool.Certificates()[0]
 	issuer = certPool.Certificates()[1]
 	revoked = certPool.Certificates()[2]
+	crlRevoked = certPool.Certificates()[3]
 	return
 }
 
 func TestOCSPGood(t *testing.T) {
-	cert, _, issuer := parseCertPEM(t)
-	go startServer(t, issuer)
+	cert, _, issuer, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/goodcertrequest"
 	isRevoked, err := CheckOCSP(cert, issuer)
 	if err != nil {
@@ -190,8 +246,7 @@ func TestOCSPGood(t *testing.T) {
 }
 
 func TestOCSPBad(t *testing.T) {
-	_, revoked, issuer := parseCertPEM(t)
-	go startServer(t, issuer)
+	_, revoked, issuer, _ := parseCertPEM()
 	revoked.OCSPServer[0] = "http://localhost:8080/badcertrequest"
 	isRevoked, err := CheckOCSP(revoked, issuer)
 	if err != nil {
@@ -203,8 +258,7 @@ func TestOCSPBad(t *testing.T) {
 }
 
 func TestOCSPGoodWithoutIssuer(t *testing.T) {
-	cert, _, issuer := parseCertPEM(t)
-	go startServer(t, issuer)
+	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/goodcertrequest"
 	cert.IssuingCertificateURL[0] = "http://localhost:8080/issuer"
 	isRevoked, err := CheckOCSP(cert, nil)
@@ -217,8 +271,7 @@ func TestOCSPGoodWithoutIssuer(t *testing.T) {
 }
 
 func TestOCSPMalformedResponse(t *testing.T) {
-	cert, _, issuer := parseCertPEM(t)
-	go startServer(t, issuer)
+	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/malformedresponse"
 	cert.IssuingCertificateURL[0] = "http://localhost:8080/issuer"
 	_, err := CheckOCSP(cert, nil)
@@ -228,8 +281,7 @@ func TestOCSPMalformedResponse(t *testing.T) {
 }
 
 func TestOCSPBadProtocol(t *testing.T) {
-	cert, _, issuer := parseCertPEM(t)
-	go startServer(t, issuer)
+	cert, _, _, _ := parseCertPEM()
 	cert.SerialNumber = nil
 	cert.OCSPServer[0] = "http://localhost:8080/goodcertrequest"
 	cert.IssuingCertificateURL[0] = "http://localhost:8080/issuer"
@@ -240,8 +292,7 @@ func TestOCSPBadProtocol(t *testing.T) {
 }
 
 func TestOCSPCannotConstruct(t *testing.T) {
-	cert, _, issuer := parseCertPEM(t)
-	go startServer(t, issuer)
+	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "ftp://localhost:8080/"
 	cert.IssuingCertificateURL[0] = "http://localhost:8080/issuer"
 	_, err := CheckOCSP(cert, nil)
@@ -251,8 +302,7 @@ func TestOCSPCannotConstruct(t *testing.T) {
 }
 
 func TestOCSPCannotConstruct2(t *testing.T) {
-	cert, _, issuer := parseCertPEM(t)
-	go startServer(t, issuer)
+	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/"
 	cert.IssuingCertificateURL[0] = "ftp://localhost:8080/issuer"
 	_, err := CheckOCSP(cert, nil)
@@ -262,8 +312,7 @@ func TestOCSPCannotConstruct2(t *testing.T) {
 }
 
 func TestOCSPBadCertResponse(t *testing.T) {
-	cert, _, issuer := parseCertPEM(t)
-	go startServer(t, issuer)
+	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/"
 	cert.IssuingCertificateURL[0] = "http://localhost:8080/issuermalformed"
 	_, err := CheckOCSP(cert, nil)
@@ -273,11 +322,43 @@ func TestOCSPBadCertResponse(t *testing.T) {
 }
 
 func TestOCSPGoodWithoutIssuerNoIssuingParty(t *testing.T) {
-	cert, _, issuer := parseCertPEM(t)
-	go startServer(t, issuer)
+	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/goodcertrequest"
 	cert.IssuingCertificateURL = nil
 	_, err := CheckOCSP(cert, nil)
+	if err == nil {
+		t.Fail()
+	}
+}
+
+func TestCRLRevoked(t *testing.T) {
+	_, _, _, crlRevoked := parseCertPEM()
+	crlRevoked.CRLDistributionPoints[0] = "http://localhost:8080/revlist"
+	isRevoked, err := CheckCRL(crlRevoked, nil)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if isRevoked != true {
+		t.Fail()
+	}
+}
+
+func TestCRLMalformed(t *testing.T) {
+	_, err := GetCRL("http://localhost:8080/revlistmalformed")
+	if err == nil {
+		t.Fail()
+	}
+}
+
+func TestCRLFailLDAP(t *testing.T) {
+	_, err := GetCRL("ldap://localhost:8080/revlist")
+	if err == nil {
+		t.Fail()
+	}
+}
+
+func TestCRLFailFTP(t *testing.T) {
+	_, err := GetCRL("ftp://localhost:8080/revlist")
 	if err == nil {
 		t.Fail()
 	}
