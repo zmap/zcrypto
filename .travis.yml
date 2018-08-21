@@ -1,6 +1,6 @@
 language: go
 go:
-- 1.7.4
+- 1.9.3
 install:
 - go get ./...
 - go get -t ./...
