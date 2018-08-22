@@ -11,6 +11,7 @@ import (
 	"encoding/asn1"
 	"encoding/json"
 	"net"
+	"sort"
 
 	"strings"
 	"time"
@@ -136,6 +137,12 @@ type auxPublicKeyAlgorithm struct {
 	OID  *pkix.AuxOID `json:"oid,omitempty"`
 }
 
+var publicKeyNameToAlgorithm = map[string]PublicKeyAlgorithm{
+	"RSA":   RSA,
+	"DSA":   DSA,
+	"ECDSA": ECDSA,
+}
+
 // MarshalJSON implements the json.Marshaler interface
 func (p *PublicKeyAlgorithm) MarshalJSON() ([]byte, error) {
 	aux := auxPublicKeyAlgorithm{
@@ -150,7 +157,8 @@ func (p *PublicKeyAlgorithm) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &aux); err != nil {
 		return err
 	}
-	panic("unimplemented")
+	*p = publicKeyNameToAlgorithm[aux.Name]
+	return nil
 }
 
 func clampTime(t time.Time) time.Time {
@@ -324,21 +332,8 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 		AddECDSAPublicKeyToKeyMap(keyMap, key)
 		jc.SubjectKeyInfo.ECDSAPublicKey = keyMap
 	case *AugmentedECDSA:
-		pub := key.Pub
+		AddECDSAPublicKeyToKeyMap(keyMap, key.Pub)
 		keyMap["pub"] = key.Raw.Bytes
-		params := pub.Params()
-		keyMap["p"] = params.P.Bytes()
-		keyMap["n"] = params.N.Bytes()
-		keyMap["b"] = params.B.Bytes()
-		keyMap["gx"] = params.Gx.Bytes()
-		keyMap["gy"] = params.Gy.Bytes()
-		keyMap["x"] = pub.X.Bytes()
-		keyMap["y"] = pub.Y.Bytes()
-		keyMap["curve"] = pub.Curve.Params().Name
-		keyMap["length"] = pub.Curve.Params().BitSize
-
-		//keyMap["asn1_oid"] = c.SignatureAlgorithmOID.String()
-
 		jc.SubjectKeyInfo.ECDSAPublicKey = keyMap
 	}
 
@@ -372,6 +367,8 @@ func purgeNameDuplicates(names []string) (out []string) {
 	for key := range hashset {
 		out = append(out, key)
 	}
+
+	sort.Strings(out) // must sort to ensure output is deterministic!
 	return
 }
 
