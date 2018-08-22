@@ -71,6 +71,7 @@ OID_EKU_IPSEC_TUNNEL = "1.3.6.1.5.5.7.3.6"
 OID_EKU_IPSEC_USER = "1.3.6.1.5.5.7.3.7"
 OID_EKU_TIME_STAMPING = "1.3.6.1.5.5.7.3.8"
 OID_EKU_OCSP_SIGNING = "1.3.6.1.5.5.7.3.9"
+OID_EKU_IPSEC_INTERMEDIATE_SYSTEM_USAGE = "1.3.6.1.5.5.8.2.2"
 OID_EKU_NETSCAPE_SERVER_GATED_CRYPTO = "2.16.840.1.113730.4.1"
 OID_EKU_ANY = "2.5.29.37.0"
 )
@@ -135,6 +136,7 @@ oidExtKeyUsageIpsecTunnel = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 6}
 oidExtKeyUsageIpsecUser = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 7}
 oidExtKeyUsageTimeStamping = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 8}
 oidExtKeyUsageOcspSigning = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 9}
+oidExtKeyUsageIpsecIntermediateSystemUsage = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 8, 2, 2}
 oidExtKeyUsageNetscapeServerGatedCrypto = asn1.ObjectIdentifier{2, 16, 840, 1, 113730, 4, 1}
 oidExtKeyUsageAny = asn1.ObjectIdentifier{2, 5, 29, 37, 0}
 )
@@ -199,6 +201,7 @@ ExtKeyUsageIpsecTunnel
 ExtKeyUsageIpsecUser
 ExtKeyUsageTimeStamping
 ExtKeyUsageOcspSigning
+ExtKeyUsageIpsecIntermediateSystemUsage
 ExtKeyUsageNetscapeServerGatedCrypto
 ExtKeyUsageAny
 )
@@ -263,6 +266,7 @@ IpsecTunnel bool `json:"ipsec_tunnel,omitempty" oid:"1.3.6.1.5.5.7.3.6"`
 IpsecUser bool `json:"ipsec_user,omitempty" oid:"1.3.6.1.5.5.7.3.7"`
 TimeStamping bool `json:"time_stamping,omitempty" oid:"1.3.6.1.5.5.7.3.8"`
 OcspSigning bool `json:"ocsp_signing,omitempty" oid:"1.3.6.1.5.5.7.3.9"`
+IpsecIntermediateSystemUsage bool `json:"ipsec_intermediate_system_usage,omitempty" oid:"1.3.6.1.5.5.8.2.2"`
 NetscapeServerGatedCrypto bool `json:"netscape_server_gated_crypto,omitempty" oid:"2.16.840.1.113730.4.1"`
 Any bool `json:"any,omitempty" oid:"2.5.29.37.0"`
 Unknown []string `json:"unknown,omitempty"`}
@@ -390,6 +394,8 @@ case OID_EKU_TIME_STAMPING:
 aux.TimeStamping = true
 case OID_EKU_OCSP_SIGNING:
 aux.OcspSigning = true
+case OID_EKU_IPSEC_INTERMEDIATE_SYSTEM_USAGE:
+aux.IpsecIntermediateSystemUsage = true
 case OID_EKU_NETSCAPE_SERVER_GATED_CRYPTO:
 aux.NetscapeServerGatedCrypto = true
 case OID_EKU_ANY:
@@ -520,6 +526,8 @@ case ExtKeyUsageTimeStamping:
 aux.TimeStamping = true
 case ExtKeyUsageOcspSigning:
 aux.OcspSigning = true
+case ExtKeyUsageIpsecIntermediateSystemUsage:
+aux.IpsecIntermediateSystemUsage = true
 case ExtKeyUsageNetscapeServerGatedCrypto:
 aux.NetscapeServerGatedCrypto = true
 case ExtKeyUsageAny:
@@ -596,6 +604,7 @@ ekuOIDs[OID_EKU_IPSEC_TUNNEL] = oidExtKeyUsageIpsecTunnel
 ekuOIDs[OID_EKU_IPSEC_USER] = oidExtKeyUsageIpsecUser
 ekuOIDs[OID_EKU_TIME_STAMPING] = oidExtKeyUsageTimeStamping
 ekuOIDs[OID_EKU_OCSP_SIGNING] = oidExtKeyUsageOcspSigning
+ekuOIDs[OID_EKU_IPSEC_INTERMEDIATE_SYSTEM_USAGE] = oidExtKeyUsageIpsecIntermediateSystemUsage
 ekuOIDs[OID_EKU_NETSCAPE_SERVER_GATED_CRYPTO] = oidExtKeyUsageNetscapeServerGatedCrypto
 ekuOIDs[OID_EKU_ANY] = oidExtKeyUsageAny
 
@@ -660,6 +669,7 @@ ekuConstants[OID_EKU_IPSEC_TUNNEL] = ExtKeyUsageIpsecTunnel
 ekuConstants[OID_EKU_IPSEC_USER] = ExtKeyUsageIpsecUser
 ekuConstants[OID_EKU_TIME_STAMPING] = ExtKeyUsageTimeStamping
 ekuConstants[OID_EKU_OCSP_SIGNING] = ExtKeyUsageOcspSigning
+ekuConstants[OID_EKU_IPSEC_INTERMEDIATE_SYSTEM_USAGE] = ExtKeyUsageIpsecIntermediateSystemUsage
 ekuConstants[OID_EKU_NETSCAPE_SERVER_GATED_CRYPTO] = ExtKeyUsageNetscapeServerGatedCrypto
 ekuConstants[OID_EKU_ANY] = ExtKeyUsageAny
 }
