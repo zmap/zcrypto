@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -115,7 +116,14 @@ import (
 
 func generateASN1(oidToName map[string]OID) []byte {
 	buffer := bytes.Buffer{}
-	for _, oid := range oidToName {
+	// Create sorted slice of keys to ensure deterministic output
+	var keys []string
+	for k := range oidToName {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		oid := oidToName[k]
 		goName := oid.GoName(GO_PREFIX)
 		oidDecl := oid.OIDDecl()
 		buffer.WriteString(goName)
@@ -130,7 +138,14 @@ func generateIntegerConstants(oidToName map[string]OID) []byte {
 	buffer := bytes.Buffer{}
 	buffer.WriteString("const (\n")
 	first := true
-	for _, oid := range oidToName {
+	// Create sorted slice of keys to ensure deterministic output
+	var keys []string
+	for k := range oidToName {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		oid := oidToName[k]
 		goName := oid.GoName("ExtKeyUsage")
 		buffer.WriteString(goName)
 		if first {
@@ -145,7 +160,14 @@ func generateIntegerConstants(oidToName map[string]OID) []byte {
 
 func generateNameConstants(oidToName map[string]OID) []byte {
 	buffer := bytes.Buffer{}
-	for _, oid := range oidToName {
+	// Create sorted slice of keys to ensure deterministic output
+	var keys []string
+	for k := range oidToName {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		oid := oidToName[k]
 		constantName := oid.GoConstant(CONST_PREFIX)
 		buffer.WriteString(constantName)
 		buffer.WriteString(" = \"")
@@ -159,7 +181,15 @@ func generateOIDMap(oidToName map[string]OID, mapName string) []byte {
 	buffer := bytes.Buffer{}
 	buffer.WriteString(mapName)
 	buffer.WriteString(" = make(map[string]asn1.ObjectIdentifier)\n")
-	for _, oid := range oidToName {
+
+	// Create sorted slice of keys to ensure deterministic output
+	var keys []string
+	for k := range oidToName {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		oid := oidToName[k]
 		constantName := oid.GoConstant(CONST_PREFIX)
 		goName := oid.GoName(GO_PREFIX)
 		buffer.WriteString(mapName)
@@ -176,7 +206,15 @@ func generateIntegerMap(oidToName map[string]OID, mapName string) []byte {
 	buffer := bytes.Buffer{}
 	buffer.WriteString(mapName)
 	buffer.WriteString(" = make(map[string]ExtKeyUsage)\n")
-	for _, oid := range oidToName {
+
+	// Create sorted slice of keys to ensure deterministic output
+	var keys []string
+	for k := range oidToName {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		oid := oidToName[k]
 		constantName := oid.GoConstant(CONST_PREFIX)
 		goName := oid.GoName("ExtKeyUsage")
 		buffer.WriteString(mapName)
@@ -192,18 +230,29 @@ func generateIntegerMap(oidToName map[string]OID, mapName string) []byte {
 func generateEKUJSONStruct(oidToName map[string]OID) []byte {
 	buffer := bytes.Buffer{}
 	buffer.WriteString("type auxExtendedKeyUsage struct {\n")
-	for _, oid := range oidToName {
+
+	// Create sorted slice of keys to ensure deterministic output
+	var keys []string
+	for k := range oidToName {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		oid := oidToName[k]
 		buffer.WriteString(oid.StructFieldName())
 		buffer.WriteString(" bool `json:\"")
 		buffer.WriteString(oid.JSONName(""))
-		buffer.WriteString(",omitempty\"`\n")
+		buffer.WriteString(",omitempty\" oid:\"")
+		buffer.WriteString(oid.OID)
+		buffer.WriteString("\"`\n")
 	}
 	buffer.WriteString("Unknown []string `json:\"unknown,omitempty\"`")
 	buffer.WriteString("}\n\n")
 	buffer.WriteString("func (aux *auxExtendedKeyUsage) populateFromASN1(oid asn1.ObjectIdentifier) {\n")
 	buffer.WriteString("s := oid.String()\n")
 	buffer.WriteString("switch s {\n")
-	for _, oid := range oidToName {
+	for _, k := range keys {
+		oid := oidToName[k]
 		buffer.WriteString("case ")
 		constantName := oid.GoConstant(CONST_PREFIX)
 		buffer.WriteString(constantName)
@@ -219,7 +268,8 @@ func generateEKUJSONStruct(oidToName map[string]OID) []byte {
 
 	buffer.WriteString("func (aux *auxExtendedKeyUsage) populateFromExtKeyUsage(eku ExtKeyUsage) {\n")
 	buffer.WriteString("switch eku {\n")
-	for _, oid := range oidToName {
+	for _, k := range keys {
+		oid := oidToName[k]
 		buffer.WriteString("case ")
 		ekuName := oid.GoName("ExtKeyUsage")
 		buffer.WriteString(ekuName)
