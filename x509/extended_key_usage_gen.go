@@ -117,7 +117,7 @@ import (
 func generateASN1(oidToName map[string]OID) []byte {
 	buffer := bytes.Buffer{}
 	// Create sorted slice of keys to ensure deterministic output
-	var keys []string
+	var keys = make([]string, 0, len(oidToName))
 	for k := range oidToName {
 		keys = append(keys, k)
 	}
@@ -139,7 +139,7 @@ func generateIntegerConstants(oidToName map[string]OID) []byte {
 	buffer.WriteString("const (\n")
 	first := true
 	// Create sorted slice of keys to ensure deterministic output
-	var keys []string
+	var keys = make([]string, 0, len(oidToName))
 	for k := range oidToName {
 		keys = append(keys, k)
 	}
@@ -161,7 +161,7 @@ func generateIntegerConstants(oidToName map[string]OID) []byte {
 func generateNameConstants(oidToName map[string]OID) []byte {
 	buffer := bytes.Buffer{}
 	// Create sorted slice of keys to ensure deterministic output
-	var keys []string
+	var keys = make([]string, 0, len(oidToName))
 	for k := range oidToName {
 		keys = append(keys, k)
 	}
@@ -183,7 +183,7 @@ func generateOIDMap(oidToName map[string]OID, mapName string) []byte {
 	buffer.WriteString(" = make(map[string]asn1.ObjectIdentifier)\n")
 
 	// Create sorted slice of keys to ensure deterministic output
-	var keys []string
+	var keys = make([]string, 0, len(oidToName))
 	for k := range oidToName {
 		keys = append(keys, k)
 	}
@@ -208,7 +208,7 @@ func generateIntegerMap(oidToName map[string]OID, mapName string) []byte {
 	buffer.WriteString(" = make(map[string]ExtKeyUsage)\n")
 
 	// Create sorted slice of keys to ensure deterministic output
-	var keys []string
+	var keys = make([]string, 0, len(oidToName))
 	for k := range oidToName {
 		keys = append(keys, k)
 	}
@@ -232,7 +232,7 @@ func generateEKUJSONStruct(oidToName map[string]OID) []byte {
 	buffer.WriteString("type auxExtendedKeyUsage struct {\n")
 
 	// Create sorted slice of keys to ensure deterministic output
-	var keys []string
+	var keys = make([]string, 0, len(oidToName))
 	for k := range oidToName {
 		keys = append(keys, k)
 	}
