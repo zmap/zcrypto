@@ -51,7 +51,7 @@ UnknownExtension = SubRecordType({
 # x509/pkix/pkix.go: type EDIPartyName struct
 EDIPartyName = SubRecordType({
     "name_assigner": WhitespaceAnalyzedString(doc="The nameAssigner (a DirectoryString)", required=False),
-    "party_name": WhitespaceAnalyzedString(doc="The partyName (a DirectoryString)", required=True),
+    "party_name": WhitespaceAnalyzedString(doc="The partyName (a DirectoryString)"),
 }, doc="An X.400 generalName representing an Electronic Data Interchange (EDI) entity.")
 
 # x509/pkix/json.go: auxOtherName / OtherName
@@ -80,8 +80,8 @@ CryptoParameter = SubRecordType({
 
 # json/dhe.go: DHParams / auxDHParams:
 DHParams = SubRecordType({
-    "prime": CryptoParameter(required=True),
-    "generator": CryptoParameter(required=True),
+    "prime": CryptoParameter(),
+    "generator": CryptoParameter(),
     "server_public": CryptoParameter(required=False),
     "server_private": CryptoParameter(required=False),
     "client_public": CryptoParameter(required=False),
@@ -91,9 +91,9 @@ DHParams = SubRecordType({
 
 # json/rsa.go: RSAPublicKey/auxRSAPublicKey (alias for crypto/rsa/PublicKey)
 RSAPublicKey = SubRecordType({
-    "exponent": Unsigned32BitInteger(required=True, doc="The RSA key's public exponent (e)."),
-    "modulus": IndexedBinary(required=True, doc="The RSA key's modulus (n) in big-endian encoding."),
-    "length": Unsigned16BitInteger(required=True, doc="Bit-length of modulus."),
+    "exponent": Unsigned32BitInteger(doc="The RSA key's public exponent (e)."),
+    "modulus": IndexedBinary(doc="The RSA key's modulus (n) in big-endian encoding."),
+    "length": Unsigned16BitInteger(doc="Bit-length of modulus."),
 }, doc="Container for the public portion (modulus and exponent) of an RSA asymmetric key.")
 
 # json/rsa.go: RSAClientParams
@@ -114,8 +114,8 @@ tls_curve_id_names = [
 
 # json/ecdhe.go: TLSCurveID.MarshalJSON()
 TLSCurveID = SubRecordType({
-    "name": Enum(required=True, values=tls_curve_id_names, doc="The name of the curve algorithm (e.g. sect163kr1, secp192r1). Unrecognized curves are 'unknown'."),
-    "id": Unsigned16BitInteger(required=True, doc="The numeric value of the curve identifier. See http://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8"),
+    "name": Enum(values=tls_curve_id_names, doc="The name of the curve algorithm (e.g. sect163kr1, secp192r1). Unrecognized curves are 'unknown'."),
+    "id": Unsigned16BitInteger(doc="The numeric value of the curve identifier. See http://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8"),
 }, doc="An elliptic curve algorithm identifier.")
 
 # json/ecdhe.go: ECPoint.MarshalJSON()
@@ -169,11 +169,11 @@ SCTVersion = Unsigned8BitInteger().with_args(doc="Version of the protocol to whi
 # x509/ct/types.go: SignedCertificateTimestamp.
 # Note: ztag_sct has "log_name": String(), which is not present in the go.
 SCTRecord = SubRecordType({
-    "version": SCTVersion(required=True),
-    "log_id": IndexedBinary(doc="The SHA-256 hash of the log's public key, calculated over the DER encoding of the key's SubjectPublicKeyInfo.", required=True),
+    "version": SCTVersion(),
+    "log_id": IndexedBinary(doc="The SHA-256 hash of the log's public key, calculated over the DER encoding of the key's SubjectPublicKeyInfo."),
     "timestamp": Timestamp(doc="Timestamp at which the SCT was issued.", required=False),
     "extensions": Binary(doc="For future extensions to the protocol.", required=False),
-    "signature": Binary(doc="The log's signature for this SCT.", required=True),
+    "signature": Binary(doc="The log's signature for this SCT."),
 })
 
 # x509/json.go: auxGeneralSubtreeIP (modifies GeneralSubtreeIP from x509.go)
@@ -304,9 +304,9 @@ SubjAuthKeyId = HexString.with_args(doc="A key identifier, usually a digest of t
 
 # x509/json.go jsonCertificate (mapped from x509.Certificate)
 ParsedCertificate = SubRecordType({
-    "subject": DistinguishedName(category="Subject", doc="The parsed subject name.", required=True),
+    "subject": DistinguishedName(category="Subject", doc="The parsed subject name."),
     "subject_dn": WhitespaceAnalyzedString(category="Basic Information", doc="A canonical string representation of the subject name.", examples=["C=US, ST=MI, L=Ann Arbor, OU=Scans, CN=localhost, emailAddress=root@localhost"]),
-    "issuer": DistinguishedName(category="Issuer", doc="The parsed issuer name.", required=True),
+    "issuer": DistinguishedName(category="Issuer", doc="The parsed issuer name."),
     "issuer_dn": WhitespaceAnalyzedString(category="Basic Information", doc="A canonical string representation of the issuer name.", examples=["C=US, ST=MI, L=Ann Arbor, OU=Certificate authority, CN=CA1, emailAddress=ca1@localhost"]),
     "version": Unsigned8BitInteger(category="Misc", doc="The x.509 certificate version number."),
     # NOTE: This is indeed encoded as a base 10 string via math.big.int.Text(10)
