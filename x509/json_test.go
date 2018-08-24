@@ -193,9 +193,9 @@ func TestSignatureAlgorithmJSON(t *testing.T) {
 			if err != nil {
 				t.Errorf("%d: %s", i, err.Error())
 			}
-			// if backToAlg != alg {
-			// 	t.Errorf("%d: Unmarshal did not preserve value", i)
-			// }
+			if strings.Compare(backToAlg.String(), alg.String()) != 0 {
+				t.Errorf("%d: Unmarshal did not preserve value", i)
+			}
 		}
 	}
 }

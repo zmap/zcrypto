@@ -123,10 +123,20 @@ func (s *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
 	}
 	*s = UnknownSignatureAlgorithm
 	oid := asn1.ObjectIdentifier(aux.OID.AsSlice())
-	for _, val := range signatureAlgorithmDetails {
-		if val.oid.Equal(oid) {
-			*s = val.algo
-			break
+	if oid.Equal(oidSignatureRSAPSS) {
+		pssAlgs := []SignatureAlgorithm{SHA256WithRSAPSS, SHA384WithRSAPSS, SHA512WithRSAPSS}
+		for _, alg := range pssAlgs {
+			if strings.Compare(alg.String(), aux.Name) == 0 {
+				*s = alg
+				break
+			}
+		}
+	} else {
+		for _, val := range signatureAlgorithmDetails {
+			if val.oid.Equal(oid) {
+				*s = val.algo
+				break
+			}
 		}
 	}
 	return nil
