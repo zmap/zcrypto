@@ -5,9 +5,85 @@
 package x509
 
 import (
+	"bytes"
 	"crypto/rand"
 	"testing"
 )
+
+func TestSubjects(t *testing.T) {
+	certs := makeRandomCertsForPool(1000)
+	pool := NewCertPool()
+	for _, c := range certs {
+		pool.AddCert(c)
+	}
+	subjects := pool.Subjects()
+	for i := range subjects {
+		if bytes.Compare(subjects[i], pool.Certificates()[i].RawSubject) != 0 {
+			t.Fail()
+		}
+	}
+}
+
+func TestSumAndContains(t *testing.T) {
+	certs1 := makeRandomCertsForPool(1000)
+	pool1 := NewCertPool()
+	for _, c := range certs1 {
+		pool1.AddCert(c)
+	}
+	certs2 := makeRandomCertsForPool(1000)
+	pool2 := NewCertPool()
+	for _, c := range certs2 {
+		pool2.AddCert(c)
+	}
+	sum := pool1.Sum(pool2)
+	for _, c := range pool1.Certificates() {
+		if !sum.Contains(c) {
+			t.Fail()
+		}
+	}
+	for _, c := range sum.Certificates() {
+		if !pool1.Contains(c) && !pool2.Contains(c) {
+			t.Fail()
+		}
+	}
+}
+
+func TestSumAndSize(t *testing.T) {
+	certs1 := makeRandomCertsForPool(1000)
+	pool1 := NewCertPool()
+	for _, c := range certs1 {
+		pool1.AddCert(c)
+	}
+	certs2 := makeRandomCertsForPool(1000)
+	pool2 := NewCertPool()
+	for _, c := range certs2 {
+		pool2.AddCert(c)
+	}
+	sum := pool1.Sum(pool2)
+	if sum.Size() != 2000 {
+		t.Fail()
+	}
+}
+
+func TestSumAndCovers(t *testing.T) {
+	certs1 := makeRandomCertsForPool(1000)
+	pool1 := NewCertPool()
+	for _, c := range certs1 {
+		pool1.AddCert(c)
+	}
+	certs2 := makeRandomCertsForPool(1000)
+	pool2 := NewCertPool()
+	for _, c := range certs2 {
+		pool2.AddCert(c)
+	}
+	sum := pool1.Sum(pool2)
+	if !sum.Covers(pool1) || !sum.Covers(pool2) {
+		t.Fail()
+	}
+	if pool1.Covers(sum) || pool2.Covers(sum) {
+		t.Fail()
+	}
+}
 
 func makeRandomCertsForPool(n int) []*Certificate {
 	out := make([]*Certificate, 0, n)
