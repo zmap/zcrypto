@@ -48,6 +48,10 @@ type VerificationResult struct {
 	// which is only checked if VerificationOptions.ShouldCheckOCSP flag is set
 	OCSPRevoked bool
 
+	// CRLRevoked is true if the certificate has been revoked through CRL,
+	// which is only checked if VerificationOptions.ShouldCheckCRL flag is set
+	CRLRevoked bool
+
 	// ValiditionError will be non-nil when there was some sort of error during
 	// validation not involving a name mismatch, e.g. if a chain could not be
 	// built.
@@ -128,6 +132,7 @@ type VerificationOptions struct {
 	Name            string
 	PresentedChain  *Graph // XXX: Unused
 	ShouldCheckOCSP bool
+	ShouldCheckCRL  bool
 }
 
 func (opt *VerificationOptions) clean() {
@@ -217,6 +222,13 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 		isRevoked, err := CheckOCSP(c, issuer)
 		if err == nil {
 			res.OCSPRevoked = isRevoked
+		}
+	}
+
+	if opts.ShouldCheckCRL {
+		isRevoked, err := CheckCRL(c, nil)
+		if err == nil {
+			res.CRLRevoked = isRevoked
 		}
 	}
 
