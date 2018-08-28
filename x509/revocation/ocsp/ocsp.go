@@ -157,6 +157,7 @@ func CreateRequest(cert *x509.Certificate, issuerKeyHash []byte, issuerNameHash 
 type Response struct {
 	// Status is one of {Good, Revoked, Unknown}
 	CertificateStatus                             string
+	IsRevoked                                     bool // set to true if CertificateStatus is "revoked"
 	SerialNumber                                  string
 	ProducedAt, ThisUpdate, NextUpdate, RevokedAt time.Time
 	RevocationReason                              crl.RevocationReasonCode
@@ -446,10 +447,13 @@ func ParseResponseForCert(bytes []byte, cert *x509.Certificate, issuer *x509.Cer
 	switch {
 	case bool(singleResp.Good):
 		ret.CertificateStatus = "Good"
+		ret.IsRevoked = false
 	case bool(singleResp.Unknown):
 		ret.CertificateStatus = "Unknown"
+		ret.IsRevoked = false
 	default:
 		ret.CertificateStatus = "Revoked"
+		ret.IsRevoked = true
 		ret.RevokedAt = singleResp.Revoked.RevocationTime
 		ret.RevocationReason = crl.RevocationReasonCode(singleResp.Revoked.RevocationReason)
 	}
