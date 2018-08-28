@@ -481,3 +481,61 @@ func TestValidationLevelJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestExtendedKeyUsageExtensionJSON(t *testing.T) {
+	tests := []struct {
+		ek ExtendedKeyUsageExtension
+	}{
+		{
+			ek: ExtendedKeyUsageExtension{
+				Known: []ExtKeyUsage{
+					ExtKeyUsageServerAuth,
+				},
+			},
+		},
+		{
+			ek: ExtendedKeyUsageExtension{
+				Known: []ExtKeyUsage{
+					ExtKeyUsageServerAuth,
+					ExtKeyUsageCodeSigning,
+				},
+				Unknown: []asn1.ObjectIdentifier{
+					asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 28},
+					asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 29},
+				},
+			},
+		},
+	}
+	for i, test := range tests {
+		j, err := json.Marshal(&test.ek)
+		if err != nil {
+			t.Errorf("%d: %s", i, err.Error())
+			continue
+		}
+		var backToEK ExtendedKeyUsageExtension
+		err = json.Unmarshal(j, &backToEK)
+		if err != nil {
+			t.Errorf("%d: %s", i, err.Error())
+			continue
+		}
+		for _, e := range backToEK.Known {
+			if !containsExtKeyUsage(test.ek.Known, e) {
+				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
+			}
+		}
+		for _, e := range backToEK.Unknown {
+			if !containsOID(test.ek.Unknown, e) {
+				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
+			}
+		}
+	}
+}
+
+func containsExtKeyUsage(s []ExtKeyUsage, e ExtKeyUsage) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
