@@ -10,6 +10,7 @@ import (
 	"crypto/rsa"
 	"encoding/asn1"
 	"encoding/json"
+	"errors"
 	"net"
 	"sort"
 
@@ -270,7 +271,6 @@ type JSONSubjectKeyInfo struct {
 	SPKIFingerprint CertificateFingerprint `json:"fingerprint_sha256"`
 }
 
-
 // JSONSignature - used to condense several fields from x509.Certificate
 // related to the signature into one field within JSONCertificate
 // Unfortunately, this struct cannot have its own Marshal method since it
@@ -401,6 +401,42 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	jc.ValidationLevel = c.ValidationLevel
 
 	return json.Marshal(jc)
+}
+
+// UnmarshalJSON - intentionally implimented to always error,
+// as this method should not be used. The MarshalJSON method
+// on Certificate condenses data in a way that is not recoverable.
+// Use the x509.ParseCertificate function instead or
+// JSONCertificateWithRaw Marshal method
+func (jc *JSONCertificate) UnmarshalJSON(b []byte) error {
+	return errors.New("Do not unmarshal cert JSON directly, use JSONCertificateWithRaw or x509.ParseCertificate function")
+}
+
+// UnmarshalJSON - intentionally implimented to always error,
+// as this method should not be used. The MarshalJSON method
+// on Certificate condenses data in a way that is not recoverable.
+// Use the x509.ParseCertificate function instead or
+// JSONCertificateWithRaw Marshal method
+func (c *Certificate) UnmarshalJSON(b []byte) error {
+	return errors.New("Do not unmarshal cert JSON directly, use JSONCertificateWithRaw or x509.ParseCertificate function")
+}
+
+// JSONCertificateWithRaw - intermediate struct for unmarshaling json
+// of a certificate - the raw is require since the
+// MarshalJSON method on Certificate condenses data in a way that
+// makes extraction to the original in Unmarshal impossible.
+// The JSON output of Marshal is not even used to construct
+// a certificate, all we need is raw
+type JSONCertificateWithRaw struct {
+	Raw []byte
+}
+
+// ParseRaw - for converting the intermediate object
+// JSONCertificateWithRaw into a parsed Certificate
+// see description of JSONCertificateWithRaw for
+// why this is used instead of UnmarshalJSON methods
+func (c *JSONCertificateWithRaw) ParseRaw() (*Certificate, error) {
+	return ParseCertificate(c.Raw)
 }
 
 func purgeNameDuplicates(names []string) (out []string) {
