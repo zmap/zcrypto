@@ -1,0 +1,86 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            01:00:00:00:00:01:1e:bc:37:27:e1
+    Signature Algorithm: sha1WithRSAEncryption
+        Issuer: C=IS, O=Audkenni hf., OU=Secure Server CA, CN=Audkenni Secure Server CA
+        Validity
+            Not Before: Jan  9 16:26:17 2009 GMT
+            Not After : Jan 26 12:54:17 2010 GMT
+        Subject: C=IS, ST=Iceland, L=Reykjavik, O=Arnason Faktor, OU=ip.arnasonfaktor.is, CN=ip.Arnasonfaktor.is
+        Subject Public Key Info:
+            Public Key Algorithm: dsaEncryption
+                pub:
+                    6d:8f:25:ba:33:ae:5a:ef:c8:a0:8c:73:f6:6a:23:
+                    61:17:8e:ea:bc:3d:ce:c0:a4:a5:b9:6b:54:bb:b3:
+                    96:0b:a2:d8:93:08:e3:ae:4a:ff:56:be:4b:32:87:
+                    4f:f6:e8:d8:ad:7f:35:b3:9e:d1:46:6b:cb:f8:cd:
+                    e9:e9:92:34:d8:ff:b2:07:39:a5:dc:58:0a:1d:9c:
+                    e1:a9:88:78:b9:17:0e:85:0e:39:ec:ed:9f:5f:7f:
+                    77:22:ed:44:1e:cd:a5:fe:c7:fb:52:29:d4:b2:d4:
+                    7a:04:90:3d:2e:8b:00:ef:34:7e:56:fa:7e:d3:42:
+                    45:4f:39:1b:bb:2d:bf:2f
+                P:
+                    00:fd:7f:53:81:1d:75:12:29:52:df:4a:9c:2e:ec:
+                    e4:e7:f6:11:b7:52:3c:ef:44:00:c3:1e:3f:80:b6:
+                    51:26:69:45:5d:40:22:51:fb:59:3d:8d:58:fa:bf:
+                    c5:f5:ba:30:f6:cb:9b:55:6c:d7:81:3b:80:1d:34:
+                    6f:f2:66:60:b7:6b:99:50:a5:a4:9f:9f:e8:04:7b:
+                    10:22:c2:4f:bb:a9:d7:fe:b7:c6:1b:f8:3b:57:e7:
+                    c6:a8:a6:15:0f:04:fb:83:f6:d3:c5:1e:c3:02:35:
+                    54:13:5a:16:91:32:f6:75:f3:ae:2b:61:d7:2a:ef:
+                    f2:22:03:19:9d:d1:48:01:c7
+                Q:
+                    00:97:60:50:8f:15:23:0b:cc:b2:92:b9:82:a2:eb:
+                    84:0b:f0:58:1c:f5
+                G:
+                    00:f7:e1:a0:85:d6:9b:3d:de:cb:bc:ab:5c:36:b8:
+                    57:b9:79:94:af:bb:fa:3a:ea:82:f9:57:4c:0b:3d:
+                    07:82:67:51:59:57:8e:ba:d4:59:4f:e6:71:07:10:
+                    81:80:b4:49:16:71:23:e8:4c:28:16:13:b7:cf:09:
+                    32:8c:c8:a6:e1:3c:16:7a:8b:54:7c:8d:28:e0:a3:
+                    ae:1e:2b:b3:a6:75:91:6e:a3:7f:0b:fa:21:35:62:
+                    f1:fb:62:7a:01:24:3b:cc:a4:f1:be:a8:51:90:89:
+                    a8:83:df:e1:5a:e5:9f:06:92:8b:66:5e:80:7b:55:
+                    25:64:01:4c:3b:fe:cf:49:2a
+        X509v3 extensions:
+            Netscape Cert Type:
+                SSL Server
+            X509v3 Key Usage: critical
+                Digital Signature, Non Repudiation, Key Encipherment, Data Encipherment
+            X509v3 Authority Key Identifier:
+                keyid:C2:1F:54:E3:AC:5D:C8:86:70:4F:FE:EE:B2:C7:B1:3A:44:F3:EA:5D
+
+    Signature Algorithm: sha1WithRSAEncryption
+         05:07:3a:22:dd:d8:57:72:83:80:00:fa:5d:57:11:8a:fc:ec:
+         fd:4e:65:62:c6:bb:b5:1c:39:ee:36:10:df:00:fb:1c:e1:05:
+         a9:dc:80:8b:5e:7e:3e:57:9d:98:f6:c6:39:fc:74:fd:6b:85:
+         f9:7d:69:54:56:42:5a:3c:d0:b5:d4:f6:d1:0c:1e:df:0a:16:
+         de:b6:04:c6:46:47:40:c5:0c:0f:d6:b5:23:72:59:95:18:73:
+         03:92:f0:e9:50:fc:dc:2d:58:80:9f:fc:30:ed:24:6b:e8:a7:
+         9e:a4:58:ac:f0:cb:e2:32:e5:e5:2d:51:95:df:32:b8:05:11:
+         e2:fa
+-----BEGIN CERTIFICATE-----
+MIIDyzCCAzSgAwIBAgILAQAAAAABHrw3J+EwDQYJKoZIhvcNAQEFBQAwYzELMAkG
+A1UEBhMCSVMxFTATBgNVBAoTDEF1ZGtlbm5pIGhmLjEZMBcGA1UECxMQU2VjdXJl
+IFNlcnZlciBDQTEiMCAGA1UEAxMZQXVka2VubmkgU2VjdXJlIFNlcnZlciBDQTAe
+Fw0wOTAxMDkxNjI2MTdaFw0xMDAxMjYxMjU0MTdaMIGIMQswCQYDVQQGEwJJUzEQ
+MA4GA1UECBMHSWNlbGFuZDESMBAGA1UEBxMJUmV5a2phdmlrMRcwFQYDVQQKEw5B
+cm5hc29uIEZha3RvcjEcMBoGA1UECxMTaXAuYXJuYXNvbmZha3Rvci5pczEcMBoG
+A1UEAxMTaXAuQXJuYXNvbmZha3Rvci5pczCCAbcwggEsBgcqhkjOOAQBMIIBHwKB
+gQD9f1OBHXUSKVLfSpwu7OTn9hG3UjzvRADDHj+AtlEmaUVdQCJR+1k9jVj6v8X1
+ujD2y5tVbNeBO4AdNG/yZmC3a5lQpaSfn+gEexAiwk+7qdf+t8Yb+DtX58aophUP
+BPuD9tPFHsMCNVQTWhaRMvZ1864rYdcq7/IiAxmd0UgBxwIVAJdgUI8VIwvMspK5
+gqLrhAvwWBz1AoGBAPfhoIXWmz3ey7yrXDa4V7l5lK+7+jrqgvlXTAs9B4JnUVlX
+jrrUWU/mcQcQgYC0SRZxI+hMKBYTt88JMozIpuE8FnqLVHyNKOCjrh4rs6Z1kW6j
+fwv6ITVi8ftiegEkO8yk8b6oUZCJqIPf4VrlnwaSi2ZegHtVJWQBTDv+z0kqA4GE
+AAKBgG2PJbozrlrvyKCMc/ZqI2EXjuq8Pc7ApKW5a1S7s5YLotiTCOOuSv9Wvksy
+h0/26NitfzWzntFGa8v4zenpkjTY/7IHOaXcWAodnOGpiHi5Fw6FDjns7Z9ff3ci
+7UQezaX+x/tSKdSy1HoEkD0uiwDvNH5W+n7TQkVPORu7Lb8vo0YwRDARBglghkgB
+hvhCAQEEBAMCBkAwDgYDVR0PAQH/BAQDAgTwMB8GA1UdIwQYMBaAFMIfVOOsXciG
+cE/+7rLHsTpE8+pdMA0GCSqGSIb3DQEBBQUAA4GBAAUHOiLd2Fdyg4AA+l1XEYr8
+7P1OZWLGu7UcOe42EN8A+xzhBancgItefj5XnZj2xjn8dP1rhfl9aVRWQlo80LXU
+9tEMHt8KFt62BMZGR0DFDA/WtSNyWZUYcwOS8OlQ/NwtWICf/DDtJGvop56kWKzw
+y+Iy5eUtUZXfMrgFEeL6
+-----END CERTIFICATE-----

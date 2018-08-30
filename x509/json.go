@@ -11,6 +11,7 @@ import (
 	"encoding/asn1"
 	"encoding/json"
 	"net"
+	"sort"
 
 	"strings"
 	"time"
@@ -122,10 +123,20 @@ func (s *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
 	}
 	*s = UnknownSignatureAlgorithm
 	oid := asn1.ObjectIdentifier(aux.OID.AsSlice())
-	for _, val := range signatureAlgorithmDetails {
-		if val.oid.Equal(oid) {
-			*s = val.algo
-			break
+	if oid.Equal(oidSignatureRSAPSS) {
+		pssAlgs := []SignatureAlgorithm{SHA256WithRSAPSS, SHA384WithRSAPSS, SHA512WithRSAPSS}
+		for _, alg := range pssAlgs {
+			if strings.Compare(alg.String(), aux.Name) == 0 {
+				*s = alg
+				break
+			}
+		}
+	} else {
+		for _, val := range signatureAlgorithmDetails {
+			if val.oid.Equal(oid) {
+				*s = val.algo
+				break
+			}
 		}
 	}
 	return nil
@@ -134,6 +145,12 @@ func (s *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
 type auxPublicKeyAlgorithm struct {
 	Name string       `json:"name,omitempty"`
 	OID  *pkix.AuxOID `json:"oid,omitempty"`
+}
+
+var publicKeyNameToAlgorithm = map[string]PublicKeyAlgorithm{
+	"RSA":   RSA,
+	"DSA":   DSA,
+	"ECDSA": ECDSA,
 }
 
 // MarshalJSON implements the json.Marshaler interface
@@ -150,7 +167,8 @@ func (p *PublicKeyAlgorithm) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &aux); err != nil {
 		return err
 	}
-	panic("unimplemented")
+	*p = publicKeyNameToAlgorithm[aux.Name]
+	return nil
 }
 
 func clampTime(t time.Time) time.Time {
@@ -194,7 +212,11 @@ func (v *validity) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type jsonSubjectKeyInfo struct {
+// JSONSubjectKeyInfo - used to condense several fields from x509.Certificate
+// related to the subject public key into one field within JSONCertificate
+// Unfortunately, this struct cannot have its own Marshal method since it
+// needs information from multiple fields in x509.Certificate
+type JSONSubjectKeyInfo struct {
 	KeyAlgorithm    PublicKeyAlgorithm     `json:"key_algorithm"`
 	RSAPublicKey    *jsonKeys.RSAPublicKey `json:"rsa_public_key,omitempty"`
 	DSAPublicKey    interface{}            `json:"dsa_public_key,omitempty"`
@@ -202,31 +224,44 @@ type jsonSubjectKeyInfo struct {
 	SPKIFingerprint CertificateFingerprint `json:"fingerprint_sha256"`
 }
 
-type jsonSignature struct {
+
+// JSONSignature - used to condense several fields from x509.Certificate
+// related to the signature into one field within JSONCertificate
+// Unfortunately, this struct cannot have its own Marshal method since it
+// needs information from multiple fields in x509.Certificate
+type JSONSignature struct {
 	SignatureAlgorithm SignatureAlgorithm `json:"signature_algorithm"`
 	Value              []byte             `json:"value"`
 	Valid              bool               `json:"valid"`
 	SelfSigned         bool               `json:"self_signed"`
 }
 
-type fullValidity struct {
+// JSONValidity - used to condense several fields related
+// to validity in x509.Certificate into one field within JSONCertificate
+// Unfortunately, this struct cannot have its own Marshal method since it
+// needs information from multiple fields in x509.Certificate
+type JSONValidity struct {
 	validity
 	ValidityPeriod int
 }
 
-type jsonCertificate struct {
+// JSONCertificate - used to condense data from x509.Certificate when marhsaling
+// into JSON. This struct has a distinct and independent layout from
+// x509.Certificate, mostly for condensing data across repetitive
+// fields and making it more presentable.
+type JSONCertificate struct {
 	Version                   int                          `json:"version"`
 	SerialNumber              string                       `json:"serial_number"`
 	SignatureAlgorithm        SignatureAlgorithm           `json:"signature_algorithm"`
 	Issuer                    pkix.Name                    `json:"issuer"`
 	IssuerDN                  string                       `json:"issuer_dn,omitempty"`
-	Validity                  fullValidity                 `json:"validity"`
+	Validity                  JSONValidity                 `json:"validity"`
 	Subject                   pkix.Name                    `json:"subject"`
 	SubjectDN                 string                       `json:"subject_dn,omitempty"`
-	SubjectKeyInfo            jsonSubjectKeyInfo           `json:"subject_key_info"`
+	SubjectKeyInfo            JSONSubjectKeyInfo           `json:"subject_key_info"`
 	Extensions                *CertificateExtensions       `json:"extensions,omitempty"`
 	UnknownExtensions         UnknownCertificateExtensions `json:"unknown_extensions,omitempty"`
-	Signature                 jsonSignature                `json:"signature"`
+	Signature                 JSONSignature                `json:"signature"`
 	FingerprintMD5            CertificateFingerprint       `json:"fingerprint_md5"`
 	FingerprintSHA1           CertificateFingerprint       `json:"fingerprint_sha1"`
 	FingerprintSHA256         CertificateFingerprint       `json:"fingerprint_sha256"`
@@ -260,7 +295,7 @@ func AddDSAPublicKeyToKeyMap(keyMap map[string]interface{}, key *dsa.PublicKey) 
 
 func (c *Certificate) MarshalJSON() ([]byte, error) {
 	// Fill out the certificate
-	jc := new(jsonCertificate)
+	jc := new(JSONCertificate)
 	jc.Version = c.Version
 	jc.SerialNumber = c.SerialNumber.String()
 	jc.SignatureAlgorithm = c.SignatureAlgorithm
@@ -324,21 +359,8 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 		AddECDSAPublicKeyToKeyMap(keyMap, key)
 		jc.SubjectKeyInfo.ECDSAPublicKey = keyMap
 	case *AugmentedECDSA:
-		pub := key.Pub
+		AddECDSAPublicKeyToKeyMap(keyMap, key.Pub)
 		keyMap["pub"] = key.Raw.Bytes
-		params := pub.Params()
-		keyMap["p"] = params.P.Bytes()
-		keyMap["n"] = params.N.Bytes()
-		keyMap["b"] = params.B.Bytes()
-		keyMap["gx"] = params.Gx.Bytes()
-		keyMap["gy"] = params.Gy.Bytes()
-		keyMap["x"] = pub.X.Bytes()
-		keyMap["y"] = pub.Y.Bytes()
-		keyMap["curve"] = pub.Curve.Params().Name
-		keyMap["length"] = pub.Curve.Params().BitSize
-
-		//keyMap["asn1_oid"] = c.SignatureAlgorithmOID.String()
-
 		jc.SubjectKeyInfo.ECDSAPublicKey = keyMap
 	}
 
@@ -372,6 +394,8 @@ func purgeNameDuplicates(names []string) (out []string) {
 	for key := range hashset {
 		out = append(out, key)
 	}
+
+	sort.Strings(out) // must sort to ensure output is deterministic!
 	return
 }
 

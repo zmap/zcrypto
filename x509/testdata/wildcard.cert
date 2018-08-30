@@ -1,0 +1,102 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            03:61:e3:f1:0b:b7:25:7b:08:25:a0:94:3e:28:c5:ee:71:f2
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=US, O=Let's Encrypt, CN=Let's Encrypt Authority X3
+        Validity
+            Not Before: Jul  3 06:08:13 2018 GMT
+            Not After : Oct  1 06:08:13 2018 GMT
+        Subject: CN=*.19670306.xyz
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:5f:70:06:e7:a2:5a:d8:c1:0a:96:27:17:36:65:
+                    48:03:f2:3e:21:03:bd:09:a3:db:66:af:be:64:70:
+                    d4:43:8b:cf:89:e1:a8:73:b2:89:70:e8:1c:41:fe:
+                    e3:d5:c6:8d:fe:19:60:63:35:58:21:02:8c:a8:e9:
+                    b4:6e:9e:60:df:10:9e:78:ea:b3:94:fb:27:b8:c3:
+                    3e:8f:8f:e8:6b:4f:e8:fd:a1:cd:3e:76:c3:f6:1f:
+                    fa:74:88:1e:e5:5c:6d
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            X509v3 Key Usage: critical
+                Digital Signature
+            X509v3 Extended Key Usage:
+                TLS Web Server Authentication, TLS Web Client Authentication
+            X509v3 Basic Constraints: critical
+                CA:FALSE
+            X509v3 Subject Key Identifier:
+                B4:31:4D:8E:AD:CE:8C:FF:CE:ED:A5:C0:E8:E9:9B:75:80:9B:CF:34
+            X509v3 Authority Key Identifier:
+                keyid:A8:4A:6A:63:04:7D:DD:BA:E6:D1:39:B7:A6:45:65:EF:F3:A8:EC:A1
+
+            Authority Information Access:
+                OCSP - URI:http://ocsp.int-x3.letsencrypt.org
+                CA Issuers - URI:http://cert.int-x3.letsencrypt.org/
+
+            X509v3 Subject Alternative Name:
+                DNS:*.19670306.xyz, DNS:19670306.xyz
+            X509v3 Certificate Policies:
+                Policy: 2.23.140.1.2.1
+                Policy: 1.3.6.1.4.1.44947.1.1.1
+                  CPS: http://cps.letsencrypt.org
+                  User Notice:
+                    Explicit Text: This Certificate may only be relied upon by Relying Parties and only in accordance with the Certificate Policy found at https://letsencrypt.org/repository/
+
+            1.3.6.1.4.1.11129.2.4.2:
+                ......u..t...)....>qm,....6..q..].O7...d...d^._......F0D. P@
+.....`1..q.M......XB.c.....~Y. li......>2..'.+...0Eu.C..x.v.....v.)<Q.T.9e..P.X...o.Xz)r......EG.x...d^._......G0E. ....4.^u4
+......
+..../P.f
+f<...T.!...zP..?...3.F#....I9&.2(... f5..
+    Signature Algorithm: sha256WithRSAEncryption
+         79:35:57:f4:19:76:a8:9c:ad:ef:a3:1f:e8:56:09:c0:c1:d7:
+         95:9e:4e:29:79:c1:82:ce:43:5b:21:e5:eb:5b:2b:86:2b:15:
+         cb:cf:4c:26:53:14:f2:fb:09:fa:cb:bb:50:55:2a:94:dd:32:
+         50:b7:d2:ff:68:42:28:96:22:65:8f:db:f8:38:78:52:26:c3:
+         c7:06:67:61:de:97:99:61:a9:fb:45:85:39:b4:61:bd:05:3b:
+         f8:e1:c0:8d:cb:ea:ad:24:75:63:4b:a2:28:79:cc:07:e6:27:
+         33:ea:3a:58:00:d9:3f:22:8a:2f:7f:0d:8a:df:8e:30:b3:21:
+         20:ee:52:14:d6:20:c3:d5:dc:b1:44:79:52:06:58:59:53:0d:
+         0c:2e:fb:8c:ca:1b:b0:6e:5c:17:bb:ac:95:f5:5d:c7:c3:b4:
+         c2:67:c8:9e:25:69:e0:0c:2b:8b:6b:c3:ab:4d:fb:12:78:72:
+         41:01:23:0b:f5:70:73:f2:9c:2a:79:67:12:58:36:fe:ce:cc:
+         d1:fa:a3:8e:48:4d:e8:9e:2a:a0:5f:08:b7:eb:5e:5f:b3:00:
+         4d:9d:e5:c0:40:bb:55:d6:82:3b:17:12:da:ff:b3:de:13:8d:
+         13:66:c1:28:59:95:32:61:6d:22:6f:a3:e0:fc:6c:17:b8:05:
+         12:04:ca:10
+-----BEGIN CERTIFICATE-----
+MIIFZjCCBE6gAwIBAgISA2Hj8Qu3JXsIJaCUPijF7nHyMA0GCSqGSIb3DQEBCwUA
+MEoxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MSMwIQYDVQQD
+ExpMZXQncyBFbmNyeXB0IEF1dGhvcml0eSBYMzAeFw0xODA3MDMwNjA4MTNaFw0x
+ODEwMDEwNjA4MTNaMBkxFzAVBgNVBAMMDiouMTk2NzAzMDYueHl6MHYwEAYHKoZI
+zj0CAQYFK4EEACIDYgAEX3AG56Ja2MEKlicXNmVIA/I+IQO9CaPbZq++ZHDUQ4vP
+ieGoc7KJcOgcQf7j1caN/hlgYzVYIQKMqOm0bp5g3xCeeOqzlPsnuMM+j4/oa0/o
+/aHNPnbD9h/6dIge5Vxto4IDIzCCAx8wDgYDVR0PAQH/BAQDAgeAMB0GA1UdJQQW
+MBQGCCsGAQUFBwMBBggrBgEFBQcDAjAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBS0
+MU2Orc6M/87tpcDo6Zt1gJvPNDAfBgNVHSMEGDAWgBSoSmpjBH3duubRObemRWXv
+86jsoTBvBggrBgEFBQcBAQRjMGEwLgYIKwYBBQUHMAGGImh0dHA6Ly9vY3NwLmlu
+dC14My5sZXRzZW5jcnlwdC5vcmcwLwYIKwYBBQUHMAKGI2h0dHA6Ly9jZXJ0Lmlu
+dC14My5sZXRzZW5jcnlwdC5vcmcvMCcGA1UdEQQgMB6CDiouMTk2NzAzMDYueHl6
+ggwxOTY3MDMwNi54eXowgf4GA1UdIASB9jCB8zAIBgZngQwBAgEwgeYGCysGAQQB
+gt8TAQEBMIHWMCYGCCsGAQUFBwIBFhpodHRwOi8vY3BzLmxldHNlbmNyeXB0Lm9y
+ZzCBqwYIKwYBBQUHAgIwgZ4MgZtUaGlzIENlcnRpZmljYXRlIG1heSBvbmx5IGJl
+IHJlbGllZCB1cG9uIGJ5IFJlbHlpbmcgUGFydGllcyBhbmQgb25seSBpbiBhY2Nv
+cmRhbmNlIHdpdGggdGhlIENlcnRpZmljYXRlIFBvbGljeSBmb3VuZCBhdCBodHRw
+czovL2xldHNlbmNyeXB0Lm9yZy9yZXBvc2l0b3J5LzCCAQMGCisGAQQB1nkCBAIE
+gfQEgfEA7wB1ANt0r+7LKeyx/so+cW0s5bmquzb3hHGDx12dTze2H79kAAABZF74
+X6UAAAQDAEYwRAIgUEAN0AO9kAxgMbnecYFN2teE6OuDWEK8Y6DvtofWflkCIGxp
+tJyd1paxPjK98ycdK9UOqjBFdb9DDx946Xb2C+kQAHYAKTxRllTIOWW6qlD8WAfU
+t2+/WHopctykwwz05UVH9HgAAAFkXvhfswAABAMARzBFAiAbHwyeNNhedTQKGL2v
+oPrMCgvH8/gvUBlmCmY8tBiFVAIhAN6xelB/jz+pn9Uz30Yj9bcUtkk5JtsyKJO6
+5yBmNeGvMA0GCSqGSIb3DQEBCwUAA4IBAQB5NVf0GXaonK3vox/oVgnAwdeVnk4p
+ecGCzkNbIeXrWyuGKxXLz0wmUxTy+wn6y7tQVSqU3TJQt9L/aEIoliJlj9v4OHhS
+JsPHBmdh3peZYan7RYU5tGG9BTv44cCNy+qtJHVjS6IoecwH5icz6jpYANk/Ioov
+fw2K344wsyEg7lIU1iDD1dyxRHlSBlhZUw0MLvuMyhuwblwXu6yV9V3Hw7TCZ8ie
+JWngDCuLa8OrTfsSeHJBASML9XBz8pwqeWcSWDb+zszR+qOOSE3oniqgXwi3615f
+swBNneXAQLtV1oI7FxLa/7PeE40TZsEoWZUyYW0ib6Pg/GwXuAUSBMoQ
+-----END CERTIFICATE-----
