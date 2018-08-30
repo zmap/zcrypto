@@ -428,7 +428,7 @@ func (c *Certificate) UnmarshalJSON(b []byte) error {
 // The JSON output of Marshal is not even used to construct
 // a certificate, all we need is raw
 type JSONCertificateWithRaw struct {
-	Raw []byte
+	Raw []byte `json:"raw,omitempty"`
 }
 
 // ParseRaw - for converting the intermediate object
