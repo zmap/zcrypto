@@ -10,7 +10,7 @@ import (
 	"github.com/zmap/zcrypto/x509"
 )
 
-func ExampleCertificate_Verify() {
+func Example_x509_ParseCertificate() {
 	// Verifying with a custom list of root certificates.
 
 	const rootPEM = `
@@ -76,17 +76,8 @@ yE+vPxsiUkvQHdO2fojCkY8jg70jxM+gu59tPDNbw3Uh/2Ij310FgTHsnGQMyA==
 	if block == nil {
 		panic("failed to parse certificate PEM")
 	}
-	cert, err := x509.ParseCertificate(block.Bytes)
+	_, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
 		panic("failed to parse certificate: " + err.Error())
-	}
-
-	opts := x509.VerifyOptions{
-		DNSName: "mail.google.com",
-		Roots:   roots,
-	}
-
-	if _, _, _, err := cert.Verify(opts); err != nil {
-		panic("failed to verify certificate: " + err.Error())
 	}
 }

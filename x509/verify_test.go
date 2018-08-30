@@ -7,7 +7,6 @@ package x509
 import (
 	"encoding/pem"
 	"errors"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -16,14 +15,12 @@ import (
 )
 
 type verifyTest struct {
-	leaf                 string
-	intermediates        []string
-	roots                []string
-	currentTime          int64
-	dnsName              string
-	systemSkip           bool
-	keyUsages            []ExtKeyUsage
-	testSystemRootsError bool
+	leaf          string
+	intermediates []string
+	roots         []string
+	currentTime   int64
+	dnsName       string
+	keyUsages     []ExtKeyUsage
 
 	errorCallback  func(*testing.T, int, error) bool
 	expectedChains [][]string
@@ -31,17 +28,6 @@ type verifyTest struct {
 }
 
 var verifyTests = []verifyTest{
-	{
-		leaf:                 googleLeaf,
-		intermediates:        []string{giag2Intermediate},
-		currentTime:          1395785200,
-		dnsName:              "www.google.com",
-		testSystemRootsError: true,
-
-		// Without any roots specified we should get a system roots
-		// error.
-		errorCallback: expectSystemRootsError,
-	},
 	{
 		leaf:          googleLeaf,
 		intermediates: []string{giag2Intermediate},
@@ -95,14 +81,10 @@ var verifyTests = []verifyTest{
 		errorCallback: expectExpired,
 	},
 	{
-		leaf:        googleLeaf,
-		roots:       []string{geoTrustRoot},
-		currentTime: 1395785200,
-		dnsName:     "www.google.com",
-
-		// Skip when using systemVerify, since Windows
-		// *will* find the missing intermediate cert.
-		systemSkip:    true,
+		leaf:          googleLeaf,
+		roots:         []string{geoTrustRoot},
+		currentTime:   1395785200,
+		dnsName:       "www.google.com",
 		errorCallback: expectAuthorityUnknown,
 	},
 	{
@@ -115,10 +97,6 @@ var verifyTests = []verifyTest{
 		expectedChains: [][]string{
 			{"Google", "Google Internet Authority", "GeoTrust"},
 		},
-		// CAPI doesn't build the chain with the duplicated GeoTrust
-		// entry so the results don't match. Thus we skip this test
-		// until that's fixed.
-		systemSkip: true,
 	},
 	{
 		leaf:          dnssecExpLeaf,
@@ -135,10 +113,6 @@ var verifyTests = []verifyTest{
 		intermediates: []string{startComIntermediate, startComRoot},
 		roots:         []string{startComRoot},
 		currentTime:   1302726541,
-
-		// Skip when using systemVerify, since Windows
-		// can only return a single chain to us (for now).
-		systemSkip: true,
 		expectedChains: [][]string{
 			{"dnssec-exp", "StartCom Class 1", "StartCom Certification Authority"},
 		},
@@ -149,30 +123,20 @@ var verifyTests = []verifyTest{
 		roots:         []string{geoTrustRoot},
 		currentTime:   1395785200,
 		dnsName:       "www.google.com",
-
-		// The specific error message may not occur when using system
-		// verification.
-		systemSkip:    true,
 		errorCallback: expectHashError,
 	},
 	{
 		// The default configuration should reject an S/MIME chain.
-		leaf:        smimeLeaf,
-		roots:       []string{smimeIntermediate},
-		currentTime: 1339436154,
-
-		// Key usage not implemented for Windows yet.
-		systemSkip:    true,
+		leaf:          smimeLeaf,
+		roots:         []string{smimeIntermediate},
+		currentTime:   1339436154,
 		errorCallback: expectUsageError,
 	},
 	{
-		leaf:        smimeLeaf,
-		roots:       []string{smimeIntermediate},
-		currentTime: 1339436154,
-		keyUsages:   []ExtKeyUsage{ExtKeyUsageServerAuth},
-
-		// Key usage not implemented for Windows yet.
-		systemSkip:    true,
+		leaf:          smimeLeaf,
+		roots:         []string{smimeIntermediate},
+		currentTime:   1339436154,
+		keyUsages:     []ExtKeyUsage{ExtKeyUsageServerAuth},
 		errorCallback: expectUsageError,
 	},
 	{
@@ -180,9 +144,6 @@ var verifyTests = []verifyTest{
 		roots:       []string{smimeIntermediate},
 		currentTime: 1339436154,
 		keyUsages:   []ExtKeyUsage{ExtKeyUsageEmailProtection},
-
-		// Key usage not implemented for Windows yet.
-		systemSkip: true,
 		expectedChains: [][]string{
 			{"Ryan Hurst", "GlobalSign PersonalSign 2 CA - G2"},
 		},
@@ -192,10 +153,6 @@ var verifyTests = []verifyTest{
 		intermediates: []string{comodoIntermediate1},
 		roots:         []string{comodoRoot},
 		currentTime:   1360431182,
-
-		// CryptoAPI can find alternative validation paths so we don't
-		// perform this test with system validation.
-		systemSkip: true,
 		expectedChains: [][]string{
 			{"mega.co.nz", "EssentialSSL CA", "COMODO Certification Authority"},
 		},
@@ -334,14 +291,6 @@ func expectAuthorityUnknown(t *testing.T, i int, err error) (ok bool) {
 	return true
 }
 
-func expectSystemRootsError(t *testing.T, i int, err error) bool {
-	if _, ok := err.(SystemRootsError); !ok {
-		t.Errorf("#%d: error was not SystemRootsError: %s", i, err)
-		return false
-	}
-	return true
-}
-
 func expectHashError(t *testing.T, i int, err error) bool {
 	if err == nil {
 		t.Errorf("#%d: no error resulted from invalid hash", i)
@@ -382,15 +331,8 @@ func certificateFromPEM(pemBytes string) (*Certificate, error) {
 	return ParseCertificate(block.Bytes)
 }
 
-func testVerify(t *testing.T, useSystemRoots bool) {
+func testVerify(t *testing.T) {
 	for i, test := range verifyTests {
-		if useSystemRoots && test.systemSkip {
-			continue
-		}
-		if runtime.GOOS == "windows" && test.testSystemRootsError {
-			continue
-		}
-
 		opts := VerifyOptions{
 			Intermediates: NewCertPool(),
 			DNSName:       test.dnsName,
@@ -398,14 +340,12 @@ func testVerify(t *testing.T, useSystemRoots bool) {
 			KeyUsages:     test.keyUsages,
 		}
 
-		if !useSystemRoots {
-			opts.Roots = NewCertPool()
-			for j, root := range test.roots {
-				ok := opts.Roots.AppendCertsFromPEM([]byte(root))
-				if !ok {
-					t.Errorf("#%d: failed to parse root #%d", i, j)
-					return
-				}
+		opts.Roots = NewCertPool()
+		for j, root := range test.roots {
+			ok := opts.Roots.AppendCertsFromPEM([]byte(root))
+			if !ok {
+				t.Errorf("#%d: failed to parse root #%d", i, j)
+				return
 			}
 		}
 
@@ -423,18 +363,7 @@ func testVerify(t *testing.T, useSystemRoots bool) {
 			return
 		}
 
-		var oldSystemRoots *CertPool
-		if test.testSystemRootsError {
-			oldSystemRoots = systemRootsPool()
-			systemRoots = nil
-			opts.Roots = nil
-		}
-
 		chains, expiredChains, _, err := leaf.Verify(opts)
-
-		if test.testSystemRootsError {
-			systemRoots = oldSystemRoots
-		}
 
 		if test.errorCallback == nil && err != nil {
 			t.Errorf("#%d: unexpected error: %s", i, err)
@@ -482,15 +411,7 @@ func testVerify(t *testing.T, useSystemRoots bool) {
 }
 
 func TestGoVerify(t *testing.T) {
-	testVerify(t, false)
-}
-
-func TestSystemVerify(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.Skipf("skipping verify test using system APIs on %q", runtime.GOOS)
-	}
-
-	testVerify(t, true)
+	testVerify(t)
 }
 
 func chainToDebugString(chain []*Certificate) string {
