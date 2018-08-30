@@ -213,8 +213,10 @@ func (v *validity) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-
-type jsonECDSAPublicKey struct {
+// ECDSAPublicKeyJSON - used to condense several fields from a
+// ECDSA public key into one field for use in JSONCertificate.
+// Uses default JSON marshal and unmarshal methods
+type ECDSAPublicKeyJSON struct {
 	B      []byte `json:"b"`
 	Curve  string `json:"curve"`
 	Gx     []byte `json:"gx"`
@@ -227,36 +229,65 @@ type jsonECDSAPublicKey struct {
 	Y      []byte `json:"y"`
 }
 
-func jsonECDSAConstructor(key *ecdsa.PublicKey) *jsonECDSAPublicKey {
-	params := key.Params()
-	return &jsonECDSAPublicKey{
-		P:      params.P.Bytes(),
-		N:      params.N.Bytes(),
-		B:      params.B.Bytes(),
-		Gx:     params.Gx.Bytes(),
-		Gy:     params.Gy.Bytes(),
-		X:      key.X.Bytes(),
-		Y:      key.Y.Bytes(),
-		Curve:  key.Curve.Params().Name,
-		Length: key.Curve.Params().BitSize,
-	}
-
+// DSAPublicKeyJSON - used to condense several fields from a
+// DSA public key into one field for use in JSONCertificate.
+// Uses default JSON marshal and unmarshal methods
+type DSAPublicKeyJSON struct {
+	G []byte `json:"g"`
+	P []byte `json:"p"`
+	Q []byte `json:"q"`
+	Y []byte `json:"y"`
 }
 
-type jsonDSAPublicKey struct {
-	G []byte`json:"g"`
-	P []byte`json:"p"`
-	Q []byte`json:"q"`
-	Y []byte`json:"y"`
-}
-
-func jsonDSAConstructor(key *dsa.PublicKey) *jsonDSAPublicKey {
-	return &jsonDSAPublicKey{
-		P: key.P.Bytes(),
-		Q: key.Q.Bytes(),
-		G: key.G.Bytes(),
-		Y: key.Y.Bytes(),
+// jsonifySubjectKey - Convert public key data in a Certificate
+// into json output format for JSONCertificate
+func (c *Certificate) jsonifySubjectKey() JSONSubjectKeyInfo {
+	j := JSONSubjectKeyInfo{
+		KeyAlgorithm:    c.PublicKeyAlgorithm,
+		SPKIFingerprint: c.SPKIFingerprint,
 	}
+
+	switch key := c.PublicKey.(type) {
+	case *rsa.PublicKey:
+		rsaKey := new(jsonKeys.RSAPublicKey)
+		rsaKey.PublicKey = key
+		j.RSAPublicKey = rsaKey
+	case *dsa.PublicKey:
+		j.DSAPublicKey = &DSAPublicKeyJSON{
+			P: key.P.Bytes(),
+			Q: key.Q.Bytes(),
+			G: key.G.Bytes(),
+			Y: key.Y.Bytes(),
+		}
+	case *ecdsa.PublicKey:
+		params := key.Params()
+		j.ECDSAPublicKey = &ECDSAPublicKeyJSON{
+			P:      params.P.Bytes(),
+			N:      params.N.Bytes(),
+			B:      params.B.Bytes(),
+			Gx:     params.Gx.Bytes(),
+			Gy:     params.Gy.Bytes(),
+			X:      key.X.Bytes(),
+			Y:      key.Y.Bytes(),
+			Curve:  key.Curve.Params().Name,
+			Length: key.Curve.Params().BitSize,
+		}
+	case *AugmentedECDSA:
+		params := key.Pub.Params()
+		j.ECDSAPublicKey = &ECDSAPublicKeyJSON{
+			P:      params.P.Bytes(),
+			N:      params.N.Bytes(),
+			B:      params.B.Bytes(),
+			Gx:     params.Gx.Bytes(),
+			Gy:     params.Gy.Bytes(),
+			X:      key.Pub.X.Bytes(),
+			Y:      key.Pub.Y.Bytes(),
+			Curve:  key.Pub.Curve.Params().Name,
+			Length: key.Pub.Curve.Params().BitSize,
+			Pub:    key.Raw.Bytes,
+		}
+	}
+	return j
 }
 
 // JSONSubjectKeyInfo - used to condense several fields from x509.Certificate
@@ -266,8 +297,8 @@ func jsonDSAConstructor(key *dsa.PublicKey) *jsonDSAPublicKey {
 type JSONSubjectKeyInfo struct {
 	KeyAlgorithm    PublicKeyAlgorithm     `json:"key_algorithm"`
 	RSAPublicKey    *jsonKeys.RSAPublicKey `json:"rsa_public_key,omitempty"`
-	DSAPublicKey    *jsonDSAPublicKey      `json:"dsa_public_key,omitempty"`
-	ECDSAPublicKey  *jsonECDSAPublicKey    `json:"ecdsa_public_key,omitempty"`
+	DSAPublicKey    *DSAPublicKeyJSON      `json:"dsa_public_key,omitempty"`
+	ECDSAPublicKey  *ECDSAPublicKeyJSON    `json:"ecdsa_public_key,omitempty"`
 	SPKIFingerprint CertificateFingerprint `json:"fingerprint_sha256"`
 }
 
@@ -333,7 +364,6 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	jc.Validity.ValidityPeriod = c.ValidityPeriod
 	jc.Subject = c.Subject
 	jc.SubjectDN = c.Subject.String()
-	jc.SubjectKeyInfo.KeyAlgorithm = c.PublicKeyAlgorithm
 
 	if isValidName(c.Subject.CommonName) {
 		jc.Names = append(jc.Names, c.Subject.CommonName)
@@ -369,22 +399,7 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	jc.SubjectKeyInfo.SPKIFingerprint = c.SPKIFingerprint
-	switch key := c.PublicKey.(type) {
-	case *rsa.PublicKey:
-		rsaKey := new(jsonKeys.RSAPublicKey)
-		rsaKey.PublicKey = key
-		jc.SubjectKeyInfo.RSAPublicKey = rsaKey
-	case *dsa.PublicKey:
-		jc.SubjectKeyInfo.DSAPublicKey = jsonDSAConstructor(key)
-	case *ecdsa.PublicKey:
-		jc.SubjectKeyInfo.ECDSAPublicKey = jsonECDSAConstructor(key)
-	case *AugmentedECDSA:
-		jsonKey := jsonECDSAConstructor(key.Pub)
-		jsonKey.Pub = key.Raw.Bytes
-		jc.SubjectKeyInfo.ECDSAPublicKey = jsonKey
-	}
-
+	jc.SubjectKeyInfo = c.jsonifySubjectKey()
 	jc.Extensions, jc.UnknownExtensions = c.jsonifyExtensions()
 
 	// TODO: Handle the fact this might not match
