@@ -212,6 +212,52 @@ func (v *validity) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+
+type jsonECDSAPublicKey struct {
+	B      []byte `json:"b"`
+	Curve  string `json:"curve"`
+	Gx     []byte `json:"gx"`
+	Gy     []byte `json:"gy"`
+	Length int    `json:"length"`
+	N      []byte `json:"n"`
+	P      []byte `json:"p"`
+	Pub    []byte `json:"pub,omitempty"`
+	X      []byte `json:"x"`
+	Y      []byte `json:"y"`
+}
+
+func jsonECDSAConstructor(key *ecdsa.PublicKey) *jsonECDSAPublicKey {
+	params := key.Params()
+	return &jsonECDSAPublicKey{
+		P:      params.P.Bytes(),
+		N:      params.N.Bytes(),
+		B:      params.B.Bytes(),
+		Gx:     params.Gx.Bytes(),
+		Gy:     params.Gy.Bytes(),
+		X:      key.X.Bytes(),
+		Y:      key.Y.Bytes(),
+		Curve:  key.Curve.Params().Name,
+		Length: key.Curve.Params().BitSize,
+	}
+
+}
+
+type jsonDSAPublicKey struct {
+	G []byte`json:"g"`
+	P []byte`json:"p"`
+	Q []byte`json:"q"`
+	Y []byte`json:"y"`
+}
+
+func jsonDSAConstructor(key *dsa.PublicKey) *jsonDSAPublicKey {
+	return &jsonDSAPublicKey{
+		P: key.P.Bytes(),
+		Q: key.Q.Bytes(),
+		G: key.G.Bytes(),
+		Y: key.Y.Bytes(),
+	}
+}
+
 // JSONSubjectKeyInfo - used to condense several fields from x509.Certificate
 // related to the subject public key into one field within JSONCertificate
 // Unfortunately, this struct cannot have its own Marshal method since it
@@ -219,8 +265,8 @@ func (v *validity) UnmarshalJSON(b []byte) error {
 type JSONSubjectKeyInfo struct {
 	KeyAlgorithm    PublicKeyAlgorithm     `json:"key_algorithm"`
 	RSAPublicKey    *jsonKeys.RSAPublicKey `json:"rsa_public_key,omitempty"`
-	DSAPublicKey    interface{}            `json:"dsa_public_key,omitempty"`
-	ECDSAPublicKey  interface{}            `json:"ecdsa_public_key,omitempty"`
+	DSAPublicKey    *jsonDSAPublicKey      `json:"dsa_public_key,omitempty"`
+	ECDSAPublicKey  *jsonECDSAPublicKey    `json:"ecdsa_public_key,omitempty"`
 	SPKIFingerprint CertificateFingerprint `json:"fingerprint_sha256"`
 }
 
@@ -273,26 +319,6 @@ type JSONCertificate struct {
 	Redacted                  bool                         `json:"redacted"`
 }
 
-func AddECDSAPublicKeyToKeyMap(keyMap map[string]interface{}, key *ecdsa.PublicKey) {
-	params := key.Params()
-	keyMap["p"] = params.P.Bytes()
-	keyMap["n"] = params.N.Bytes()
-	keyMap["b"] = params.B.Bytes()
-	keyMap["gx"] = params.Gx.Bytes()
-	keyMap["gy"] = params.Gy.Bytes()
-	keyMap["x"] = key.X.Bytes()
-	keyMap["y"] = key.Y.Bytes()
-	keyMap["curve"] = key.Curve.Params().Name
-	keyMap["length"] = key.Curve.Params().BitSize
-}
-
-func AddDSAPublicKeyToKeyMap(keyMap map[string]interface{}, key *dsa.PublicKey) {
-	keyMap["p"] = key.P.Bytes()
-	keyMap["q"] = key.Q.Bytes()
-	keyMap["g"] = key.G.Bytes()
-	keyMap["y"] = key.Y.Bytes()
-}
-
 func (c *Certificate) MarshalJSON() ([]byte, error) {
 	// Fill out the certificate
 	jc := new(JSONCertificate)
@@ -343,9 +369,6 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	// Pull out the key
-	keyMap := make(map[string]interface{})
-
 	jc.SubjectKeyInfo.SPKIFingerprint = c.SPKIFingerprint
 	switch key := c.PublicKey.(type) {
 	case *rsa.PublicKey:
@@ -353,15 +376,13 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 		rsaKey.PublicKey = key
 		jc.SubjectKeyInfo.RSAPublicKey = rsaKey
 	case *dsa.PublicKey:
-		AddDSAPublicKeyToKeyMap(keyMap, key)
-		jc.SubjectKeyInfo.DSAPublicKey = keyMap
+		jc.SubjectKeyInfo.DSAPublicKey = jsonDSAConstructor(key)
 	case *ecdsa.PublicKey:
-		AddECDSAPublicKeyToKeyMap(keyMap, key)
-		jc.SubjectKeyInfo.ECDSAPublicKey = keyMap
+		jc.SubjectKeyInfo.ECDSAPublicKey = jsonECDSAConstructor(key)
 	case *AugmentedECDSA:
-		AddECDSAPublicKeyToKeyMap(keyMap, key.Pub)
-		keyMap["pub"] = key.Raw.Bytes
-		jc.SubjectKeyInfo.ECDSAPublicKey = keyMap
+		jsonKey := jsonECDSAConstructor(key.Pub)
+		jsonKey.Pub = key.Raw.Bytes
+		jc.SubjectKeyInfo.ECDSAPublicKey = jsonKey
 	}
 
 	jc.Extensions, jc.UnknownExtensions = c.jsonifyExtensions()
