@@ -70,6 +70,18 @@ func TestCertificateJSON(t *testing.T) {
 		if jsonString := string(jsonBytes); jsonString != test.expected {
 			t.Errorf("%d: expected %s, got %s", i, test.expected, jsonString)
 		}
+		backToCert := Certificate{}
+		err = json.Unmarshal(jsonBytes, &backToCert) // should fail
+		if err == nil {
+			t.Errorf("Expected UnmarshalJSON to fail, should not be used")
+		}
+		jsonWithRaw := JSONCertificateWithRaw{
+			Raw: p.Bytes,
+		}
+		_, err = jsonWithRaw.ParseRaw()
+		if err != nil {
+			t.Errorf(err.Error())
+		}
 	}
 }
 
