@@ -95,14 +95,18 @@ func (k *KeyUsage) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type auxSignatureAlgorithm struct {
+// JSONSignatureAlgorithm is the intermediate type
+// used when marshaling a PublicKeyAlgorithm out to JSON.
+type JSONSignatureAlgorithm struct {
 	Name string      `json:"name,omitempty"`
 	OID  pkix.AuxOID `json:"oid"`
 }
 
 // MarshalJSON implements the json.Marshaler interface
+// MAY NOT PRESERVE ORIGINAL OID FROM CERTIFICATE -
+// CONSIDER USING jsonifySignatureAlgorithm INSTEAD!
 func (s *SignatureAlgorithm) MarshalJSON() ([]byte, error) {
-	aux := auxSignatureAlgorithm{
+	aux := JSONSignatureAlgorithm{
 		Name: s.String(),
 	}
 	for _, val := range signatureAlgorithmDetails {
@@ -118,7 +122,7 @@ func (s *SignatureAlgorithm) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements the json.Unmarshler interface
 func (s *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
-	var aux auxSignatureAlgorithm
+	var aux JSONSignatureAlgorithm
 	if err := json.Unmarshal(b, &aux); err != nil {
 		return err
 	}
@@ -141,6 +145,29 @@ func (s *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
 		}
 	}
 	return nil
+}
+
+// jsonifySignatureAlgorithm gathers the necessary fields in a Certificate
+// into a JSONSignatureAlgorithm, which can then use the default
+// JSON marhsalers and unmarshalers. THIS FUNCTION IS PREFERED OVER
+// THE CUSTOM JSON MARSHALER PRESENTED ABOVE FOR SIGNATUREALGORITHM
+// BECAUSE THIS METHOD PRESERVES THE OID ORIGINALLY IN THE CERTIFICATE!
+// This reason also explains why we need this function -
+// the OID is unfortunately stored outside the scope of a
+// SignatureAlgorithm struct and cannot be recovered without access to the
+// entire Certificate if we do not know the signature algorithm.
+func (c *Certificate) jsonifySignatureAlgorithm() (JSONSignatureAlgorithm) {
+	aux := JSONSignatureAlgorithm{}
+	if c.SignatureAlgorithm == 0 {
+		aux.Name = "unknown_algorithm"
+	} else {
+		aux.Name = c.SignatureAlgorithm.String()
+	}
+	aux.OID = make([]int, len(c.SignatureAlgorithmOID))
+	for idx := range c.SignatureAlgorithmOID {
+		aux.OID[idx] = c.SignatureAlgorithmOID[idx]
+	}
+	return aux
 }
 
 type auxPublicKeyAlgorithm struct {
@@ -307,10 +334,10 @@ type JSONSubjectKeyInfo struct {
 // Unfortunately, this struct cannot have its own Marshal method since it
 // needs information from multiple fields in x509.Certificate
 type JSONSignature struct {
-	SignatureAlgorithm SignatureAlgorithm `json:"signature_algorithm"`
-	Value              []byte             `json:"value"`
-	Valid              bool               `json:"valid"`
-	SelfSigned         bool               `json:"self_signed"`
+	SignatureAlgorithm JSONSignatureAlgorithm `json:"signature_algorithm"`
+	Value              []byte                 `json:"value"`
+	Valid              bool                   `json:"valid"`
+	SelfSigned         bool                   `json:"self_signed"`
 }
 
 // JSONValidity - used to condense several fields related
@@ -329,7 +356,7 @@ type JSONValidity struct {
 type JSONCertificate struct {
 	Version                   int                          `json:"version"`
 	SerialNumber              string                       `json:"serial_number"`
-	SignatureAlgorithm        SignatureAlgorithm           `json:"signature_algorithm"`
+	SignatureAlgorithm        JSONSignatureAlgorithm       `json:"signature_algorithm"`
 	Issuer                    pkix.Name                    `json:"issuer"`
 	IssuerDN                  string                       `json:"issuer_dn,omitempty"`
 	Validity                  JSONValidity                 `json:"validity"`
@@ -355,7 +382,6 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	jc := new(JSONCertificate)
 	jc.Version = c.Version
 	jc.SerialNumber = c.SerialNumber.String()
-	jc.SignatureAlgorithm = c.SignatureAlgorithm
 	jc.Issuer = c.Issuer
 	jc.IssuerDN = c.Issuer.String()
 
@@ -403,6 +429,7 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	jc.Extensions, jc.UnknownExtensions = c.jsonifyExtensions()
 
 	// TODO: Handle the fact this might not match
+	jc.SignatureAlgorithm = c.jsonifySignatureAlgorithm()
 	jc.Signature.SignatureAlgorithm = jc.SignatureAlgorithm
 	jc.Signature.Value = c.Signature
 	jc.Signature.Valid = c.validSignature
