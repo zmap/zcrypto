@@ -407,6 +407,9 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	jc.Signature.Value = c.Signature
 	jc.Signature.Valid = c.validSignature
 	jc.Signature.SelfSigned = c.SelfSigned
+	if c.SelfSigned {
+		jc.Signature.Valid = true 
+	}
 	jc.FingerprintMD5 = c.FingerprintMD5
 	jc.FingerprintSHA1 = c.FingerprintSHA1
 	jc.FingerprintSHA256 = c.FingerprintSHA256
