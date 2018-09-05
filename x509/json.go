@@ -239,6 +239,57 @@ type DSAPublicKeyJSON struct {
 	Y []byte `json:"y"`
 }
 
+// GetDSAPublicKeyJSON - get the DSAPublicKeyJSON for the given standard DSA PublicKey.
+func GetDSAPublicKeyJSON(key *dsa.PublicKey) *DSAPublicKeyJSON {
+	return &DSAPublicKeyJSON{
+		P: key.P.Bytes(),
+		Q: key.Q.Bytes(),
+		G: key.G.Bytes(),
+		Y: key.Y.Bytes(),
+	}
+}
+
+// GetRSAPublicKeyJSON - get the jsonKeys.RSAPublicKey for the given standard RSA PublicKey.
+func GetRSAPublicKeyJSON(key *rsa.PublicKey) *jsonKeys.RSAPublicKey {
+	rsaKey := new(jsonKeys.RSAPublicKey)
+	rsaKey.PublicKey = key
+	return rsaKey
+}
+
+// GetECDSAPublicKeyJSON - get the GetECDSAPublicKeyJSON for the given standard ECDSA PublicKey.
+func GetECDSAPublicKeyJSON(key *ecdsa.PublicKey) *ECDSAPublicKeyJSON {
+	params := key.Params()
+	return &ECDSAPublicKeyJSON{
+		P:      params.P.Bytes(),
+		N:      params.N.Bytes(),
+		B:      params.B.Bytes(),
+		Gx:     params.Gx.Bytes(),
+		Gy:     params.Gy.Bytes(),
+		X:      key.X.Bytes(),
+		Y:      key.Y.Bytes(),
+		Curve:  key.Curve.Params().Name,
+		Length: key.Curve.Params().BitSize,
+	}
+}
+
+// GetAugmentedECDSAPublicKeyJSON - get the GetECDSAPublicKeyJSON for the given "augmented"
+// ECDSA PublicKey.
+func GetAugmentedECDSAPublicKeyJSON(key *AugmentedECDSA) *ECDSAPublicKeyJSON {
+	params := key.Pub.Params()
+	return &ECDSAPublicKeyJSON{
+		P:      params.P.Bytes(),
+		N:      params.N.Bytes(),
+		B:      params.B.Bytes(),
+		Gx:     params.Gx.Bytes(),
+		Gy:     params.Gy.Bytes(),
+		X:      key.Pub.X.Bytes(),
+		Y:      key.Pub.Y.Bytes(),
+		Curve:  key.Pub.Curve.Params().Name,
+		Length: key.Pub.Curve.Params().BitSize,
+		Pub:    key.Raw.Bytes,
+	}
+}
+
 // jsonifySubjectKey - Convert public key data in a Certificate
 // into json output format for JSONCertificate
 func (c *Certificate) jsonifySubjectKey() JSONSubjectKeyInfo {
@@ -408,7 +459,7 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	jc.Signature.Valid = c.validSignature
 	jc.Signature.SelfSigned = c.SelfSigned
 	if c.SelfSigned {
-		jc.Signature.Valid = true 
+		jc.Signature.Valid = true
 	}
 	jc.FingerprintMD5 = c.FingerprintMD5
 	jc.FingerprintSHA1 = c.FingerprintSHA1
