@@ -264,6 +264,8 @@ const (
 	RSA
 	DSA
 	ECDSA
+	ED25519
+	X25519
 	total_key_algorithms
 )
 
