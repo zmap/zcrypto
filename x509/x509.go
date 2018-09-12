@@ -210,7 +210,7 @@ const (
 	SHA256WithRSAPSS
 	SHA384WithRSAPSS
 	SHA512WithRSAPSS
-	ED25519SIG
+	Ed25519Sig
 )
 
 func (algo SignatureAlgorithm) isRSAPSS() bool {
@@ -238,7 +238,7 @@ var algoName = [...]string{
 	ECDSAWithSHA256:  "ECDSA-SHA256",
 	ECDSAWithSHA384:  "ECDSA-SHA384",
 	ECDSAWithSHA512:  "ECDSA-SHA512",
-	ED25519SIG:       "Ed25519",
+	Ed25519Sig:       "Ed25519",
 }
 
 func (algo SignatureAlgorithm) String() string {
@@ -264,7 +264,7 @@ const (
 	RSA
 	DSA
 	ECDSA
-	ED25519
+	Ed25519
 	X25519
 	total_key_algorithms
 )
@@ -371,7 +371,7 @@ var signatureAlgorithmDetails = []struct {
 	{ECDSAWithSHA256, oidSignatureECDSAWithSHA256, ECDSA, crypto.SHA256},
 	{ECDSAWithSHA384, oidSignatureECDSAWithSHA384, ECDSA, crypto.SHA384},
 	{ECDSAWithSHA512, oidSignatureECDSAWithSHA512, ECDSA, crypto.SHA512},
-	{ED25519SIG, oidKeyEd25519, ED25519, crypto.Hash(0)},
+	{Ed25519Sig, oidKeyEd25519, Ed25519, crypto.Hash(0)},
 }
 
 // pssParameters reflects the parameters in an AlgorithmIdentifier that
@@ -511,7 +511,7 @@ func getPublicKeyAlgorithmFromOID(oid asn1.ObjectIdentifier) PublicKeyAlgorithm 
 	case oid.Equal(oidPublicKeyECDSA):
 		return ECDSA
 	case oid.Equal(oidKeyEd25519):
-		return ED25519
+		return Ed25519
 	case oid.Equal(oidKeyX25519):
 		return X25519
 	}
@@ -1030,7 +1030,7 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 	//case MD2WithRSA, MD5WithRSA:
 	case MD2WithRSA:
 		return InsecureAlgorithmError(algo)
-	case ED25519SIG:
+	case Ed25519Sig:
 		hashType = 0
 	default:
 		return ErrUnsupportedAlgorithm
@@ -1090,7 +1090,7 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 		return
 	case ed25519.PublicKey:
 		if !ed25519.Verify(pub, digest, signature) {
-			return errors.New("x509: ED25519 verification failure")
+			return errors.New("x509: Ed25519 verification failure")
 		}
 		return
 	}
@@ -1342,7 +1342,7 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 			Raw: keyData.PublicKey,
 		}
 		return pub, nil
-	case ED25519:
+	case Ed25519:
 		p := ed25519.PublicKey(asn1Data)
 		if len(p) > ed25519.PublicKeySize {
 			return nil, errors.New("x509: trailing data after Ed25519 data")
@@ -2381,8 +2381,7 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo SignatureAlgori
 		}
 
 	case ed25519.PublicKey:
-		// ed25519.PublicKey doesn't return a pointer to the key so we check for both
-		pubType = ED25519
+		pubType = Ed25519
 		hashFunc = 0
 		shouldHash = false
 		sigAlgo.Algorithm = oidKeyEd25519
