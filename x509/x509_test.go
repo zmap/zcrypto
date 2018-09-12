@@ -257,7 +257,7 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 
 	ed25519Pub, ed25519Priv, err := ed25519.GenerateKey(nil)
 	if err != nil {
-		t.Fatalf("Failed to generate ED25519 key: %s", err)
+		t.Fatalf("Failed to generate Ed25519 key: %s", err)
 	}
 	var pubkey, privkey [32]byte
 	if _, err := io.ReadFull(rand.Reader, privkey[:]); err != nil {
@@ -277,8 +277,8 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 		{"RSA/ECDSA", &rsaPriv.PublicKey, ecdsaPriv, false, ECDSAWithSHA384, false},
 		{"ECDSA/RSA", &AugmentedECDSA{Pub: &ecdsaPriv.PublicKey, Raw: null}, rsaPriv, false, SHA256WithRSA, false},
 		{"ECDSA/ECDSA", &AugmentedECDSA{Pub: &ecdsaPriv.PublicKey, Raw: null}, ecdsaPriv, true, ECDSAWithSHA1, true},
-		{"ED25519/ED25519", ed25519Pub, ed25519Priv, true, ED25519SIG, true},
-		{"X25519/ED25519", x25519Pub, ed25519Priv, false, ED25519SIG, false},
+		{"Ed25519/Ed25519", ed25519Pub, ed25519Priv, true, Ed25519Sig, true},
+		{"X25519/Ed25519", x25519Pub, ed25519Priv, false, Ed25519Sig, false},
 	}
 
 	testExtKeyUsage := []ExtKeyUsage{ExtKeyUsageClientAuth, ExtKeyUsageServerAuth}
@@ -560,7 +560,7 @@ var ed25519Tests = []struct {
 	pemCert    string
 	signerCert string
 }{
-	{ED25519SIG, ed25519CertPem, ed25519CertPem},
+	{Ed25519Sig, ed25519CertPem, ed25519CertPem},
 }
 
 func Test25519(t *testing.T) {
@@ -581,10 +581,10 @@ func Test25519(t *testing.T) {
 			t.Errorf("%d: signature algorithm is %v, want %v", i, sa, test.sigAlgo)
 		}
 		if parsedKey, ok := cert.PublicKey.(ed25519.PublicKey); !ok {
-			t.Errorf("%d: wanted an ED25519 public key but found: %#v", i, parsedKey)
+			t.Errorf("%d: wanted an Ed25519 public key but found: %#v", i, parsedKey)
 		}
-		if pka := cert.PublicKeyAlgorithm; pka != ED25519 {
-			t.Errorf("%d: public key algorithm is %v, want ED25519", i, pka)
+		if pka := cert.PublicKeyAlgorithm; pka != Ed25519 {
+			t.Errorf("%d: public key algorithm is %v, want Ed25519", i, pka)
 		}
 		if err = cert.CheckSignatureFrom(signerCert); err != nil {
 			t.Errorf("%d: certificate verification failed: %s", i, err)
@@ -597,7 +597,7 @@ var x25519Tests = []struct {
 	pemCert    string
 	signerCert string
 }{
-	{ED25519SIG, x25519CertPem, ed25519CertPem},
+	{Ed25519Sig, x25519CertPem, ed25519CertPem},
 }
 
 func TestX25519(t *testing.T) {
@@ -618,10 +618,10 @@ func TestX25519(t *testing.T) {
 			t.Errorf("%d: signature algorithm is %v, want %v", i, sa, test.sigAlgo)
 		}
 		if parsedKey, ok := cert.PublicKey.(X25519PublicKey); !ok {
-			t.Errorf("%d: wanted an ED25519 public key but found: %#v", i, parsedKey)
+			t.Errorf("%d: wanted an Ed25519 public key but found: %#v", i, parsedKey)
 		}
 		if pka := cert.PublicKeyAlgorithm; pka != X25519 {
-			t.Errorf("%d: public key algorithm is %v, want ED25519", i, pka)
+			t.Errorf("%d: public key algorithm is %v, want Ed25519", i, pka)
 		}
 		if err = cert.CheckSignatureFrom(signerCert); err != nil {
 			t.Errorf("%d: certificate verification failed: %s", i, err)
