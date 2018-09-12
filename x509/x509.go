@@ -349,6 +349,13 @@ var (
 	oidISOSignatureSHA1WithRSA = asn1.ObjectIdentifier{1, 3, 14, 3, 2, 29}
 )
 
+// cryptoNoDigest means that the signature algorithm does not require a hash
+// digest. The distinction between cryptoNoDigest and crypto.Hash(0)
+// is purely superficial. crypto.Hash(0) is used in place of a null value
+// when hashing is not supported for the given algorithm (as in the case of
+// MD2WithRSA below).
+var cryptoNoDigest = crypto.Hash(0)
+
 var signatureAlgorithmDetails = []struct {
 	algo       SignatureAlgorithm
 	oid        asn1.ObjectIdentifier
@@ -371,7 +378,7 @@ var signatureAlgorithmDetails = []struct {
 	{ECDSAWithSHA256, oidSignatureECDSAWithSHA256, ECDSA, crypto.SHA256},
 	{ECDSAWithSHA384, oidSignatureECDSAWithSHA384, ECDSA, crypto.SHA384},
 	{ECDSAWithSHA512, oidSignatureECDSAWithSHA512, ECDSA, crypto.SHA512},
-	{Ed25519Sig, oidKeyEd25519, Ed25519, crypto.Hash(0)},
+	{Ed25519Sig, oidKeyEd25519, Ed25519, cryptoNoDigest},
 }
 
 // pssParameters reflects the parameters in an AlgorithmIdentifier that
