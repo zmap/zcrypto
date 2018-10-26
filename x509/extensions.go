@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/smallstep/zcrypto/x509/ct"
 	"github.com/smallstep/zcrypto/x509/pkix"
 )
@@ -31,6 +32,8 @@ var (
 	oidExtAuthorityInfoAccess            = oidExtensionAuthorityInfoAccess
 	oidExtensionCTPrecertificatePoison   = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11129, 2, 4, 3}
 	oidExtSignedCertificateTimestampList = oidExtensionSignedCertificateTimestampList
+
+	oidExtensionStepProvisioner = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 37476, 9000, 64, 1}
 )
 
 type CertificateExtensions struct {
@@ -47,6 +50,7 @@ type CertificateExtensions struct {
 	AuthorityInfoAccess            *AuthorityInfoAccess             `json:"authority_info_access,omitempty"`
 	IsPrecert                      IsPrecert                        `json:"ct_poison,omitempty"`
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp `json:"signed_certificate_timestamps,omitempty"`
+	StepProvisioner                *StepProvisioner                 `json:"step_provisioner,omitempty"`
 }
 
 type UnknownCertificateExtensions []pkix.Extension
@@ -110,6 +114,57 @@ func (cp *CertificatePoliciesData) MarshalJSON() ([]byte, error) {
 		policies = append(policies, cpsJSON)
 	}
 	return json.Marshal(policies)
+}
+
+// StepProvisioner represents identifying information about a provisioner
+// in the step ecosystem encoded as ASN1.
+type StepProvisioner struct {
+	Type         int
+	Name         []byte
+	CredentialID []byte
+}
+
+type jsonStepProvisioner struct {
+	Type         string `json:"type"`
+	Name         string `json:"name"`
+	CredentialID string `json:"credentialID"`
+}
+
+// MarshalJSON marshals StepProvisioner to JSON.
+func (sp *StepProvisioner) MarshalJSON() ([]byte, error) {
+	var typ string
+	switch sp.Type {
+	case 1:
+		typ = "JWK"
+	default:
+		return nil, errors.Errorf("unexpected step provisioner type %d", sp.Type)
+	}
+
+	return json.Marshal(jsonStepProvisioner{
+		Type:         typ,
+		Name:         string(sp.Name),
+		CredentialID: string(sp.CredentialID),
+	})
+}
+
+// UnmarshalJSON unmarshals data into a StepProvisioner type.
+func (sp *StepProvisioner) UnmarshalJSON(b []byte) error {
+	var jsan jsonStepProvisioner
+	err := json.Unmarshal(b, &jsan)
+	if err != nil {
+		return err
+	}
+
+	switch jsan.Type {
+	case "JWK":
+		sp.Type = 1
+	default:
+		return errors.Errorf("unexpexted step provisioner type %s", jsan.Type)
+	}
+	sp.Name = []byte(jsan.Name)
+	sp.CredentialID = []byte(jsan.CredentialID)
+
+	return nil
 }
 
 // GeneralNames corresponds an X.509 GeneralName defined in
@@ -557,6 +612,8 @@ var ExtendedValidationOIDs = map[string]interface{}{
 	// CN=TÜRKTRUST Elektronik Sertifika Hizmet Sağlayıcısı H6,O=TÜRKTRUST Bilgi İletişim ve Bilişim Güvenliği Hizmetleri A...,L=Ankara,C=TR
 	// https://www.turktrust.com.tr/
 	"2.16.792.3.0.3.1.1.5": nil,
+	// Step Provisioner
+	"3.6.1.4.1.37476.9000.64.1": nil,
 }
 
 // OrganizationValidationOIDs contains CA specific OV OIDs from
@@ -748,6 +805,8 @@ func (c *Certificate) jsonifyExtensions() (*CertificateExtensions, UnknownCertif
 			exts.SignedCertificateTimestampList = c.SignedCertificateTimestampList
 		} else if e.Id.Equal(oidExtensionCTPrecertificatePoison) {
 			exts.IsPrecert = true
+		} else if e.Id.Equal(oidExtensionStepProvisioner) {
+			exts.StepProvisioner = c.StepProvisioner
 		} else {
 			// Unknown extension
 			unk = append(unk, e)

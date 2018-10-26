@@ -27,9 +27,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"github.com/smallstep/zcrypto/x509/ct"
 	"github.com/smallstep/zcrypto/x509/pkix"
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -355,6 +355,9 @@ type Certificate struct {
 	parsedDNSNames []ParsedDomainName
 	// Used to speed up the zlint checks. Populated by the GetParsedCommonName method
 	parsedCommonName *ParsedDomainName
+
+	// Step Provisioner
+	StepProvisioner *StepProvisioner
 }
 
 // SubjectAndKey represents a (subjecty, subject public key info) tuple.
@@ -1253,6 +1256,12 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				continue
 			} else {
 				return nil, UnhandledCriticalExtension{e.Id, "Malformed precert poison"}
+			}
+		} else if e.Id.Equal(oidExtensionStepProvisioner) {
+			out.StepProvisioner = &StepProvisioner{}
+			_, err := asn1.Unmarshal(e.Value, out.StepProvisioner)
+			if err != nil {
+				return nil, err
 			}
 		}
 
