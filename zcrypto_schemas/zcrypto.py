@@ -317,7 +317,7 @@ ParsedCertificate = SubRecordType({
     "validity": SubRecord({
         "start": Timestamp(doc="Timestamp of when certificate is first valid. Timezone is UTC."),
         "end": Timestamp(doc="Timestamp of when certificate expires. Timezone is UTC."),
-        "length": Signed64BitInteger(),
+        "length": Signed64BitInteger(doc="The length of time, in seconds, that the certificate is valid."),
     }, category="Validity Period"),
     "signature_algorithm": SignatureAlgorithm(),
     "subject_key_info": SubRecord({
