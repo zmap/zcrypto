@@ -753,8 +753,12 @@ func parseGeneralNames(value []byte) (otherNames []pkix.OtherName, dnsNames, ema
 	return
 }
 
-//TODO
 func parseCertificate(in *certificate) (*Certificate, error) {
+	return NewCertParser().parseCertificate(in)
+}
+
+//TODO
+func (cp *CertParser) parseCertificate(in *certificate) (*Certificate, error) {
 	out := new(Certificate)
 	out.Raw = in.Raw
 	out.RawTBSCertificate = in.TBSCertificate.Raw
@@ -834,10 +838,20 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 
 	// Check if self-signed
 	if bytes.Equal(out.RawSubject, out.RawIssuer) {
-		// Possibly self-signed, check the signature against itself.
-		if err := out.CheckSignature(out.SignatureAlgorithm, out.RawTBSCertificate, out.Signature); err == nil {
-			out.SelfSigned = true
+		certFingerprint := out.SPKISubjectFingerprint.Hex()
+		selfSigned, exists := cp.selfSignedCache[certFingerprint]
+		if !exists {
+			// Possibly self-signed, check the signature against itself.
+			if err := out.CheckSignature(out.SignatureAlgorithm, out.RawTBSCertificate, out.Signature); err == nil {
+				cp.selfSignedCache[certFingerprint] = true
+				selfSigned = true
+			} else {
+				cp.selfSignedCache[certFingerprint] = false
+				selfSigned = false
+			}
 		}
+
+		out.SelfSigned = selfSigned
 	}
 
 	out.NotBefore = in.TBSCertificate.Validity.NotBefore
