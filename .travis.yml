@@ -9,7 +9,7 @@ env:
 install:
   - go install -mod=vendor -v ./...
 
-test:
+script:
   - go test -mod=vendor -v ./...
 
 notifications:
