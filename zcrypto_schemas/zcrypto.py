@@ -20,24 +20,25 @@ def getUnknowns(known, range, unknown="unknown"):
     return ret
 
 
-# x509/pkix/pkix.go: Name
+
+# x509/pkix/pkix.go: Name (pkix/json.go - auxName)
 DistinguishedName = SubRecordType({
-    "serial_number": ListOf(String()),
-    "common_name": ListOf(WhitespaceAnalyzedString()),
-    "surname": ListOf(WhitespaceAnalyzedString()),
-    "country": ListOf(WhitespaceAnalyzedString()),
-    "locality": ListOf(WhitespaceAnalyzedString()),
-    "province": ListOf(WhitespaceAnalyzedString()),
-    "street_address": ListOf(WhitespaceAnalyzedString()),
-    "organization": ListOf(WhitespaceAnalyzedString()),
-    "organizational_unit": ListOf(WhitespaceAnalyzedString()),
-    "postal_code": ListOf(String()),
-    "domain_component": ListOf(WhitespaceAnalyzedString()),
-    "email_address": ListOf(WhitespaceAnalyzedString()),
-    "given_name": ListOf(WhitespaceAnalyzedString()),
-    "jurisdiction_country":ListOf(WhitespaceAnalyzedString()),
-    "jurisdiction_locality":ListOf(WhitespaceAnalyzedString()),
-    "jurisdiction_province":ListOf(WhitespaceAnalyzedString()),
+    "serial_number": ListOf(String(), doc="serialNumber elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.5)"),
+    "common_name": ListOf(WhitespaceAnalyzedString(), doc="commonName (CN) elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.3)"),
+    "surname": ListOf(WhitespaceAnalyzedString(), doc="surname (SN) elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.4)"),
+    "country": ListOf(WhitespaceAnalyzedString(), doc="countryName (C) elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.6)"),
+    "locality": ListOf(WhitespaceAnalyzedString(), doc="localityName (L) elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.7)"),
+    "province": ListOf(WhitespaceAnalyzedString(), doc="stateOrProviceName (ST) elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.8)"),
+    "street_address": ListOf(WhitespaceAnalyzedString(), doc="streetAddress (STREET) elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.9)"),
+    "organization": ListOf(WhitespaceAnalyzedString(), doc="organizationName (O) elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.10)"),
+    "organizational_unit": ListOf(WhitespaceAnalyzedString(), doc="organizationalUnit (OU) elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.11)"),
+    "postal_code": ListOf(String(), doc="postalCode elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.17)"),
+    "domain_component": ListOf(WhitespaceAnalyzedString(), doc="domainComponent (DC) elements of the distinguished name (OBJECT IDENTIFIER 0.9.2342.19200300.100.1.25)"),
+    "email_address": ListOf(WhitespaceAnalyzedString(), doc="emailAddress (E) elements of the distinguished name (OBJECT IDENTIFIER 1.2.840.113549.1.9.1)"),
+    "given_name": ListOf(WhitespaceAnalyzedString(), doc="givenName (G) elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.42)"),
+    "jurisdiction_country":ListOf(WhitespaceAnalyzedString(), doc="jurisdictionCountry elements of the distinguished name (OBJECT IDENTIFIER 1.3.6.1.4.1.311.60.2.1.3)"),
+    "jurisdiction_locality":ListOf(WhitespaceAnalyzedString(), doc="jurisdictionLocality elements of the distinguished name (OBJECT IDENTIFIER 1.3.6.1.4.1.311.60.2.1.1)"),
+    "jurisdiction_province":ListOf(WhitespaceAnalyzedString(), doc="jurisdictionStateOrProvice elements of the distinguished name (OBJECT IDENTIFIER 1.3.6.1.4.1.311.60.2.1.2)"),
 })
 
 # x509/pkix/pkix.go: Extension (via auxExtension in x509/json.go)
@@ -60,34 +61,34 @@ OtherName = SubRecordType({
     "value": IndexedBinary(doc="The raw otherName value."),
 })
 
-# x509/extensions.go: GeneralNames/jsonGeneralNames
+# x509/extensions.go: GeneralNames/jsonGeneralNames [RFC 5280 section 4.2.1.6]
 GeneralNames = SubRecordType({
-    "dns_names": ListOf(FQDN()),
-    "email_addresses": ListOf(EmailAddress()),
-    "ip_addresses": ListOf(IPAddress()),
-    "directory_names": ListOf(DistinguishedName()),
-    "edi_party_names": ListOf(EDIPartyName()),
-    "other_names": ListOf(OtherName()),
-    "registered_ids": ListOf(OID()),
-    "uniform_resource_identifiers": ListOf(URI()),
-})
+    "dns_names": ListOf(FQDN(), doc="dNSName entries in the GeneralName (IA5String, CHOICE tag 2)."),
+    "email_addresses": ListOf(EmailAddress(), doc="rfc822Name entries in the GeneralName (IA5String, CHOICE tag 1)."),
+    "ip_addresses": ListOf(IPAddress(), doc="iPAddress entries in the GeneralName (CHOICE tag 7)."),
+    "directory_names": ListOf(DistinguishedName(), doc="Parsed directoryName entries in the GeneralName (CHOICE tag 4)."),
+    "edi_party_names": ListOf(EDIPartyName(), doc="Parsed eDIPartyName entries in the GeneralName (CHOICE tag 5)"),
+    "other_names": ListOf(OtherName(), doc="otherName entries in the GeneralName (CHOICE tag 0). An arbitrary binary value identified by an OBJECT IDENTIFIER."),
+    "registered_ids": ListOf(OID(), doc="registeredID entries in the GeneralName (OBJECT IDENTIFIER, CHOICE tag 8). Stored in dotted-decimal format."),
+    "uniform_resource_identifiers": ListOf(URI(), doc="uniformResourceIdentifier entries in the GeneralName (CHOICE tag 6)."),
+}, doc="Parsed GeneralNames struct: component GeneralName values are grouped by their type. See RFC 5280 section 4.2.1.6.")
 
 # json/dhe.go: cryptoParameter / auxCryptoParameter
 CryptoParameter = SubRecordType({
-    "value": IndexedBinary(required=False),
-    "length": Unsigned16BitInteger(required=False),
-})
+    "value": IndexedBinary(required=False, doc="The value of the parameter."),
+    "length": Unsigned16BitInteger(required=False, doc="The length of the parameter."),
+}, doc="Generic parameter for a cryptographic algorithm.")
 
 # json/dhe.go: DHParams / auxDHParams:
 DHParams = SubRecordType({
-    "prime": CryptoParameter(),
-    "generator": CryptoParameter(),
-    "server_public": CryptoParameter(required=False),
-    "server_private": CryptoParameter(required=False),
-    "client_public": CryptoParameter(required=False),
-    "client_private": CryptoParameter(required=False),
-    "session_key": CryptoParameter(required=False),
-})
+    "prime": CryptoParameter(doc="The shared prime number."),
+    "generator": CryptoParameter(doc="The generator of the DH group."),
+    "server_public": CryptoParameter(doc="The server's public key.", required=False),
+    "server_private": CryptoParameter(doc="The server's private key. Usually does not coexist with client_private.", required=False),
+    "client_public": CryptoParameter(doc="The client's public key.", required=False),
+    "client_private": CryptoParameter(doc="The client's private key. Usually does not coexist with server_private.", required=False),
+    "session_key": CryptoParameter(doc="The session key.", required=False),
+}, doc="Parameters for the Diffie-Hellman key exchange.")
 
 # json/rsa.go: RSAPublicKey/auxRSAPublicKey (alias for crypto/rsa/PublicKey)
 RSAPublicKey = SubRecordType({
@@ -99,7 +100,7 @@ RSAPublicKey = SubRecordType({
 # json/rsa.go: RSAClientParams
 RSAClientParams = SubRecordType({
     "length": Unsigned16BitInteger(required=False, doc="Bit-length of modulus."),
-    "encrypted_pre_master_secret": Binary(required=False),
+    "encrypted_pre_master_secret": Binary(required=False, doc="The premaster secret encrypted with the server's public key."),
 }, doc="TLS key exchange parameters for RSA keys.")
 
 # json/names.go: ecIDToName
@@ -168,13 +169,14 @@ SCTVersion = Unsigned8BitInteger().with_args(doc="Version of the protocol to whi
 
 # x509/ct/types.go: SignedCertificateTimestamp.
 # Note: ztag_sct has "log_name": String(), which is not present in the go.
+# Note: The timestamp is actually seconds, not milliseconds (as in the ASN.1 structure) -- in MarshalJSON it divides by 1000.
 SCTRecord = SubRecordType({
     "version": SCTVersion(),
     "log_id": IndexedBinary(doc="The SHA-256 hash of the log's public key, calculated over the DER encoding of the key's SubjectPublicKeyInfo."),
-    "timestamp": Timestamp(doc="Timestamp at which the SCT was issued.", required=False),
+    "timestamp": Timestamp(doc="Time at which the SCT was issued (in seconds since the Unix epoch).", required=False),
     "extensions": Binary(doc="For future extensions to the protocol.", required=False),
     "signature": Binary(doc="The log's signature for this SCT."),
-})
+}, doc="A parsed SignedCertificateTimestamp record (See RFC 6962 section 3.2).")
 
 # x509/json.go: auxGeneralSubtreeIP (modifies GeneralSubtreeIP from x509.go)
 GeneralSubtreeIP = SubRecordType({
@@ -319,45 +321,46 @@ ParsedCertificate = SubRecordType({
         "end": Timestamp(doc="Timestamp of when certificate expires. Timezone is UTC."),
         "length": Signed64BitInteger(doc="The length of time, in seconds, that the certificate is valid."),
     }, category="Validity Period"),
-    "signature_algorithm": SignatureAlgorithm(),
+    "signature_algorithm": SignatureAlgorithm(doc="Identifies the algorithm used by the CA to sign the certificate."),
     "subject_key_info": SubRecord({
-        "fingerprint_sha256": HexString(),
-        "key_algorithm": PublicKeyAlgorithm(),
+        "fingerprint_sha256": HexString(doc="The SHA2-256 digest calculated over the certificate's DER-encoded SubjectPublicKeyInfo field."),
+        "key_algorithm": PublicKeyAlgorithm(doc="Identifies the type of key and any relevant parameters."),
         "rsa_public_key": RSAPublicKey(),
         "dsa_public_key": DSAPublicKey(),
         "ecdsa_public_key": ECDSAPublicKey(),
-    }, category="Public Key"),
+    }, category="Public Key", doc="The certificate's public key. Only one of the *_public_key fields will be set."),
     "extensions": SubRecord({
         "key_usage": SubRecord({
             "value": Unsigned16BitInteger(doc="Integer value of the bitmask in the extension"),
-            "digital_signature": Boolean(),
-            "certificate_sign": Boolean(),
-            "crl_sign": Boolean(),
-            "content_commitment": Boolean(),
-            "key_encipherment": Boolean(),
-            "data_encipherment": Boolean(),
-            "key_agreement": Boolean(),
-            "decipher_only": Boolean(),
-            "encipher_only": Boolean(),
-        }, category="Key Usage"),
+            "digital_signature": Boolean(doc="Indicates if the digitalSignature bit(0) is set."),
+            "certificate_sign": Boolean(doc="Indicates if the keyCertSign bit(5) is set."),
+            "crl_sign": Boolean(doc="Indicates if the cRLSign bit(6) is set."),
+            "content_commitment": Boolean(doc="Indicates if the contentCommitment bit(1) (formerly called nonRepudiation) is set."),
+            "key_encipherment": Boolean(doc="Indicates if the keyEncipherment bit(2) is set."),
+            "data_encipherment": Boolean(doc="Indicates if the dataEncipherment bit(3) is set."),
+            "key_agreement": Boolean(doc="Indicates if the keyAgreement bit(4) is set."),
+            "decipher_only": Boolean(doc="Indicates if the encipherOnly bit(7) is set."),
+            "encipher_only": Boolean(doc="Indicates if the decipherOnly bit(8) is set."),
+        }, category="Key Usage", doc="The parsed id-ce-keyUsage extension (2.5.29.15); see RFC 5280."),
         "basic_constraints": SubRecord({
-            "is_ca": Boolean(),
-            "max_path_len": Signed32BitInteger(),
-        }, category="Basic Constaints"),
-        "subject_alt_name": GeneralNames(category="Subject Alternate Names (SANs)", doc="The parsed Subject Alternative Name extension.", required=False),
-        "issuer_alt_name": GeneralNames(doc="The parsed Issuer Alternative Name extension.", required=False),
-        "crl_distribution_points": ListOf(URL(), category="CRL Distribution Points"),
+            "is_ca": Boolean(doc="Indicates that the certificate is permitted to sign other certificates."),
+            "max_path_len": Signed32BitInteger(doc="When present, gives the  maximum number of non-self-issued intermediate certificates that may follow this certificate in a valid certification path."),
+        }, category="Basic Constaints", doc="The parsed id-ce-basicConstraints extension (2.5.29.19); see RFC 5280."),
+        "subject_alt_name": GeneralNames(category="Subject Alternate Names (SANs)", doc="The parsed Subject Alternative Name extension (id-ce-subjectAltName, 2.5.29.17).", required=False),
+        "issuer_alt_name": GeneralNames(doc="The parsed Issuer Alternative Name extension (id-ce-issuerAltName, 2.5.29.18).", required=False),
+        "crl_distribution_points": ListOf(URL(), category="CRL Distribution Points", doc="The parsed id-ce-cRLDistributionPoints extension (2.5.29.31). Contents are a list of distributionPoint URLs (other distributionPoint types are omitted)."),
+        # NOTE: inherit the SubjAuthKeyId docs
         "authority_key_id": SubjAuthKeyId(category="Authority Key ID (AKID)"),
         "subject_key_id": SubjAuthKeyId(category="Subject Key ID (SKID)", validation_policy="warn"),
-        "extended_key_usage": ExtendedKeyUsage(exclude=["bigquery"]),
-        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies", validation_policy="warn", exclude=["bigquery"]),
+        "extended_key_usage": ExtendedKeyUsage(exclude=["bigquery"], doc="The parsed id-ce-extKeyUsage (2.5.29.37) extension."),
+        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies", validation_policy="warn", exclude=["bigquery"], doc="The parsed id-ce-certificatePolicies extension (2.5.29.32)."),
         "authority_info_access": SubRecord({
-            "ocsp_urls": ListOf(URL()),
-            "issuer_urls": ListOf(URL())
-        }, category="Authority Info Access (AIA)"),
+            "ocsp_urls": ListOf(URL(), doc="URLs of accessLocations with accessMethod of id-ad-ocsp, pointing to OCSP servers that can be used to check this certificate's revocation status. Only uniformResourceIdentifier accessLocations are supported; others are omitted."),
+            "issuer_urls": ListOf(URL(), doc="URLs of accessLocations with accessMethod of id-ad-caIssuers, pointing to locations where this certificate's issuers can be downloaded. Only uniformResourceIdentifier accessLocations are supported; others are omitted."),
+        }, category="Authority Info Access (AIA)", doc="The parsed id-pe-authorityInfoAccess extension (1.3.6.1.5.7.1.1). Only id-ad-caIssuers and id-ad-ocsp accessMethods are supported; others are omitted."),
         "name_constraints": SubRecord({
-            "critical": Boolean(),
-            "permitted_names": ListOf(FQDN()),
+            "critical": Boolean(doc="If set, clients unable to understand this extension must reject this certificate."),
+            "permitted_names": ListOf(FQDN(), doc="Permitted names of type dNSName."),
             # We do not schema email addresses as an EmailAddress per
             # rfc5280#section-4.2.1.10 documentation:
             # A name constraint for Internet mail addresses MAY specify a
@@ -373,27 +376,27 @@ ParsedCertificate = SubRecordType({
             # URIs).  For example, ".example.com" indicates all the Internet mail
             # addresses in the domain "example.com", but not Internet mail
             # addresses on the host "example.com".
-            "permitted_email_addresses": ListOf(WhitespaceAnalyzedString()),
-            "permitted_ip_addresses": ListOf(GeneralSubtreeIP()),
-            "permitted_directory_names": ListOf(DistinguishedName()),
-            "permitted_registered_ids": ListOf(OID()),
-            "permitted_edi_party_names": ListOf(EDIPartyName()),
-            "excluded_names": ListOf(FQDN()),
-            "excluded_email_addresses": ListOf(WhitespaceAnalyzedString()),
-            "excluded_ip_addresses": ListOf(GeneralSubtreeIP()),
-            "excluded_directory_names": ListOf(DistinguishedName()),
-            "excluded_registered_ids": ListOf(OID()),
-            "excluded_edi_party_names": ListOf(EDIPartyName()),
-        }, category="Name Constraints"),
-        "signed_certificate_timestamps": ListOf(SCTRecord(), category="Embedded SCTS / CT Poison"),
+            "permitted_email_addresses": ListOf(WhitespaceAnalyzedString(), doc="Permitted names of type rfc822Name."),
+            "permitted_ip_addresses": ListOf(GeneralSubtreeIP(), doc="Range of permitted names of type iPAddress."),
+            "permitted_directory_names": ListOf(DistinguishedName(), doc="Permitted names of type directoryName."),
+            "permitted_registered_ids": ListOf(OID(), doc="Permitted names of type registeredID."),
+            "permitted_edi_party_names": ListOf(EDIPartyName(), doc="Permitted names of type ediPartyName"),
+            "excluded_names": ListOf(FQDN(), doc="Excluded names of type dNSName."),
+            "excluded_email_addresses": ListOf(WhitespaceAnalyzedString(), doc="Excluded names of type rfc822Name."),
+            "excluded_ip_addresses": ListOf(GeneralSubtreeIP(), doc="Range of excluded names of type iPAddress."),
+            "excluded_directory_names": ListOf(DistinguishedName(), doc="Excluded names of type directoryName."),
+            "excluded_registered_ids": ListOf(OID(), doc="Excluded names of type registeredID."),
+            "excluded_edi_party_names": ListOf(EDIPartyName(), doc="Excluded names of type ediPartyName."),
+        }, category="Name Constraints", doc="The parsed id-ce-nameConstraints extension (2.5.29.30). Specifies a name space within which all child certificates' subject names MUST be located."),
+        "signed_certificate_timestamps": ListOf(SCTRecord(), category="Embedded SCTS / CT Poison", doc="The parsed Certificate Transparency SignedCertificateTimestampsList extension (1.3.6.1.4.1.11129.2.4.2); see RFC 6962."),
         "ct_poison": Boolean(category="Embedded SCTS / CT Poison", doc="This is true if the certificate possesses the Certificate Transparency Precertificate Poison extension (1.3.6.1.4.1.11129.2.4.3).")
     }),
     "unknown_extensions": ListOf(UnknownExtension(), category="Unknown Extensions", doc="List of raw extensions that were not recognized by the application."),
     "signature": SubRecord({
         "signature_algorithm": SignatureAlgorithm(),
-        "value": Binary(),
+        "value": Binary(doc="Contents of the signature BIT STRING."),
         "valid": Boolean(),
-        "self_signed": Boolean(),
+        "self_signed": Boolean(doc="Indicates whether the subject key was also used to sign the certificate."),
     }, category="Signature"),
     "fingerprint_md5": HexString(category="Fingerprint", doc="The MD5 digest over the DER encoding of the certificate, as a hexadecimal string."),
     "fingerprint_sha1": HexString(category="Fingerprint", doc="The SHA1 digest over the DER encoding of the certificate, as a hexadecimal string."),
@@ -403,10 +406,9 @@ ParsedCertificate = SubRecordType({
     "tbs_noct_fingerprint": HexString(category="Fingerprint", doc="The SHA2-256 digest over the DER encoding of the certificate's TBSCertificate, *with any CT extensions omitted*, as a hexadecimal string."),
     "names": ListOf(FQDN(), category="Basic Information", doc="A list of subject names in the certificate, including the Subject CommonName and SubjectAltName DNSNames, IPAddresses and URIs."),
     # NOTE: ztag has "__expanded_names": ListOf(String())
-    # TODO: What Enum() values?
-    # [ "unknown", "DV", "OV", "EV" ]
-    "validation_level": Enum(values=["unknown", "DV", "OV", "EV"], category="Misc"),
-    "redacted": Boolean(category="Misc", doc="This is set if any of the certificate's names start with a '?'."),
+    # Calculated in parseCertificate() in x509.go
+    "validation_level": Enum(values=["unknown", "DV", "OV", "EV"], category="Misc", doc="How the certificate is validated -- Domain validated (DV), Organization Validated (OV), Extended Validation (EV), or unknown."),
+    "redacted": Boolean(category="Misc", doc="This is set if any of the certificate's names contain redacted fields."),
 })
 
 # x509/validation.go: Validation
@@ -616,13 +618,13 @@ ClientKeyExchange = SubRecordType({
 MasterSecret = SubRecordType({
     "value": Binary(),
     "length": GoInt(),
-})
+}, doc="The TLS master secret derived from the premaster secret (see e.g. RFC 5246 section 8.1).")
 
 # tls/tls_handshake.go: PreMasterSecret
 PreMasterSecret = SubRecordType({
     "value": Binary(),
     "length": GoInt(),
-})
+}, doc="The TLS premaster secret used to during TLS key agreement to arrive at a master secret (see e.g. RFC 5246 section 8.1).")
 
 # tls/tls_handshake.go: KeyMaterial
 KeyMaterial = SubRecordType({
@@ -632,7 +634,7 @@ KeyMaterial = SubRecordType({
 
 # x509/validation.go: type Validation struct
 TLSCertificateValidation = SubRecordType({
-    "matches_domain": Boolean(),
+    "matches_domain": Boolean(doc="Indicates whether the server's domain name matches that in the certificate."),
     #"stores":SubRecord({
     #    "nss":zgrab_server_certificate_valid,
     #    "microsoft":zgrab_server_certificate_valid,
@@ -640,11 +642,12 @@ TLSCertificateValidation = SubRecordType({
     #    "java":zgrab_server_certificate_valid,
     #    "android":zgrab_server_certificate_valid,
     #})
-    "browser_trusted": Boolean(),
-    "browser_error": String()
+    "browser_trusted": Boolean(doc="Indicates whether the certificate is trusted by the standard browser certificate stores."),
+    "browser_error": String(doc="Description of the reason browser_trusted == false.")
 })
 
 # tls/tls_handshake.go: ServerHandshake
+# Note: docs inherited where possible
 TLSHandshake = SubRecordType({
     "client_hello": ClientHello(),
     "server_hello": ServerHello(),
@@ -672,4 +675,4 @@ HeartbleedLog = SubRecordType({
 })
 
 # zcrypto/x509/chain.go: type CertificateChain []*Certificate
-certificate_chain = ListOf(ParsedCertificate())
+certificate_chain = ListOf(ParsedCertificate(), doc="Certificates used in validating another certificate.")
