@@ -1,0 +1,15 @@
+language: go
+dist: trusty
+go:
+- 1.10.2
+before_install:
+- go get ./...
+- go get -t ./...
+script:
+- make
+- make test
+notifications:
+  email:
+  - zmap-devel@umich.edu
+  slack:
+    secure: oeKepvGdlO1GwvcqaC05GTP22FQI2e0H5K9EklqNDNPbnXUZGdc39H/m3YxXz4jXL4dE+9Xmg12VYLYIvgXR2mO9vSZVnw+2Cx0LNiDxegN4pzCOF+Pm9uMT+3Vb7MTcCecPlL58rwQY9Z9lPFE5Xgh1X31Wc0oMtAV1+Qlq3UzCfRsoVgqwjmseLWYdu+MG2uQ63O5Pizk29LHvhmEW0x7lZZm3DNK5Od9Zp3odHtiPOiJgDPX6iaUOzFXkPdXZGac59z3Kvgj/kkTkvYeOY/GVlZ1UPYpPmrw73F7zHT7JWQzlQM03BkyuFTEgQJn6L2GdMVSdk3RXt1sDgrFXERxfluJ9UJhUoCwG4LutrDYpNTUZR4/FaT7BplHMbndh6LfuQ89bBLWQ5kKCntRYdzRkzh3bc4nTwZKEyth3URWQTsdeclfa4UPAFTpeMtH23ecNKeaERajKV9G3gjcvXwUsLywksOSXiVsOE9WbAjCpzJLrfT0TdkRattJvbwe4WCvwFkatyAb5WhUIsC/hQrwPDMgsLoXdGL/RnjEVdyMQNAnSt5bAu2LpmWQWrLoavyYEiQGMc6biu98z2Hu4OoqfAshN49tTgbv/9wn8jOxw2i0hir2PvulJcgLL4BMdmMvcFWdzRTyMcxhSoVv+hyhrSywf3ZVKcKDuWTn9jUQ=
