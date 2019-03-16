@@ -1185,6 +1185,9 @@ func TestParseTorServiceDescriptorSyntax(t *testing.T) {
 		0x7b, 0x7d, 0xbe, 0x47, 0x2a, 0xac, 0x62, 0x78,
 		0x30, 0x71, 0xb0, 0x39, 0xb8, 0x66, 0x38, 0x5c,
 	}
+	mockAlgorithm := pkix.AlgorithmIdentifier{
+		Algorithm: asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 1},
+	}
 	testCases := []struct {
 		Name                          string
 		InputFilename                 string
@@ -1194,67 +1197,63 @@ func TestParseTorServiceDescriptorSyntax(t *testing.T) {
 		{
 			Name:           "empty Tor service descriptor extension",
 			InputFilename:  "onionSANEmptyServDesc.pem",
-			ExpectedErrMsg: "invalid TorServiceDescriptor extension (oid 2.23.140.1.31): unable to unmarshal outer SEQUENCE",
+			ExpectedErrMsg: "asn1: syntax error: unable to unmarshal outer TorServiceDescriptor SEQUENCE",
 		},
 		{
 			Name:           "invalid outer SEQUENCE in service descriptor extension",
 			InputFilename:  "onionSANServDescNoOuterSeq.pem",
-			ExpectedErrMsg: "invalid TorServiceDescriptor extension (oid 2.23.140.1.31): invalid outer SEQUENCE",
+			ExpectedErrMsg: "asn1: syntax error: invalid outer TorServiceDescriptor SEQUENCE",
 		},
 		{
 			Name:           "data trailing outer SEQUENCE in service descriptor extension",
 			InputFilename:  "onionSANBadServDescOuterSeqTrailing.pem",
-			ExpectedErrMsg: "invalid TorServiceDescriptor extension (oid 2.23.140.1.31): trailing data after outer SEQUENCE",
+			ExpectedErrMsg: "asn1: syntax error: trailing data after outer TorServiceDescriptor SEQUENCE",
 		},
 		{
 			Name:           "data trailing inner TorServiceDescriptorHash SEQUENCE",
 			InputFilename:  "onionSANBadServDescInnerSeqTrailing.pem",
-			ExpectedErrMsg: "invalid TorServiceDescriptor extension (oid 2.23.140.1.31): trailing data after TorServiceDescriptorHash",
+			ExpectedErrMsg: "asn1: syntax error: trailing data after TorServiceDescriptorHash",
 		},
 		{
 			Name:           "bad service descriptor onion URI field tag",
 			InputFilename:  "onionSANBadServDescOnionURI.pem",
-			ExpectedErrMsg: "invalid TorServiceDescriptor extension (oid 2.23.140.1.31): TorServiceDescriptorHash missing non-compound UTF8String tag",
-		},
-		{
-			Name:           "bad service descriptor onion URI utf8 bytes",
-			InputFilename:  "onionSANBadServDescInvalidUTF8OnionURI.pem",
-			ExpectedErrMsg: "invalid TorServiceDescriptor extension (oid 2.23.140.1.31): TorServiceDescriptorHash UTF8String value was not valid UTF-8",
-		},
-		{
-			Name:           "bad service descriptor hash bit length",
-			InputFilename:  "onionSANBadServDescBitLen.pem",
-			ExpectedErrMsg: "invalid TorServiceDescriptor extension (oid 2.23.140.1.31): TorServiceDescriptorHash subjectPublicKeyHash bit length is <= 0",
+			ExpectedErrMsg: "asn1: syntax error: TorServiceDescriptorHash missing non-compound UTF8String tag",
 		},
 		{
 			Name:           "bad service descriptor algorithm field",
 			InputFilename:  "onionSANBadServDescAlgorithm.pem",
-			ExpectedErrMsg: "invalid TorServiceDescriptor extension (oid 2.23.140.1.31): error unmarshaling TorServiceDescriptorHash algorithm",
+			ExpectedErrMsg: "asn1: syntax error: error unmarshaling TorServiceDescriptorHash algorithm",
 		},
 		{
 			Name:           "bad service descriptor hash field",
 			InputFilename:  "onionSANBadServDescHash.pem",
-			ExpectedErrMsg: "invalid TorServiceDescriptor extension (oid 2.23.140.1.31): error unmarshaling TorServiceDescriptorHash Hash",
+			ExpectedErrMsg: "asn1: syntax error: error unmarshaling TorServiceDescriptorHash Hash",
 		},
 		{
-			Name:           "bad service descriptor unknown hash algorithm",
-			InputFilename:  "onionSANBadServDescUnknownHashAlg.pem",
-			ExpectedErrMsg: `invalid TorServiceDescriptor extension (oid 2.23.140.1.31): subjectPublicKeyHash alg (oid 2.16.840.1.101.3.4.2.99) is unknown`,
-		},
-		{
-			Name:           "bad service descriptor hash alg and hash bit len mismatch",
-			InputFilename:  "onionSANBadServDescHashMismatch.pem",
-			ExpectedErrMsg: "invalid TorServiceDescriptor extension (oid 2.23.140.1.31): subjectPublicKeyHash alg is SHA256 but bit length is 128 not 256",
+			Name:          "valid service descriptor unknown hash algorithm",
+			InputFilename: "onionSANBadServDescUnknownHashAlg.pem",
+			ExpectedTorServiceDescriptors: []*TorServiceDescriptorHash{
+				{
+					Onion:         "https://zmap.onion",
+					AlgorithmName: "Unknown",
+					Algorithm: pkix.AlgorithmIdentifier{
+						Algorithm: asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 99},
+					},
+					HashBits: 256,
+					Hash:     mockHashBytes,
+				},
+			},
 		},
 		{
 			Name:          "valid service descriptor extension",
 			InputFilename: "onionSANGoodServDesc.pem",
 			ExpectedTorServiceDescriptors: []*TorServiceDescriptorHash{
 				{
-					Onion:    "https://zmap.onion",
-					Alg:      "SHA256",
-					HashBits: 256,
-					Hash:     mockHashBytes,
+					Onion:         "https://zmap.onion",
+					AlgorithmName: "SHA256",
+					Algorithm:     mockAlgorithm,
+					HashBits:      256,
+					Hash:          mockHashBytes,
 				},
 			},
 		},
@@ -1263,16 +1262,18 @@ func TestParseTorServiceDescriptorSyntax(t *testing.T) {
 			InputFilename: "onionSANMultiGoodServDesc.pem",
 			ExpectedTorServiceDescriptors: []*TorServiceDescriptorHash{
 				{
-					Onion:    "https://zmap.onion",
-					Alg:      "SHA256",
-					HashBits: 256,
-					Hash:     mockHashBytes,
+					Onion:         "https://zmap.onion",
+					AlgorithmName: "SHA256",
+					Algorithm:     mockAlgorithm,
+					HashBits:      256,
+					Hash:          mockHashBytes,
 				},
 				{
-					Onion:    "https://other.onion",
-					Alg:      "SHA256",
-					HashBits: 256,
-					Hash:     mockHashBytes,
+					Onion:         "https://other.onion",
+					AlgorithmName: "SHA256",
+					Algorithm:     mockAlgorithm,
+					HashBits:      256,
+					Hash:          mockHashBytes,
 				},
 			},
 		},

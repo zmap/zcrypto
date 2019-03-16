@@ -18,7 +18,6 @@ import (
 	_ "crypto/sha512"
 	"io"
 	"strings"
-	"unicode/utf8"
 
 	"bytes"
 	"crypto"
@@ -1199,10 +1198,11 @@ type distributionPointName struct {
 // (computed over the DER encoding of the ASN.1 SubjectPublicKey of the .onion
 // service), and the number of bits in the hash bytes.
 type TorServiceDescriptorHash struct {
-	Onion    string
-	Alg      string
-	Hash     []byte
-	HashBits int
+	Onion         string
+	Algorithm     pkix.AlgorithmIdentifier
+	AlgorithmName string
+	Hash          []byte
+	HashBits      int
 }
 
 func maxValidationLevel(a, b CertValidationLevel) CertValidationLevel {
@@ -1948,21 +1948,24 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 // there are any structural errors related to the ASN.1 content (wrong tags,
 // trailing data, missing fields, etc).
 func parseTorServiceDescriptorSyntax(ext pkix.Extension) ([]*TorServiceDescriptorHash, error) {
-	baseErr := fmt.Sprintf(
-		"invalid TorServiceDescriptor extension (oid %s)", oidBRTorServiceDescriptor)
-
 	// TorServiceDescriptorSyntax ::=
 	//    SEQUENCE ( 1..MAX ) of TorServiceDescriptorHash
 	var seq asn1.RawValue
 	rest, err := asn1.Unmarshal(ext.Value, &seq)
 	if err != nil {
-		return nil, fmt.Errorf("%s: unable to unmarshal outer SEQUENCE", baseErr)
+		return nil, asn1.SyntaxError{
+			Msg: "unable to unmarshal outer TorServiceDescriptor SEQUENCE",
+		}
 	}
 	if len(rest) != 0 {
-		return nil, fmt.Errorf("%s: trailing data after outer SEQUENCE", baseErr)
+		return nil, asn1.SyntaxError{
+			Msg: "trailing data after outer TorServiceDescriptor SEQUENCE",
+		}
 	}
 	if seq.Tag != asn1.TagSequence || seq.Class != asn1.ClassUniversal || !seq.IsCompound {
-		return nil, fmt.Errorf("%s: invalid outer SEQUENCE", baseErr)
+		return nil, asn1.SyntaxError{
+			Msg: "invalid outer TorServiceDescriptor SEQUENCE",
+		}
 	}
 
 	var descriptors []*TorServiceDescriptorHash
@@ -1971,7 +1974,7 @@ func parseTorServiceDescriptorSyntax(ext pkix.Extension) ([]*TorServiceDescripto
 		var descriptor *TorServiceDescriptorHash
 		descriptor, rest, err = parseTorServiceDescriptorHash(rest)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", baseErr, err)
+			return nil, err
 		}
 		descriptors = append(descriptors, descriptor)
 	}
@@ -1992,16 +1995,16 @@ func parseTorServiceDescriptorHash(data []byte) (*TorServiceDescriptorHash, []by
 	var err error
 	data, err = asn1.Unmarshal(data, &outerSeq)
 	if err != nil {
-		return nil,
-			data,
-			errors.New("error unmarshaling TorServiceDescriptorHash SEQUENCE")
+		return nil, data, asn1.SyntaxError{
+			Msg: "error unmarshaling TorServiceDescriptorHash SEQUENCE",
+		}
 	}
 	if outerSeq.Tag != asn1.TagSequence ||
 		outerSeq.Class != asn1.ClassUniversal ||
 		!outerSeq.IsCompound {
-		return nil,
-			data,
-			errors.New("TorServiceDescriptorHash missing compound SEQUENCE tag")
+		return nil, data, asn1.SyntaxError{
+			Msg: "TorServiceDescriptorHash missing compound SEQUENCE tag",
+		}
 	}
 	fieldData := outerSeq.Bytes
 
@@ -2009,28 +2012,36 @@ func parseTorServiceDescriptorHash(data []byte) (*TorServiceDescriptorHash, []by
 	var rawOnionURI asn1.RawValue
 	fieldData, err = asn1.Unmarshal(fieldData, &rawOnionURI)
 	if err != nil {
-		return nil,
-			data,
-			errors.New("error unmarshaling TorServiceDescriptorHash onionURI")
+		return nil, data, asn1.SyntaxError{
+			Msg: "error unmarshaling TorServiceDescriptorHash onionURI",
+		}
 	}
 	if rawOnionURI.Tag != asn1.TagUTF8String ||
 		rawOnionURI.Class != asn1.ClassUniversal ||
 		rawOnionURI.IsCompound {
-		return nil,
-			data,
-			errors.New("TorServiceDescriptorHash missing non-compound UTF8String tag")
-	}
-	if !utf8.Valid(rawOnionURI.Bytes) {
-		return nil,
-			data,
-			errors.New("TorServiceDescriptorHash UTF8String value was not valid UTF-8")
+		return nil, data, asn1.SyntaxError{
+			Msg: "TorServiceDescriptorHash missing non-compound UTF8String tag",
+		}
 	}
 
 	// Unmarshal and verify the structure of the algorithm UTF8String field.
 	var algorithm pkix.AlgorithmIdentifier
 	fieldData, err = asn1.Unmarshal(fieldData, &algorithm)
 	if err != nil {
-		return nil, nil, errors.New("error unmarshaling TorServiceDescriptorHash algorithm")
+		return nil, nil, asn1.SyntaxError{
+			Msg: "error unmarshaling TorServiceDescriptorHash algorithm",
+		}
+	}
+
+	var algorithmName string
+	if algorithm.Algorithm.Equal(oidSHA256) {
+		algorithmName = "SHA256"
+	} else if algorithm.Algorithm.Equal(oidSHA384) {
+		algorithmName = "SHA384"
+	} else if algorithm.Algorithm.Equal(oidSHA512) {
+		algorithmName = "SHA512"
+	} else {
+		algorithmName = "Unknown"
 	}
 
 	// Unmarshal and verify the structure of the Subject Public Key Hash BitString
@@ -2038,52 +2049,25 @@ func parseTorServiceDescriptorHash(data []byte) (*TorServiceDescriptorHash, []by
 	var spkh asn1.BitString
 	fieldData, err = asn1.Unmarshal(fieldData, &spkh)
 	if err != nil {
-		return nil, data, errors.New("error unmarshaling TorServiceDescriptorHash Hash")
-	}
-
-	if spkh.BitLength == 0 {
-		return nil, data, errors.New("TorServiceDescriptorHash subjectPublicKeyHash bit length is <= 0")
-	}
-
-	var algorithmName string
-	if algorithm.Algorithm.Equal(oidSHA256) {
-		algorithmName = "SHA256"
-		if spkh.BitLength != 256 {
-			return nil, data, fmt.Errorf(
-				"subjectPublicKeyHash alg is SHA256 but bit length is %d not %d",
-				spkh.BitLength, 256)
+		return nil, data, asn1.SyntaxError{
+			Msg: "error unmarshaling TorServiceDescriptorHash Hash",
 		}
-	} else if algorithm.Algorithm.Equal(oidSHA384) {
-		algorithmName = "SHA384"
-		if spkh.BitLength != 384 {
-			return nil, data, fmt.Errorf(
-				"subjectPublicKeyHash alg is SHA384 but bit length is %d not %d",
-				spkh.BitLength, 384)
-		}
-	} else if algorithm.Algorithm.Equal(oidSHA512) {
-		algorithmName = "SHA512"
-		if spkh.BitLength != 512 {
-			return nil, data, fmt.Errorf(
-				"subjectPublicKeyHash alg is SHA512 but bit length is %d not %d",
-				spkh.BitLength, 512)
-		}
-	} else {
-		return nil, data, fmt.Errorf(
-			"subjectPublicKeyHash alg (oid %s) is unknown",
-			algorithm.Algorithm)
 	}
 
 	// There should be no trailing data after the TorServiceDescriptorHash
 	// SEQUENCE.
 	if len(fieldData) > 0 {
-		return nil, data, errors.New("trailing data after TorServiceDescriptorHash")
+		return nil, data, asn1.SyntaxError{
+			Msg: "trailing data after TorServiceDescriptorHash",
+		}
 	}
 
 	return &TorServiceDescriptorHash{
-		Onion:    string(rawOnionURI.Bytes),
-		Alg:      algorithmName,
-		HashBits: spkh.BitLength,
-		Hash:     spkh.Bytes,
+		Onion:         string(rawOnionURI.Bytes),
+		Algorithm:     algorithm,
+		AlgorithmName: algorithmName,
+		HashBits:      spkh.BitLength,
+		Hash:          spkh.Bytes,
 	}, data, nil
 }
 
