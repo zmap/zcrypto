@@ -18,6 +18,7 @@ import (
 	_ "crypto/sha512"
 	"io"
 	"strings"
+	"unicode/utf8"
 
 	"bytes"
 	"crypto"
@@ -817,9 +818,14 @@ type Certificate struct {
 	parsedDNSNames []ParsedDomainName
 	// Used to speed up the zlint checks. Populated by the GetParsedCommonName method
 	parsedCommonName *ParsedDomainName
+
+	// CAB Forum Tor Service Descriptor Hash Extensions (see EV Guidelines
+	// Appendix F)
+	TorServiceDescriptors []*TorServiceDescriptorHash
 }
 
-// ParsedDomainName is a structure holding a parsed domain name (CommonName or DNS SAN) and a parsing error.
+// ParsedDomainName is a structure holding a parsed domain name (CommonName or
+// DNS SAN) and a parsing error.
 type ParsedDomainName struct {
 	DomainString string
 	ParsedDomain *publicsuffix.DomainName
@@ -1181,6 +1187,22 @@ type distributionPoint struct {
 type distributionPointName struct {
 	FullName     asn1.RawValue    `asn1:"optional,tag:0"`
 	RelativeName pkix.RDNSequence `asn1:"optional,tag:1"`
+}
+
+// TorServiceDescriptorHash is a structure corrsponding to the
+// TorServiceDescriptorHash SEQUENCE described in Appendix F ("Issuance of
+// Certificates for .onion Domain Names").
+//
+// Each TorServiceDescriptorHash holds an onion URI (a utf8 string with the
+// .onion address that was validated), a hash algorithm name (computed based on
+// the pkix.AlgorithmIdentifier in the TorServiceDescriptorHash), the hash bytes
+// (computed over the DER encoding of the ASN.1 SubjectPublicKey of the .onion
+// service), and the number of bits in the hash bytes.
+type TorServiceDescriptorHash struct {
+	Onion    string
+	Alg      string
+	Hash     []byte
+	HashBits int
 }
 
 func maxValidationLevel(a, b CertValidationLevel) CertValidationLevel {
@@ -1904,6 +1926,12 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 			} else {
 				return nil, UnhandledCriticalExtension{e.Id, "Malformed precert poison"}
 			}
+		} else if e.Id.Equal(oidBRTorServiceDescriptor) {
+			descs, err := parseTorServiceDescriptorSyntax(e)
+			if err != nil {
+				return nil, err
+			}
+			out.TorServiceDescriptors = descs
 		}
 
 		//if e.Critical {
@@ -1912,6 +1940,151 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 	}
 
 	return out, nil
+}
+
+// parseTorServiceDescriptorSyntax parses the given pkix.Extension (assumed to
+// have OID == oidBRTorServiceDescriptor) and returns a slice of parsed
+// TorServiceDescriptorHash objects, or an error. An error will be returned if
+// there are any structural errors related to the ASN.1 content (wrong tags,
+// trailing data, missing fields, etc).
+func parseTorServiceDescriptorSyntax(ext pkix.Extension) ([]*TorServiceDescriptorHash, error) {
+	baseErr := fmt.Sprintf(
+		"invalid TorServiceDescriptor extension (oid %s)", oidBRTorServiceDescriptor)
+
+	// TorServiceDescriptorSyntax ::=
+	//    SEQUENCE ( 1..MAX ) of TorServiceDescriptorHash
+	var seq asn1.RawValue
+	rest, err := asn1.Unmarshal(ext.Value, &seq)
+	if err != nil {
+		return nil, fmt.Errorf("%s: unable to unmarshal outer SEQUENCE", baseErr)
+	}
+	if len(rest) != 0 {
+		return nil, fmt.Errorf("%s: trailing data after outer SEQUENCE", baseErr)
+	}
+	if seq.Tag != asn1.TagSequence || seq.Class != asn1.ClassUniversal || !seq.IsCompound {
+		return nil, fmt.Errorf("%s: invalid outer SEQUENCE", baseErr)
+	}
+
+	var descriptors []*TorServiceDescriptorHash
+	rest = seq.Bytes
+	for len(rest) > 0 {
+		var descriptor *TorServiceDescriptorHash
+		descriptor, rest, err = parseTorServiceDescriptorHash(rest)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", baseErr, err)
+		}
+		descriptors = append(descriptors, descriptor)
+	}
+	return descriptors, nil
+}
+
+// parseTorServiceDescriptorHash unmarshals a SEQUENCE from the provided data
+// and parses a TorServiceDescriptorHash using the data contained in the
+// sequence. The TorServiceDescriptorHash object and the remaining data are
+// returned if no error occurs.
+func parseTorServiceDescriptorHash(data []byte) (*TorServiceDescriptorHash, []byte, error) {
+	// TorServiceDescriptorHash:: = SEQUENCE {
+	//   onionURI UTF8String
+	//   algorithm AlgorithmIdentifier
+	//   subjectPublicKeyHash BIT STRING
+	// }
+	var outerSeq asn1.RawValue
+	var err error
+	data, err = asn1.Unmarshal(data, &outerSeq)
+	if err != nil {
+		return nil,
+			data,
+			errors.New("error unmarshaling TorServiceDescriptorHash SEQUENCE")
+	}
+	if outerSeq.Tag != asn1.TagSequence ||
+		outerSeq.Class != asn1.ClassUniversal ||
+		!outerSeq.IsCompound {
+		return nil,
+			data,
+			errors.New("TorServiceDescriptorHash missing compound SEQUENCE tag")
+	}
+	fieldData := outerSeq.Bytes
+
+	// Unmarshal and verify the structure of the onionURI UTF8String field.
+	var rawOnionURI asn1.RawValue
+	fieldData, err = asn1.Unmarshal(fieldData, &rawOnionURI)
+	if err != nil {
+		return nil,
+			data,
+			errors.New("error unmarshaling TorServiceDescriptorHash onionURI")
+	}
+	if rawOnionURI.Tag != asn1.TagUTF8String ||
+		rawOnionURI.Class != asn1.ClassUniversal ||
+		rawOnionURI.IsCompound {
+		return nil,
+			data,
+			errors.New("TorServiceDescriptorHash missing non-compound UTF8String tag")
+	}
+	if !utf8.Valid(rawOnionURI.Bytes) {
+		return nil,
+			data,
+			errors.New("TorServiceDescriptorHash UTF8String value was not valid UTF-8")
+	}
+
+	// Unmarshal and verify the structure of the algorithm UTF8String field.
+	var algorithm pkix.AlgorithmIdentifier
+	fieldData, err = asn1.Unmarshal(fieldData, &algorithm)
+	if err != nil {
+		return nil, nil, errors.New("error unmarshaling TorServiceDescriptorHash algorithm")
+	}
+
+	// Unmarshal and verify the structure of the Subject Public Key Hash BitString
+	// field.
+	var spkh asn1.BitString
+	fieldData, err = asn1.Unmarshal(fieldData, &spkh)
+	if err != nil {
+		return nil, data, errors.New("error unmarshaling TorServiceDescriptorHash Hash")
+	}
+
+	if spkh.BitLength == 0 {
+		return nil, data, errors.New("TorServiceDescriptorHash subjectPublicKeyHash bit length is <= 0")
+	}
+
+	var algorithmName string
+	if algorithm.Algorithm.Equal(oidSHA256) {
+		algorithmName = "SHA256"
+		if spkh.BitLength != 256 {
+			return nil, data, fmt.Errorf(
+				"subjectPublicKeyHash alg is SHA256 but bit length is %d not %d",
+				spkh.BitLength, 256)
+		}
+	} else if algorithm.Algorithm.Equal(oidSHA384) {
+		algorithmName = "SHA384"
+		if spkh.BitLength != 384 {
+			return nil, data, fmt.Errorf(
+				"subjectPublicKeyHash alg is SHA384 but bit length is %d not %d",
+				spkh.BitLength, 384)
+		}
+	} else if algorithm.Algorithm.Equal(oidSHA512) {
+		algorithmName = "SHA512"
+		if spkh.BitLength != 512 {
+			return nil, data, fmt.Errorf(
+				"subjectPublicKeyHash alg is SHA512 but bit length is %d not %d",
+				spkh.BitLength, 512)
+		}
+	} else {
+		return nil, data, fmt.Errorf(
+			"subjectPublicKeyHash alg (oid %s) is unknown",
+			algorithm.Algorithm)
+	}
+
+	// There should be no trailing data after the TorServiceDescriptorHash
+	// SEQUENCE.
+	if len(fieldData) > 0 {
+		return nil, data, errors.New("trailing data after TorServiceDescriptorHash")
+	}
+
+	return &TorServiceDescriptorHash{
+		Onion:    string(rawOnionURI.Bytes),
+		Alg:      algorithmName,
+		HashBits: spkh.BitLength,
+		Hash:     spkh.Bytes,
+	}, data, nil
 }
 
 // ParseCertificate parses a single certificate from the given ASN.1 DER data.
@@ -2035,6 +2208,7 @@ var (
 var (
 	oidAuthorityInfoAccessOcsp    = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 48, 1}
 	oidAuthorityInfoAccessIssuers = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 48, 2}
+	oidBRTorServiceDescriptor     = asn1.ObjectIdentifier{2, 23, 140, 1, 31}
 )
 
 // oidNotInExtensions returns whether an extension with the given oid exists in
@@ -2858,7 +3032,7 @@ func ParseCertificateRequest(asn1Data []byte) (*CertificateRequest, error) {
 
 func parseCertificateRequest(in *certificateRequest) (*CertificateRequest, error) {
 	out := &CertificateRequest{
-		Raw: in.Raw,
+		Raw:                      in.Raw,
 		RawTBSCertificateRequest: in.TBSCSR.Raw,
 		RawSubjectPublicKeyInfo:  in.TBSCSR.PublicKey.Raw,
 		RawSubject:               in.TBSCSR.Subject.FullBytes,
