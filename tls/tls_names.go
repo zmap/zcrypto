@@ -490,7 +490,7 @@ func signatureToName(n string) uint8 {
 			return k
 		}
 	}
-	s,_ := strconv.ParseInt(strings.TrimPrefix(n, "unknown."), 10, 8)
+	s,_ := strconv.ParseInt(strings.TrimPrefix(n, "unknown."), 10, 32)
 	return uint8(s)
 }
 
@@ -500,7 +500,7 @@ func hashToName(n string) uint8 {
 			return k
 		}
 	}
-	h,_ := strconv.ParseInt(strings.TrimPrefix(n, "unknown."), 10, 8)
+	h,_ := strconv.ParseInt(strings.TrimPrefix(n, "unknown."), 10, 32)
 	return uint8(h)
 }
 
