@@ -4,7 +4,10 @@
 
 package tls
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
 var signatureNames map[uint8]string
 var hashNames map[uint8]string
@@ -479,6 +482,26 @@ func nameForHash(h uint8) string {
 	}
 	num := strconv.Itoa(int(h))
 	return "unknown." + num
+}
+
+func signatureToName(n string) uint8 {
+	for k,v := range(signatureNames) {
+		if v == n {
+			return k
+		}
+	}
+	s,_ := strconv.ParseInt(strings.TrimPrefix(n, "unknown."), 10, 32)
+	return uint8(s)
+}
+
+func hashToName(n string) uint8 {
+	for k,v := range(hashNames) {
+		if v == n {
+			return k
+		}
+	}
+	h,_ := strconv.ParseInt(strings.TrimPrefix(n, "unknown."), 10, 32)
+	return uint8(h)
 }
 
 func nameForSuite(cs uint16) string {
