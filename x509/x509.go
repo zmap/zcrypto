@@ -1198,11 +1198,11 @@ type distributionPointName struct {
 // (computed over the DER encoding of the ASN.1 SubjectPublicKey of the .onion
 // service), and the number of bits in the hash bytes.
 type TorServiceDescriptorHash struct {
-	Onion         string
-	Algorithm     pkix.AlgorithmIdentifier
-	AlgorithmName string
-	Hash          []byte
-	HashBits      int
+	Onion         string                   `json:"onion"`
+	Algorithm     pkix.AlgorithmIdentifier `json:"-"`
+	AlgorithmName string                   `json:"algorithm_name"`
+	Hash          []byte                   `json:"hash"`
+	HashBits      int                      `json:"hash_bits"`
 }
 
 func maxValidationLevel(a, b CertValidationLevel) CertValidationLevel {

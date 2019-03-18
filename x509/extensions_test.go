@@ -7,7 +7,9 @@ package x509
 import (
 	"bytes"
 	"encoding/asn1"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net"
 	"strings"
 	"testing"
@@ -538,4 +540,34 @@ func containsExtKeyUsage(s []ExtKeyUsage, e ExtKeyUsage) bool {
 		}
 	}
 	return false
+}
+
+func TestTorServiceDescriptorHashJSON(t *testing.T) {
+
+	testHash := []byte("here is the hash")
+	encodedTestHash := base64.StdEncoding.EncodeToString(testHash)
+
+	descs := []*TorServiceDescriptorHash{
+		{
+			Onion: "https://zmap.onion",
+			Algorithm: pkix.AlgorithmIdentifier{
+				Algorithm: oidSHA256,
+			},
+			AlgorithmName: "SHA256",
+			Hash:          []byte("here is the hash"),
+			HashBits:      256,
+		},
+	}
+
+	expectedJSON := fmt.Sprintf(
+		`[{"onion":"https://zmap.onion","algorithm_name":"SHA256","hash":%q,"hash_bits":256}]`,
+		encodedTestHash)
+
+	out, err := json.Marshal(descs)
+	if err != nil {
+		t.Errorf("expected no marshal err, got %v", err)
+	}
+	if outStr := string(out); outStr != expectedJSON {
+		t.Errorf("expected JSON %q got %q\n", expectedJSON, outStr)
+	}
 }
