@@ -543,7 +543,6 @@ func containsExtKeyUsage(s []ExtKeyUsage, e ExtKeyUsage) bool {
 }
 
 func TestTorServiceDescriptorHashJSON(t *testing.T) {
-
 	testHash := []byte("here is the hash")
 	encodedTestHash := base64.StdEncoding.EncodeToString(testHash)
 
