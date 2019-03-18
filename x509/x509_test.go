@@ -1188,50 +1188,145 @@ func TestParseTorServiceDescriptorSyntax(t *testing.T) {
 	mockAlgorithm := pkix.AlgorithmIdentifier{
 		Algorithm: asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 1},
 	}
+	// mustASN1 marshals a given object to its ASN1 bytes or panics.
+	mustASN1 := func(value interface{}) []byte {
+		result, err := asn1.Marshal(value)
+		if err != nil {
+			panic(fmt.Sprintf("err marshaling asn1 test data: %v", err))
+		}
+		return result
+	}
+	// sequence marshals a ASN1 SEQUENCE for the given bytes.
+	sequence := func(bytes []byte) []byte {
+		return mustASN1(asn1.RawValue{
+			Tag:        asn1.TagSequence,
+			Class:      asn1.ClassUniversal,
+			IsCompound: true,
+			Bytes:      bytes,
+		})
+	}
+	// torServiceDescriptorHash constructs a marshaled SEQUENCE for
+	// a TorServiceDescriptorHash with the given values.
+	torServiceDescriptorHash := func(onion string, algorithm pkix.AlgorithmIdentifier, hash []byte, bits int) []byte {
+		return sequence(
+			append(mustASN1(asn1.RawValue{
+				Tag:   asn1.TagUTF8String,
+				Class: asn1.ClassUniversal,
+				Bytes: []byte(onion),
+			}),
+				append(
+					mustASN1(algorithm),
+					mustASN1(asn1.BitString{
+						Bytes:     hash,
+						BitLength: bits,
+					})...)...,
+			))
+	}
 	testCases := []struct {
 		Name                          string
-		InputFilename                 string
+		InputExtension                pkix.Extension
 		ExpectedErrMsg                string
 		ExpectedTorServiceDescriptors []*TorServiceDescriptorHash
 	}{
 		{
-			Name:           "empty Tor service descriptor extension",
-			InputFilename:  "onionSANEmptyServDesc.pem",
+			Name: "empty Tor service descriptor extension",
+			InputExtension: pkix.Extension{
+				Value: nil,
+			},
 			ExpectedErrMsg: "asn1: syntax error: unable to unmarshal outer TorServiceDescriptor SEQUENCE",
 		},
 		{
-			Name:           "invalid outer SEQUENCE in service descriptor extension",
-			InputFilename:  "onionSANServDescNoOuterSeq.pem",
+			Name: "invalid outer SEQUENCE in service descriptor extension",
+			InputExtension: pkix.Extension{
+				Value: mustASN1(asn1.RawValue{}),
+			},
 			ExpectedErrMsg: "asn1: syntax error: invalid outer TorServiceDescriptor SEQUENCE",
 		},
 		{
-			Name:           "data trailing outer SEQUENCE in service descriptor extension",
-			InputFilename:  "onionSANBadServDescOuterSeqTrailing.pem",
+			Name: "data trailing outer SEQUENCE in service descriptor extension",
+			InputExtension: pkix.Extension{
+				Value: append(
+					sequence(nil),                // Outer SEQUENCE
+					mustASN1(asn1.RawValue{})..., // Trailing data
+				),
+			},
 			ExpectedErrMsg: "asn1: syntax error: trailing data after outer TorServiceDescriptor SEQUENCE",
 		},
 		{
-			Name:           "data trailing inner TorServiceDescriptorHash SEQUENCE",
-			InputFilename:  "onionSANBadServDescInnerSeqTrailing.pem",
-			ExpectedErrMsg: "asn1: syntax error: trailing data after TorServiceDescriptorHash",
-		},
-		{
-			Name:           "bad service descriptor onion URI field tag",
-			InputFilename:  "onionSANBadServDescOnionURI.pem",
+			Name: "bad service descriptor onion URI field tag",
+			InputExtension: pkix.Extension{
+				Value: sequence( // Outer SEQUENCE
+					sequence( // TorServiceDescriptorHash SEQUENCE
+						mustASN1(asn1.RawValue{}), // Invalid Onion URI
+					)),
+			},
 			ExpectedErrMsg: "asn1: syntax error: TorServiceDescriptorHash missing non-compound UTF8String tag",
 		},
 		{
-			Name:           "bad service descriptor algorithm field",
-			InputFilename:  "onionSANBadServDescAlgorithm.pem",
+			Name: "bad service descriptor algorithm field",
+			InputExtension: pkix.Extension{
+				Value: sequence( // Outer SEQUENCE
+					sequence( // TorServiceDescriptorHash SEQUENCE
+						mustASN1(asn1.RawValue{ // Onion URI
+							Tag:   asn1.TagUTF8String,
+							Class: asn1.ClassUniversal,
+						}))),
+				// No pkix.AlgorithmIdentifier algorithm field
+			},
 			ExpectedErrMsg: "asn1: syntax error: error unmarshaling TorServiceDescriptorHash algorithm",
 		},
 		{
-			Name:           "bad service descriptor hash field",
-			InputFilename:  "onionSANBadServDescHash.pem",
+			Name: "bad service descriptor hash field",
+			InputExtension: pkix.Extension{
+				Value: sequence( // Outer SEQUENCE
+					sequence( // TorServiceDescriptorHash SEQUENCE
+						append(mustASN1(asn1.RawValue{ // Onion URI
+							Tag:   asn1.TagUTF8String,
+							Class: asn1.ClassUniversal,
+						}),
+							mustASN1(mockAlgorithm)...), // Algorithm
+					)),
+				// No BitString hash field
+			},
 			ExpectedErrMsg: "asn1: syntax error: error unmarshaling TorServiceDescriptorHash Hash",
 		},
 		{
-			Name:          "valid service descriptor unknown hash algorithm",
-			InputFilename: "onionSANBadServDescUnknownHashAlg.pem",
+			Name: "data trailing inner TorServiceDescriptorHash SEQUENCE",
+			InputExtension: pkix.Extension{
+				Value: sequence(
+					sequence( // Outer SEQUENCE
+						append(mustASN1(asn1.RawValue{ // Onion URI
+							Tag:   asn1.TagUTF8String,
+							Class: asn1.ClassUniversal,
+						}),
+							append(
+								append(
+									mustASN1(mockAlgorithm), // Algorithm
+									mustASN1(asn1.BitString{ // Hash
+										Bytes:     []byte{0x00},
+										BitLength: 1,
+									})...,
+								),
+								mustASN1(asn1.RawValue{})..., // Trailing data
+							)...,
+						),
+					)),
+			},
+			ExpectedErrMsg: "asn1: syntax error: trailing data after TorServiceDescriptorHash",
+		},
+		{
+			Name: "valid service descriptor unknown hash algorithm",
+			InputExtension: pkix.Extension{
+				Value: sequence( // Outer SEQUENCE
+					torServiceDescriptorHash(
+						"https://zmap.onion",
+						pkix.AlgorithmIdentifier{
+							Algorithm: asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 99},
+						},
+						mockHashBytes,
+						256),
+				),
+			},
 			ExpectedTorServiceDescriptors: []*TorServiceDescriptorHash{
 				{
 					Onion:         "https://zmap.onion",
@@ -1245,8 +1340,15 @@ func TestParseTorServiceDescriptorSyntax(t *testing.T) {
 			},
 		},
 		{
-			Name:          "valid service descriptor extension",
-			InputFilename: "onionSANGoodServDesc.pem",
+			Name: "valid service descriptor extension",
+			InputExtension: pkix.Extension{
+				Value: sequence( // Outer SEQUENCE
+					torServiceDescriptorHash(
+						"https://zmap.onion",
+						mockAlgorithm,
+						mockHashBytes,
+						256),
+				)},
 			ExpectedTorServiceDescriptors: []*TorServiceDescriptorHash{
 				{
 					Onion:         "https://zmap.onion",
@@ -1258,8 +1360,20 @@ func TestParseTorServiceDescriptorSyntax(t *testing.T) {
 			},
 		},
 		{
-			Name:          "valid service descriptor extension, multiple entries",
-			InputFilename: "onionSANMultiGoodServDesc.pem",
+			Name: "valid service descriptor extension, multiple entries",
+			InputExtension: pkix.Extension{
+				Value: sequence( // Outer SEQUENCE
+					append(torServiceDescriptorHash(
+						"https://zmap.onion",
+						mockAlgorithm,
+						mockHashBytes,
+						256),
+						torServiceDescriptorHash(
+							"https://other.onion",
+							mockAlgorithm,
+							mockHashBytes,
+							256)...),
+				)},
 			ExpectedTorServiceDescriptors: []*TorServiceDescriptorHash{
 				{
 					Onion:         "https://zmap.onion",
@@ -1281,13 +1395,7 @@ func TestParseTorServiceDescriptorSyntax(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			inputPath := fmt.Sprintf("testdata/%s", tc.InputFilename)
-			pemBytes, err := ioutil.ReadFile(inputPath)
-			if err != nil {
-				t.Errorf("error reading testcase file %q: %v", inputPath, err)
-			}
-			pem, _ := pem.Decode(pemBytes)
-			c, err := ParseCertificate(pem.Bytes)
+			descs, err := parseTorServiceDescriptorSyntax(tc.InputExtension)
 			if err != nil && tc.ExpectedErrMsg == "" {
 				t.Errorf("expected no error, got %v", err)
 			} else if err == nil && tc.ExpectedErrMsg != "" {
@@ -1295,11 +1403,11 @@ func TestParseTorServiceDescriptorSyntax(t *testing.T) {
 			} else if err != nil && err.Error() != tc.ExpectedErrMsg {
 				t.Errorf("expected error %q, got %q", tc.ExpectedErrMsg, err.Error())
 			} else if err == nil && tc.ExpectedErrMsg == "" {
-				if len(c.TorServiceDescriptors) != len(tc.ExpectedTorServiceDescriptors) {
+				if len(descs) != len(tc.ExpectedTorServiceDescriptors) {
 					t.Errorf("expected %d TorServiceDescriptorHashes, got %d",
-						len(tc.ExpectedTorServiceDescriptors), len(c.TorServiceDescriptors))
+						len(tc.ExpectedTorServiceDescriptors), len(descs))
 				}
-				for i, servDesc := range c.TorServiceDescriptors {
+				for i, servDesc := range descs {
 					if !reflect.DeepEqual(servDesc, tc.ExpectedTorServiceDescriptors[i]) {
 						t.Errorf("expected TorServiceDescriptors %#v in index %d, got %#v",
 							tc.ExpectedTorServiceDescriptors[i], i, servDesc)
