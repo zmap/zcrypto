@@ -116,7 +116,9 @@ func loadPEMPool(r io.Reader) (*x509.CertPool, error) {
 func loadBase64Pool(r io.Reader) (*x509.CertPool, error) {
 	out := x509.NewCertPool()
 	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
+	scanner.Buffer(nil, 1024*1024*10)
+	var lines int
+	for lines = 0; scanner.Scan(); lines += 1 {
 		line := scanner.Text()
 		raw, err := base64.StdEncoding.DecodeString(line)
 		if err != nil {
@@ -130,6 +132,10 @@ func loadBase64Pool(r io.Reader) (*x509.CertPool, error) {
 		}
 		out.AddCert(c)
 	}
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("%s", err)
+	}
+	log.Infof("read %d lines", lines)
 	return out, nil
 }
 
@@ -180,7 +186,7 @@ func main() {
 	intermediates := make([]*x509.Certificate, 0)
 	rejected := 0
 	for idx, candidate := range candidates {
-		if idx > 0 {
+		if idx > 0 && idx%1000 == 0 {
 			log.Infof("checked %d candidates", idx)
 		}
 		if current, expired, never, _ := candidate.Verify(verifyOpts); len(current) > 0 || len(expired) > 0 || len(never) > 0 {
