@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/zmap/zcertificate"
+	"github.com/zmap/zcrypto"
 	"github.com/zmap/zcrypto/x509"
 )
 
@@ -87,13 +88,13 @@ func (g *Graph) Edges() []*GraphEdge {
 
 // FindEdge returns an edge with a certificate matching the given SHA256
 // fingerprint, if it exists. If it does not exist, FindEdge returns nil.
-func (g *Graph) FindEdge(fp x509.CertificateFingerprint) *GraphEdge {
+func (g *Graph) FindEdge(fp zcrypto.Fingerprint) *GraphEdge {
 	return g.edges.FindEdge(fp)
 }
 
 // FindNode returns a node with a matching spki_subject_fingerprint to fp, if it
 // exists. If it does not exist, FindNode returns nil.
-func (g *Graph) FindNode(fp x509.CertificateFingerprint) *GraphNode {
+func (g *Graph) FindNode(fp zcrypto.Fingerprint) *GraphNode {
 	node := g.nodesBySubjectAndKey[subjectAndKeyFingerprint(fp)]
 	return node
 }
@@ -312,7 +313,7 @@ func (es *GraphEdgeSet) Size() int {
 
 // FindEdge returns an edge matching the certificate fingerprint, if it exists.
 // If it does not exist, FindEdge returns nil.
-func (es *GraphEdgeSet) FindEdge(fp x509.CertificateFingerprint) *GraphEdge {
+func (es *GraphEdgeSet) FindEdge(fp zcrypto.Fingerprint) *GraphEdge {
 	edge, _ := es.edges[string(fp)]
 	return edge
 }
@@ -320,7 +321,7 @@ func (es *GraphEdgeSet) FindEdge(fp x509.CertificateFingerprint) *GraphEdge {
 // RemoveEdge removes an edge matching the certificate fingerprint, if it
 // exists. If it exists, RemoveEdge returns a point to the removed edge. If no
 // such edge exists, RemoveEdge does nothing and returns nil.
-func (es *GraphEdgeSet) removeEdge(fp x509.CertificateFingerprint) *GraphEdge {
+func (es *GraphEdgeSet) removeEdge(fp zcrypto.Fingerprint) *GraphEdge {
 	edge, ok := es.edges[string(fp)]
 	if !ok {
 		return nil

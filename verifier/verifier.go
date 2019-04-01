@@ -17,6 +17,7 @@ package verifier
 import (
 	"time"
 
+	"github.com/zmap/zcrypto"
 	"github.com/zmap/zcrypto/x509"
 )
 
@@ -94,7 +95,7 @@ type VerificationResult struct {
 
 	// ParentSPKISubjectFingerprint is the SHA256 of the (SPKI, Subject) for
 	// parents of this certificate.
-	ParentSPKISubjectFingerprint x509.CertificateFingerprint
+	ParentSPKISubjectFingerprint zcrypto.Fingerprint
 
 	// ParentSPKI is the raw bytes of the subject public key info of the parent. It
 	// is the SPKI used as part of the ParentSPKISubjectFingerprint.

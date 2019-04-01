@@ -19,6 +19,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/zmap/zcrypto"
 	"github.com/zmap/zcrypto/x509"
 
 	data "github.com/zmap/zcrypto/data/test/certificates"
@@ -338,7 +339,7 @@ func TestGraph(t *testing.T) {
 			g.AddCert(c)
 		}
 
-		var expectedNodeFingerprints []x509.CertificateFingerprint
+		var expectedNodeFingerprints []zcrypto.Fingerprint
 		for _, hexfp := range test.expectedNodes {
 			fp, err := hex.DecodeString(hexfp)
 			if err != nil {

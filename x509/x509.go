@@ -35,6 +35,7 @@ import (
 	"time"
 
 	"github.com/weppos/publicsuffix-go/publicsuffix"
+	"github.com/zmap/zcrypto"
 	"github.com/zmap/zcrypto/x509/ct"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
@@ -795,15 +796,15 @@ type Certificate struct {
 	ValidationLevel   CertValidationLevel
 
 	// Fingerprints
-	FingerprintMD5    CertificateFingerprint
-	FingerprintSHA1   CertificateFingerprint
-	FingerprintSHA256 CertificateFingerprint
-	FingerprintNoCT   CertificateFingerprint
+	FingerprintMD5    zcrypto.Fingerprint
+	FingerprintSHA1   zcrypto.Fingerprint
+	FingerprintSHA256 zcrypto.Fingerprint
+	FingerprintNoCT   zcrypto.Fingerprint
 
 	// SPKI
-	SPKIFingerprint           CertificateFingerprint
-	SPKISubjectFingerprint    CertificateFingerprint
-	TBSCertificateFingerprint CertificateFingerprint
+	SPKIFingerprint           zcrypto.Fingerprint
+	SPKISubjectFingerprint    zcrypto.Fingerprint
+	TBSCertificateFingerprint zcrypto.Fingerprint
 
 	IsPrecert bool
 
@@ -1456,11 +1457,11 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 	out.RawIssuer = in.TBSCertificate.Issuer.FullBytes
 
 	// Fingerprints
-	out.FingerprintMD5 = MD5Fingerprint(in.Raw)
-	out.FingerprintSHA1 = SHA1Fingerprint(in.Raw)
-	out.FingerprintSHA256 = SHA256Fingerprint(in.Raw)
-	out.SPKIFingerprint = SHA256Fingerprint(in.TBSCertificate.PublicKey.Raw)
-	out.TBSCertificateFingerprint = SHA256Fingerprint(in.TBSCertificate.Raw)
+	out.FingerprintMD5 = zcrypto.MD5Fingerprint(in.Raw)
+	out.FingerprintSHA1 = zcrypto.SHA1Fingerprint(in.Raw)
+	out.FingerprintSHA256 = zcrypto.SHA256Fingerprint(in.Raw)
+	out.SPKIFingerprint = zcrypto.SHA256Fingerprint(in.TBSCertificate.PublicKey.Raw)
+	out.TBSCertificateFingerprint = zcrypto.SHA256Fingerprint(in.TBSCertificate.Raw)
 
 	tbs := in.TBSCertificate
 	originalExtensions := in.TBSCertificate.Extensions
@@ -1489,7 +1490,7 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 	if tbsbytes == nil {
 		return nil, asn1.SyntaxError{Msg: "Trailing data"}
 	}
-	out.FingerprintNoCT = SHA256Fingerprint(tbsbytes[:])
+	out.FingerprintNoCT = zcrypto.SHA256Fingerprint(tbsbytes[:])
 
 	// Hash both SPKI and Subject to create a fingerprint that we can use to describe a CA
 	hasher := sha256.New()
@@ -1985,7 +1986,7 @@ func ParseTBSCertificate(asn1Data []byte) (*Certificate, error) {
 type SubjectAndKey struct {
 	RawSubject              []byte
 	RawSubjectPublicKeyInfo []byte
-	Fingerprint             CertificateFingerprint
+	Fingerprint             zcrypto.Fingerprint
 	PublicKey               interface{}
 	PublicKeyAlgorithm      PublicKeyAlgorithm
 }

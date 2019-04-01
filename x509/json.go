@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/zmap/zcrypto"
 	jsonKeys "github.com/zmap/zcrypto/json"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
@@ -156,7 +157,7 @@ func (s *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
 // the OID is unfortunately stored outside the scope of a
 // SignatureAlgorithm struct and cannot be recovered without access to the
 // entire Certificate if we do not know the signature algorithm.
-func (c *Certificate) jsonifySignatureAlgorithm() (JSONSignatureAlgorithm) {
+func (c *Certificate) jsonifySignatureAlgorithm() JSONSignatureAlgorithm {
 	aux := JSONSignatureAlgorithm{}
 	if c.SignatureAlgorithm == 0 {
 		aux.Name = "unknown_algorithm"
@@ -377,7 +378,7 @@ type JSONSubjectKeyInfo struct {
 	RSAPublicKey    *jsonKeys.RSAPublicKey `json:"rsa_public_key,omitempty"`
 	DSAPublicKey    *DSAPublicKeyJSON      `json:"dsa_public_key,omitempty"`
 	ECDSAPublicKey  *ECDSAPublicKeyJSON    `json:"ecdsa_public_key,omitempty"`
-	SPKIFingerprint CertificateFingerprint `json:"fingerprint_sha256"`
+	SPKIFingerprint zcrypto.Fingerprint    `json:"fingerprint_sha256"`
 }
 
 // JSONSignature - used to condense several fields from x509.Certificate
@@ -417,12 +418,12 @@ type JSONCertificate struct {
 	Extensions                *CertificateExtensions       `json:"extensions,omitempty"`
 	UnknownExtensions         UnknownCertificateExtensions `json:"unknown_extensions,omitempty"`
 	Signature                 JSONSignature                `json:"signature"`
-	FingerprintMD5            CertificateFingerprint       `json:"fingerprint_md5"`
-	FingerprintSHA1           CertificateFingerprint       `json:"fingerprint_sha1"`
-	FingerprintSHA256         CertificateFingerprint       `json:"fingerprint_sha256"`
-	FingerprintNoCT           CertificateFingerprint       `json:"tbs_noct_fingerprint"`
-	SPKISubjectFingerprint    CertificateFingerprint       `json:"spki_subject_fingerprint"`
-	TBSCertificateFingerprint CertificateFingerprint       `json:"tbs_fingerprint"`
+	FingerprintMD5            zcrypto.Fingerprint          `json:"fingerprint_md5"`
+	FingerprintSHA1           zcrypto.Fingerprint          `json:"fingerprint_sha1"`
+	FingerprintSHA256         zcrypto.Fingerprint          `json:"fingerprint_sha256"`
+	FingerprintNoCT           zcrypto.Fingerprint          `json:"tbs_noct_fingerprint"`
+	SPKISubjectFingerprint    zcrypto.Fingerprint          `json:"spki_subject_fingerprint"`
+	TBSCertificateFingerprint zcrypto.Fingerprint          `json:"tbs_fingerprint"`
 	ValidationLevel           CertValidationLevel          `json:"validation_level"`
 	Names                     []string                     `json:"names,omitempty"`
 	Redacted                  bool                         `json:"redacted"`

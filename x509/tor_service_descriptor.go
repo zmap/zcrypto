@@ -2,6 +2,8 @@ package x509
 
 import (
 	"encoding/asn1"
+
+	"github.com/zmap/zcrypto"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
 
@@ -24,7 +26,7 @@ type TorServiceDescriptorHash struct {
 	Onion         string                   `json:"onion"`
 	Algorithm     pkix.AlgorithmIdentifier `json:"-"`
 	AlgorithmName string                   `json:"algorithm_name"`
-	Hash          CertificateFingerprint   `json:"hash"`
+	Hash          zcrypto.Fingerprint      `json:"hash"`
 	HashBits      int                      `json:"hash_bits"`
 }
 
@@ -153,6 +155,6 @@ func parseTorServiceDescriptorHash(data []byte) (*TorServiceDescriptorHash, []by
 		Algorithm:     algorithm,
 		AlgorithmName: algorithmName,
 		HashBits:      spkh.BitLength,
-		Hash:          CertificateFingerprint(spkh.Bytes),
+		Hash:          zcrypto.Fingerprint(spkh.Bytes),
 	}, data, nil
 }

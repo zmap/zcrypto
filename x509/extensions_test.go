@@ -13,6 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/zmap/zcrypto"
+
 	"github.com/zmap/zcrypto/x509/pkix"
 )
 
@@ -542,7 +544,7 @@ func containsExtKeyUsage(s []ExtKeyUsage, e ExtKeyUsage) bool {
 }
 
 func TestTorServiceDescriptorHashJSON(t *testing.T) {
-	testHash := CertificateFingerprint("here is the hash")
+	testHash := zcrypto.Fingerprint("here is the hash")
 
 	descs := []*TorServiceDescriptorHash{
 		{
