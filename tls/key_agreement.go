@@ -313,19 +313,6 @@ func pickTLS12HashForSignature(sigType uint8, clientList, serverList []signature
 	return 0, errors.New("tls: client doesn't support any common hash functions")
 }
 
-func curveForCurveID(id CurveID) (elliptic.Curve, bool) {
-	switch id {
-	case CurveP256:
-		return elliptic.P256(), true
-	case CurveP384:
-		return elliptic.P384(), true
-	case CurveP521:
-		return elliptic.P521(), true
-	default:
-		return nil, false
-	}
-}
-
 // keyAgreementAuthentication is a helper interface that specifies how
 // to authenticate the ServerKeyExchange parameters.
 type keyAgreementAuthentication interface {
