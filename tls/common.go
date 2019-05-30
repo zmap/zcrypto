@@ -434,6 +434,12 @@ type Config struct {
 	// be used.
 	CurvePreferences []CurveID
 
+	// DynamicRecordSizingDisabled disables adaptive sizing of TLS records.
+	// When true, the largest possible TLS record size is always used. When
+	// false, the size of TLS records may be adjusted in an attempt to
+	// improve latency.
+	DynamicRecordSizingDisabled bool
+
 	// If enabled, empty CurvePreferences indicates that there are no curves
 	// supported for ECDHE key exchanges
 	ExplicitCurvePreferences bool
