@@ -5,9 +5,25 @@
 package tls_test
 
 import (
-	"github.com/zmap/zcrypto/tls"
-	"github.com/zmap/zcrypto/x509"
+	"crypto/tls"
+	"crypto/x509"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"time"
 )
+
+// zeroSource is an io.Reader that returns an unlimited number of zero bytes.
+type zeroSource struct{}
+
+func (zeroSource) Read(b []byte) (n int, err error) {
+	for i := range b {
+		b[i] = 0
+	}
+
+	return len(b), nil
+}
 
 func ExampleDial() {
 	// Connecting with a custom root-certificate set.
@@ -54,4 +70,116 @@ yuGnBXj8ytqU0CwIPX4WecigUCAkVDNx
 		panic("failed to connect: " + err.Error())
 	}
 	conn.Close()
+}
+
+func ExampleConfig_keyLogWriter() {
+	// Debugging TLS applications by decrypting a network traffic capture.
+
+	// WARNING: Use of KeyLogWriter compromises security and should only be
+	// used for debugging.
+
+	// Dummy test HTTP server for the example with insecure random so output is
+	// reproducible.
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	server.TLS = &tls.Config{
+		Rand: zeroSource{}, // for example only; don't do this.
+	}
+	server.StartTLS()
+	defer server.Close()
+
+	// Typically the log would go to an open file:
+	// w, err := os.OpenFile("tls-secrets.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	w := os.Stdout
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				KeyLogWriter: w,
+
+				Rand:               zeroSource{}, // for reproducible output; don't do this.
+				InsecureSkipVerify: true,         // test server certificate is not trusted.
+			},
+		},
+	}
+	resp, err := client.Get(server.URL)
+	if err != nil {
+		log.Fatalf("Failed to get URL: %v", err)
+	}
+	resp.Body.Close()
+
+	// The resulting file can be used with Wireshark to decrypt the TLS
+	// connection by setting (Pre)-Master-Secret log filename in SSL Protocol
+	// preferences.
+}
+
+func ExampleLoadX509KeyPair() {
+	cert, err := tls.LoadX509KeyPair("testdata/example-cert.pem", "testdata/example-key.pem")
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg := &tls.Config{Certificates: []tls.Certificate{cert}}
+	listener, err := tls.Listen("tcp", ":2000", cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_ = listener
+}
+
+func ExampleX509KeyPair() {
+	certPem := []byte(`-----BEGIN CERTIFICATE-----
+MIIBhTCCASugAwIBAgIQIRi6zePL6mKjOipn+dNuaTAKBggqhkjOPQQDAjASMRAw
+DgYDVQQKEwdBY21lIENvMB4XDTE3MTAyMDE5NDMwNloXDTE4MTAyMDE5NDMwNlow
+EjEQMA4GA1UEChMHQWNtZSBDbzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABD0d
+7VNhbWvZLWPuj/RtHFjvtJBEwOkhbN/BnnE8rnZR8+sbwnc/KhCk3FhnpHZnQz7B
+5aETbbIgmuvewdjvSBSjYzBhMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggr
+BgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MCkGA1UdEQQiMCCCDmxvY2FsaG9zdDo1
+NDUzgg4xMjcuMC4wLjE6NTQ1MzAKBggqhkjOPQQDAgNIADBFAiEA2zpJEPQyz6/l
+Wf86aX6PepsntZv2GYlA5UpabfT2EZICICpJ5h/iI+i341gBmLiAFQOyTDT+/wQc
+6MF9+Yw1Yy0t
+-----END CERTIFICATE-----`)
+	keyPem := []byte(`-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIIrYSSNQFaA2Hwf1duRSxKtLYX5CB04fSeQ6tF1aY/PuoAoGCCqGSM49
+AwEHoUQDQgAEPR3tU2Fta9ktY+6P9G0cWO+0kETA6SFs38GecTyudlHz6xvCdz8q
+EKTcWGekdmdDPsHloRNtsiCa697B2O9IFA==
+-----END EC PRIVATE KEY-----`)
+	cert, err := tls.X509KeyPair(certPem, keyPem)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg := &tls.Config{Certificates: []tls.Certificate{cert}}
+	listener, err := tls.Listen("tcp", ":2000", cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_ = listener
+}
+
+func ExampleX509KeyPair_httpServer() {
+	certPem := []byte(`-----BEGIN CERTIFICATE-----
+MIIBhTCCASugAwIBAgIQIRi6zePL6mKjOipn+dNuaTAKBggqhkjOPQQDAjASMRAw
+DgYDVQQKEwdBY21lIENvMB4XDTE3MTAyMDE5NDMwNloXDTE4MTAyMDE5NDMwNlow
+EjEQMA4GA1UEChMHQWNtZSBDbzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABD0d
+7VNhbWvZLWPuj/RtHFjvtJBEwOkhbN/BnnE8rnZR8+sbwnc/KhCk3FhnpHZnQz7B
+5aETbbIgmuvewdjvSBSjYzBhMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggr
+BgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MCkGA1UdEQQiMCCCDmxvY2FsaG9zdDo1
+NDUzgg4xMjcuMC4wLjE6NTQ1MzAKBggqhkjOPQQDAgNIADBFAiEA2zpJEPQyz6/l
+Wf86aX6PepsntZv2GYlA5UpabfT2EZICICpJ5h/iI+i341gBmLiAFQOyTDT+/wQc
+6MF9+Yw1Yy0t
+-----END CERTIFICATE-----`)
+	keyPem := []byte(`-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIIrYSSNQFaA2Hwf1duRSxKtLYX5CB04fSeQ6tF1aY/PuoAoGCCqGSM49
+AwEHoUQDQgAEPR3tU2Fta9ktY+6P9G0cWO+0kETA6SFs38GecTyudlHz6xvCdz8q
+EKTcWGekdmdDPsHloRNtsiCa697B2O9IFA==
+-----END EC PRIVATE KEY-----`)
+	cert, err := tls.X509KeyPair(certPem, keyPem)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg := &tls.Config{Certificates: []tls.Certificate{cert}}
+	srv := &http.Server{
+		TLSConfig:    cfg,
+		ReadTimeout:  time.Minute,
+		WriteTimeout: time.Minute,
+	}
+	log.Fatal(srv.ListenAndServeTLS("", ""))
 }
