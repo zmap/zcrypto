@@ -368,11 +368,10 @@ func (e *SignatureAlgorithmExtension) CheckImplemented() error {
 	return nil
 }
 
-func (e *SignatureAlgorithmExtension) getStructuredAlgorithms() []signatureAndHash {
-	result := make([]signatureAndHash, len(e.SignatureAndHashes))
+func (e *SignatureAlgorithmExtension) getStructuredAlgorithms() []SignatureScheme {
+	result := make([]SignatureScheme, len(e.SignatureAndHashes))
 	for i, alg := range e.SignatureAndHashes {
-		result[i].hash = uint8(alg >> 8)
-		result[i].signature = uint8(alg)
+		result[i] = alg
 	}
 	return result
 }

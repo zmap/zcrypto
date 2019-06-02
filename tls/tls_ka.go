@@ -14,8 +14,10 @@ import (
 )
 
 // SignatureAndHash is a signatureAndHash that implements json.Marshaler and
-// json.Unmarshaler
-type SignatureAndHash signatureAndHash
+// json.Unmarshaler, and wraps the SignatureScheme type. This maintains
+// backwards compatibility for TLS 1.2 SignatureAndHash objects, which
+// technically could do weird things like have ECC with MD5.
+type SignatureAndHash SignatureScheme
 
 type auxSignatureAndHash struct {
 	SignatureAlgorithm string `json:"signature_algorithm"`
@@ -24,9 +26,11 @@ type auxSignatureAndHash struct {
 
 // MarshalJSON implements the json.Marshaler interface
 func (sh *SignatureAndHash) MarshalJSON() ([]byte, error) {
+	signature := uint8(sh)
+	hash := uint8(sh >> 8)
 	aux := auxSignatureAndHash{
-		SignatureAlgorithm: nameForSignature(sh.signature),
-		HashAlgorithm:      nameForHash(sh.hash),
+		SignatureAlgorithm: nameForSignature(signature),
+		HashAlgorithm:      nameForHash(hash),
 	}
 	return json.Marshal(&aux)
 }
@@ -39,8 +43,9 @@ func (sh *SignatureAndHash) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, aux); err != nil {
 		return err
 	}
-	sh.signature = signatureToName(aux.SignatureAlgorithm)
-	sh.hash = hashToName(aux.HashAlgorithm)
+	signature = signatureToName(aux.SignatureAlgorithm)
+	hash = hashToName(aux.HashAlgorithm)
+	*sh = (uint16(hash) << 8) + uint16(signature)
 	return nil
 }
 
