@@ -10,7 +10,7 @@ require (
 	github.com/weppos/publicsuffix-go v0.4.0
 	github.com/zmap/rc2 v0.0.0-20131011165748-24b9757f5521
 	github.com/zmap/zcertificate v0.0.0-20180516150559-0e3d58b1bac4
-	golang.org/x/net v0.0.0-20190301231341-16b79f2e4e95
-	golang.org/x/text v0.3.0 // indirect
+	golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
+	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 )
