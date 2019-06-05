@@ -98,6 +98,7 @@ func (ka *ecdheKeyAgreement) ClientECDHParams() *jsonKeys.ECDHParams {
 	return out
 }
 
+/*
 func (ka *dheKeyAgreement) DHParams() *jsonKeys.DHParams {
 	out := new(jsonKeys.DHParams)
 	if ka.p != nil {
@@ -131,6 +132,7 @@ func (ka *dheKeyAgreement) ClientDHParams() *jsonKeys.DHParams {
 	}
 	return out
 }
+*/
 
 // DigitalSignature represents a signature for a digitally-signed-struct in the
 // TLS record protocol. It is dependent on the version of TLS in use. In TLS
@@ -162,6 +164,7 @@ func signatureTypeToName(sigType uint8) string {
 	return "unknown." + strconv.Itoa(int(sigType))
 }
 
+/*
 func (ka *signedKeyAgreement) Signature() *DigitalSignature {
 	out := DigitalSignature{
 		Raw:     ka.raw,
@@ -175,3 +178,4 @@ func (ka *signedKeyAgreement) Signature() *DigitalSignature {
 	}
 	return &out
 }
+*/

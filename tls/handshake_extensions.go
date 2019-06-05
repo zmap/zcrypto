@@ -1,4 +1,5 @@
 package tls
+/*
 
 import (
 	"errors"
@@ -390,3 +391,5 @@ func (e *SignatureAlgorithmExtension) Marshal() []byte {
 	}
 	return result
 }
+
+*/
