@@ -28,6 +28,7 @@ var (
 	HeartbleedError = errors.New("Error after Heartbleed")
 )
 
+/*
 type Heartbleed struct {
 	HeartbeatEnabled bool `json:"heartbeat_enabled"`
 	Vulnerable       bool `json:"heartbleed_vulnerable"`
@@ -87,3 +88,4 @@ func (c *Conn) CheckHeartbleed(b []byte) (n int, err error) {
 func (c *Conn) GetHeartbleedLog() *Heartbleed {
 	return c.heartbleedLog
 }
+*/
