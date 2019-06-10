@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zmap/zcrypto/x509/ct"
 	jsonKeys "github.com/zmap/zcrypto/json"
 	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/ct"
 )
 
 var ErrUnimplementedCipher error = errors.New("unimplemented cipher suite")
@@ -54,10 +54,10 @@ type ParsedAndRawSCT struct {
 }
 
 type ServerHello struct {
-	Version                     TLSVersion        `json:"version"`
-	Random                      []byte            `json:"random"`
-	SessionID                   []byte            `json:"session_id"`
-	CipherSuite                 CipherSuite       `json:"cipher_suite"`
+	Version     TLSVersion  `json:"version"`
+	Random      []byte      `json:"random"`
+	SessionID   []byte      `json:"session_id"`
+	CipherSuite CipherSuite `json:"cipher_suite"`
 	// TODO FIXME: Why is this a raw uint8, not a CompressionMethod?
 	CompressionMethod           uint8             `json:"compression_method"`
 	OcspStapling                bool              `json:"ocsp_stapling"`
@@ -287,7 +287,7 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 
 	ch.OcspStapling = m.ocspStapling
 	ch.TicketSupported = m.ticketSupported
-	ch.SecureRenegotiation = m.secureRenegotiation
+	ch.SecureRenegotiation = m.secureRenegotiationSupported
 	ch.HeartbeatSupported = m.heartbeatEnabled
 
 	if len(m.extendedRandom) > 0 {
@@ -344,7 +344,7 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	sh.CompressionMethod = m.compressionMethod
 	sh.OcspStapling = m.ocspStapling
 	sh.TicketSupported = m.ticketSupported
-	sh.SecureRenegotiation = m.secureRenegotiation
+	sh.SecureRenegotiation = m.secureRenegotiationSupported
 	sh.HeartbeatSupported = m.heartbeatEnabled
 	if len(m.extendedRandom) > 0 {
 		sh.ExtendedRandom = make([]byte, len(m.extendedRandom))
