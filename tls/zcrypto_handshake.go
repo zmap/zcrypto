@@ -311,8 +311,8 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 		ch.SessionTicket.LifetimeHint = 0 // Clients don't send
 	}
 
-	ch.SignatureAndHashes = make([]SignatureAndHash, len(m.signatureAndHashes))
-	for i, aGroup := range m.signatureAndHashes {
+	ch.SignatureAndHashes = make([]SignatureAndHash, len(m.supportedSignatureAlgorithms))
+	for i, aGroup := range m.supportedSignatureAlgorithms {
 		ch.SignatureAndHashes[i] = SignatureAndHash(aGroup)
 	}
 
