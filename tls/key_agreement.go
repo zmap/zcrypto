@@ -21,11 +21,11 @@ var errServerKeyExchange = errors.New("tls: invalid ServerKeyExchange message")
 // encrypts the pre-master secret to the server's public key.
 type rsaKeyAgreement struct{}
 
-func (ka rsaKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {
+func (ka *rsaKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {
 	return nil, nil
 }
 
-func (ka rsaKeyAgreement) processClientKeyExchange(config *Config, cert *Certificate, ckx *clientKeyExchangeMsg, version uint16) ([]byte, error) {
+func (ka *rsaKeyAgreement) processClientKeyExchange(config *Config, cert *Certificate, ckx *clientKeyExchangeMsg, version uint16) ([]byte, error) {
 	if len(ckx.ciphertext) < 2 {
 		return nil, errClientKeyExchange
 	}
@@ -56,11 +56,11 @@ func (ka rsaKeyAgreement) processClientKeyExchange(config *Config, cert *Certifi
 	return preMasterSecret, nil
 }
 
-func (ka rsaKeyAgreement) processServerKeyExchange(config *Config, clientHello *clientHelloMsg, serverHello *serverHelloMsg, cert *x509.Certificate, skx *serverKeyExchangeMsg) error {
+func (ka *rsaKeyAgreement) processServerKeyExchange(config *Config, clientHello *clientHelloMsg, serverHello *serverHelloMsg, cert *x509.Certificate, skx *serverKeyExchangeMsg) error {
 	return errors.New("tls: unexpected ServerKeyExchange")
 }
 
-func (ka rsaKeyAgreement) generateClientKeyExchange(config *Config, clientHello *clientHelloMsg, cert *x509.Certificate) ([]byte, *clientKeyExchangeMsg, error) {
+func (ka *rsaKeyAgreement) generateClientKeyExchange(config *Config, clientHello *clientHelloMsg, cert *x509.Certificate) ([]byte, *clientKeyExchangeMsg, error) {
 	preMasterSecret := make([]byte, 48)
 	preMasterSecret[0] = byte(clientHello.vers >> 8)
 	preMasterSecret[1] = byte(clientHello.vers)
