@@ -25,26 +25,25 @@ type TLSVersion uint16
 type CipherSuite uint16
 
 type ClientHello struct {
-	Version              TLSVersion          `json:"version"`
-	Random               []byte              `json:"random"`
-	SessionID            []byte              `json:"session_id,omitempty"`
-	CipherSuites         []CipherSuite       `json:"cipher_suites"`
-	CompressionMethods   []CompressionMethod `json:"compression_methods"`
-	OcspStapling         bool                `json:"ocsp_stapling"`
-	TicketSupported      bool                `json:"ticket"`
-	SecureRenegotiation  bool                `json:"secure_renegotiation"`
-	HeartbeatSupported   bool                `json:"heartbeat"`
-	ExtendedRandom       []byte              `json:"extended_random,omitempty"`
-	ExtendedMasterSecret bool                `json:"extended_master_secret"`
-	NextProtoNeg         bool                `json:"next_protocol_negotiation"`
-	ServerName           string              `json:"server_name,omitempty"`
-	Scts                 bool                `json:"scts"`
-	SupportedCurves      []CurveID           `json:"supported_curves,omitempty"`
-	SupportedPoints      []PointFormat       `json:"supported_point_formats,omitempty"`
-	SessionTicket        *SessionTicket      `json:"session_ticket,omitempty"`
-	SignatureAndHashes   []SignatureAndHash  `json:"signature_and_hashes,omitempty"`
-	SctEnabled           bool                `json:"sct_enabled"`
-	AlpnProtocols        []string            `json:"alpn_protocols,omitempty"`
+	Version             TLSVersion          `json:"version"`
+	Random              []byte              `json:"random"`
+	SessionID           []byte              `json:"session_id,omitempty"`
+	CipherSuites        []CipherSuite       `json:"cipher_suites"`
+	CompressionMethods  []CompressionMethod `json:"compression_methods"`
+	OcspStapling        bool                `json:"ocsp_stapling"`
+	TicketSupported     bool                `json:"ticket"`
+	SecureRenegotiation bool                `json:"secure_renegotiation"`
+	HeartbeatSupported  bool                `json:"heartbeat"`
+	ExtendedRandom      []byte              `json:"extended_random,omitempty"`
+	NextProtoNeg        bool                `json:"next_protocol_negotiation"`
+	ServerName          string              `json:"server_name,omitempty"`
+	Scts                bool                `json:"scts"`
+	SupportedCurves     []CurveID           `json:"supported_curves,omitempty"`
+	SupportedPoints     []PointFormat       `json:"supported_point_formats,omitempty"`
+	SessionTicket       *SessionTicket      `json:"session_ticket,omitempty"`
+	SignatureAndHashes  []SignatureAndHash  `json:"signature_and_hashes,omitempty"`
+	SctEnabled          bool                `json:"sct_enabled"`
+	AlpnProtocols       []string            `json:"alpn_protocols,omitempty"`
 }
 
 type ParsedAndRawSCT struct {
@@ -64,7 +63,6 @@ type ServerHello struct {
 	SecureRenegotiation         bool              `json:"secure_renegotiation"`
 	HeartbeatSupported          bool              `json:"heartbeat"`
 	ExtendedRandom              []byte            `json:"extended_random,omitempty"`
-	ExtendedMasterSecret        bool              `json:"extended_master_secret"`
 	SignedCertificateTimestamps []ParsedAndRawSCT `json:"scts,omitempty"`
 }
 
@@ -355,7 +353,6 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 			sh.SignedCertificateTimestamps = append(sh.SignedCertificateTimestamps, out)
 		}
 	}
-	sh.ExtendedMasterSecret = m.extendedMasterSecret
 	return sh
 }
 
