@@ -51,7 +51,7 @@ func (sh *SignatureAndHash) UnmarshalJSON(b []byte) error {
 
 func (ka *rsaKeyAgreement) RSAParams() *jsonKeys.RSAPublicKey {
 	out := new(jsonKeys.RSAPublicKey)
-	out.PublicKey = ka.publicKey
+	out.PublicKey = ka.serverPublic
 	return out
 }
 
