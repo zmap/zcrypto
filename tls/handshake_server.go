@@ -7,7 +7,6 @@ package tls
 import (
 	"crypto"
 	"crypto/ecdsa"
-	"golang.org/x/crypto/ed25519"
 	"crypto/rsa"
 	"crypto/subtle"
 	"crypto/x509"
@@ -15,6 +14,8 @@ import (
 	"fmt"
 	"io"
 	"sync/atomic"
+
+	"golang.org/x/crypto/ed25519"
 )
 
 // serverHandshakeState contains details of a server handshake in progress.
@@ -32,6 +33,9 @@ type serverHandshakeState struct {
 	finishedHash finishedHash
 	masterSecret []byte
 	cert         *Certificate
+
+	// ZCrypto
+	preMasterSecret []byte
 }
 
 // serverHandshake performs a TLS handshake as a server.

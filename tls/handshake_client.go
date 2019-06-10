@@ -31,6 +31,9 @@ type clientHandshakeState struct {
 	finishedHash finishedHash
 	masterSecret []byte
 	session      *ClientSessionState
+
+	// ZCrypto
+	preMasterSecret []byte
 }
 
 func (c *Conn) makeClientHello() (*clientHelloMsg, ecdheParameters, error) {
@@ -552,6 +555,10 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 	}
 
 	preMasterSecret, ckx, err := keyAgreement.generateClientKeyExchange(c.config, hs.hello, c.peerCertificates[0])
+	if len(preMasterSecret) > 0 {
+		hs.preMasterSecret = make([]byte, len(preMasterSecret))
+		copy(hs.preMasterSecret, preMasterSecret)
+	}
 	if err != nil {
 		c.sendAlert(alertInternalError)
 		return err
@@ -604,6 +611,10 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 	}
 
+	if len(preMasterSecret) > 0 {
+		hs.preMasterSecret = make([]byte, len(preMasterSecret))
+		copy(hs.preMasterSecret, preMasterSecret)
+	}
 	hs.masterSecret = masterFromPreMasterSecret(c.vers, hs.suite, preMasterSecret, hs.hello.random, hs.serverHello.random)
 	if err := c.config.writeKeyLog(keyLogLabelTLS12, hs.hello.random, hs.masterSecret); err != nil {
 		c.sendAlert(alertInternalError)
