@@ -316,7 +316,7 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 		ch.SignatureAndHashes[i] = SignatureAndHash(aGroup)
 	}
 
-	ch.SctEnabled = m.sctEnabled
+	ch.SctEnabled = m.scts
 
 	ch.AlpnProtocols = make([]string, len(m.alpnProtocols))
 	copy(ch.AlpnProtocols, m.alpnProtocols)
