@@ -9,6 +9,14 @@ import (
 	"strings"
 )
 
+// Signature algorithms for TLS 1.2 (See RFC 5246, section A.4.1)
+//
+// Only contains those not defined in common.go
+const (
+	signatureRSA uint8 = 1
+	signatureDSA uint8 = 2
+)
+
 var signatureNames map[uint8]string
 var hashNames map[uint8]string
 var cipherSuiteNames map[int]string
