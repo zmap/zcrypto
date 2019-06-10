@@ -26,8 +26,8 @@ type auxSignatureAndHash struct {
 
 // MarshalJSON implements the json.Marshaler interface
 func (sh *SignatureAndHash) MarshalJSON() ([]byte, error) {
-	signature := uint8(sh)
-	hash := uint8(sh >> 8)
+	signature := uint8(*sh)
+	hash := uint8(*sh >> 8)
 	aux := auxSignatureAndHash{
 		SignatureAlgorithm: nameForSignature(signature),
 		HashAlgorithm:      nameForHash(hash),
@@ -43,9 +43,9 @@ func (sh *SignatureAndHash) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, aux); err != nil {
 		return err
 	}
-	signature = signatureToName(aux.SignatureAlgorithm)
-	hash = hashToName(aux.HashAlgorithm)
-	*sh = (uint16(hash) << 8) + uint16(signature)
+	signature := signatureToName(aux.SignatureAlgorithm)
+	hash := hashToName(aux.HashAlgorithm)
+	*sh = SignatureAndHash((uint16(hash) << 8) + uint16(signature))
 	return nil
 }
 
