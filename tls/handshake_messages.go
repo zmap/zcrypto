@@ -6,8 +6,9 @@ package tls
 
 import (
 	"fmt"
-	"golang.org/x/crypto/cryptobyte"
 	"strings"
+
+	"golang.org/x/crypto/cryptobyte"
 )
 
 // The marshalingFunction type is an adapter to allow the use of ordinary
@@ -92,6 +93,9 @@ type clientHelloMsg struct {
 	pskModes                         []uint8
 	pskIdentities                    []pskIdentity
 	pskBinders                       [][]byte
+
+	// ZCrypto
+	extendedRandom []byte
 }
 
 func (m *clientHelloMsg) marshal() []byte {
@@ -620,6 +624,9 @@ type serverHelloMsg struct {
 	// HelloRetryRequest extensions
 	cookie        []byte
 	selectedGroup CurveID
+
+	// ZCrypto
+	extendedRandom []byte
 }
 
 func (m *serverHelloMsg) marshal() []byte {
