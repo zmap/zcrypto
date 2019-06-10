@@ -1833,6 +1833,9 @@ func (m *certificateVerifyMsg) unmarshal(data []byte) bool {
 type newSessionTicketMsg struct {
 	raw    []byte
 	ticket []byte
+
+	// ZCrypto
+	lifetimeHint uint32
 }
 
 func (m *newSessionTicketMsg) marshal() (x []byte) {
@@ -1850,6 +1853,8 @@ func (m *newSessionTicketMsg) marshal() (x []byte) {
 	x[3] = uint8(length)
 	x[8] = uint8(ticketLen >> 8)
 	x[9] = uint8(ticketLen)
+
+	m.lifetimeHint = uint32(x[4])<<24 | uint32(x[5])<<16 | uint32(x[6])<<8 | uint32(x[7])
 	copy(x[10:], m.ticket)
 
 	m.raw = x

@@ -785,6 +785,8 @@ func (hs *clientHandshakeState) readSessionTicket() error {
 		serverCertificates: c.peerCertificates,
 		verifiedChains:     c.verifiedChains,
 		receivedAt:         c.config.time(),
+		// ZCrypto
+		lifetimeHint:       sessionTicketMsg.lifetimeHint,
 	}
 
 	return nil

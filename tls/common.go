@@ -273,6 +273,9 @@ type ClientSessionState struct {
 	nonce  []byte    // Ticket nonce sent by the server, to derive PSK
 	useBy  time.Time // Expiration of the ticket lifetime as set by the server
 	ageAdd uint32    // Random obfuscation factor for sending the ticket age
+
+	// ZCrypto
+	lifetimeHint uint32
 }
 
 // ClientSessionCache is a cache of ClientSessionState objects that can be used
