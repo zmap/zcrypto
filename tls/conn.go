@@ -108,6 +108,9 @@ type Conn struct {
 	activeCall int32
 
 	tmp [16]byte
+
+	// ZCrypto JSON
+	handshakeLog *ServerHandshake
 }
 
 // Access to net.Conn methods.
