@@ -296,7 +296,7 @@ func (f *fixedNonceAEAD) Open(out, nonce, plaintext, additionalData []byte) ([]b
 	return f.aead.Open(out, f.openNonce, plaintext, additionalData)
 }
 
-func (f *fixedNonceAEAD) explicitNonce() bool {return true}
+func (f *fixedNonceAEAD) explicitNonce() bool { return true }
 
 func aeadAESGCM(key, fixedNonce []byte) tlsAead {
 	aes, err := aes.NewCipher(key)
@@ -325,7 +325,7 @@ type xorNonceAEAD struct {
 func (f *xorNonceAEAD) NonceSize() int        { return 8 } // 64-bit sequence number
 func (f *xorNonceAEAD) Overhead() int         { return f.aead.Overhead() }
 func (f *xorNonceAEAD) explicitNonceLen() int { return 0 }
-func (f *xorNonceAEAD) explicitNonce() bool { return false }
+func (f *xorNonceAEAD) explicitNonce() bool   { return false }
 
 func (f *xorNonceAEAD) Seal(out, nonce, plaintext, additionalData []byte) []byte {
 	for i, b := range nonce {
@@ -352,7 +352,7 @@ func (f *xorNonceAEAD) Open(out, nonce, ciphertext, additionalData []byte) ([]by
 }
 
 const (
-	aeadNonceLength   = 12
+	aeadNonceLength = 12
 )
 
 func aeadCHACHA20POLY1305(key, fixedNonce []byte) tlsAead {
