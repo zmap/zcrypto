@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zmap/zcrypto/x509/ct"
 	jsonKeys "github.com/zmap/zcrypto/json"
 	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/ct"
 )
 
 var ErrUnimplementedCipher error = errors.New("unimplemented cipher suite")
@@ -54,10 +54,10 @@ type ParsedAndRawSCT struct {
 }
 
 type ServerHello struct {
-	Version                     TLSVersion        `json:"version"`
-	Random                      []byte            `json:"random"`
-	SessionID                   []byte            `json:"session_id"`
-	CipherSuite                 CipherSuite       `json:"cipher_suite"`
+	Version     TLSVersion  `json:"version"`
+	Random      []byte      `json:"random"`
+	SessionID   []byte      `json:"session_id"`
+	CipherSuite CipherSuite `json:"cipher_suite"`
 	// TODO FIXME: Why is this a raw uint8, not a CompressionMethod?
 	CompressionMethod           uint8             `json:"compression_method"`
 	OcspStapling                bool              `json:"ocsp_stapling"`

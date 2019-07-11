@@ -132,27 +132,26 @@ func TestReadVarBytesShortRead(t *testing.T) {
 	}
 }
 
-
 const (
-	defaultSCTLogIDString          string = "iamapublickeyshatwofivesixdigest"
-	defaultSCTTimestamp            uint64 = 1234
-	defaultSCTSignatureString      string = "\x04\x03\x00\x09signature"
-	defaultSCTHexString string =
+	defaultSCTLogIDString     string = "iamapublickeyshatwofivesixdigest"
+	defaultSCTTimestamp       uint64 = 1234
+	defaultSCTSignatureString string = "\x04\x03\x00\x09signature"
+	defaultSCTHexString       string =
 	// version, 1 byte
-		"00" +
+	"00" +
 		// keyid, 32 bytes
-			"69616d617075626c69636b657973686174776f66697665736978646967657374" +
+		"69616d617075626c69636b657973686174776f66697665736978646967657374" +
 		// timestamp, 8 bytes
-			"00000000000004d2" +
+		"00000000000004d2" +
 		// extensions length, 2 bytes
-			"0000" +
+		"0000" +
 		// extensions, 0 bytes
 		// hash algo, sig algo, 2 bytes
-			"0403" +
+		"0403" +
 		// signature length, 2 bytes
-			"0009" +
+		"0009" +
 		// signature, 9 bytes
-			"7369676e6174757265"
+		"7369676e6174757265"
 )
 
 func defaultSCTLogID() SHA256Hash {

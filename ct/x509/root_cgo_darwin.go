@@ -5,6 +5,7 @@
 // +build cgo,!arm,!arm64,!ios
 
 package x509
+
 // Use non-cgo on Darwin to prevent duplicate symbols on cgo
 
 //

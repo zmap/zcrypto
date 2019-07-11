@@ -485,22 +485,22 @@ func nameForHash(h uint8) string {
 }
 
 func signatureToName(n string) uint8 {
-	for k,v := range(signatureNames) {
+	for k, v := range signatureNames {
 		if v == n {
 			return k
 		}
 	}
-	s,_ := strconv.ParseInt(strings.TrimPrefix(n, "unknown."), 10, 32)
+	s, _ := strconv.ParseInt(strings.TrimPrefix(n, "unknown."), 10, 32)
 	return uint8(s)
 }
 
 func hashToName(n string) uint8 {
-	for k,v := range(hashNames) {
+	for k, v := range hashNames {
 		if v == n {
 			return k
 		}
 	}
-	h,_ := strconv.ParseInt(strings.TrimPrefix(n, "unknown."), 10, 32)
+	h, _ := strconv.ParseInt(strings.TrimPrefix(n, "unknown."), 10, 32)
 	return uint8(h)
 }
 
