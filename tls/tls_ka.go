@@ -39,8 +39,9 @@ func (sh *SignatureAndHash) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, aux); err != nil {
 		return err
 	}
-	// TODO implement
-	panic("unimplemented")
+	sh.signature = signatureToName(aux.SignatureAlgorithm)
+	sh.hash = hashToName(aux.HashAlgorithm)
+	return nil
 }
 
 func (ka *rsaKeyAgreement) RSAParams() *jsonKeys.RSAPublicKey {
