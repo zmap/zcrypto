@@ -103,11 +103,11 @@ func TestKeyUsageJSON(t *testing.T) {
 		expectDecipherOnly      bool
 	}{
 		{
-			k: KeyUsageDigitalSignature,
+			k:                      KeyUsageDigitalSignature,
 			expectDigitalSignature: true,
 		},
 		{
-			k: KeyUsageCertSign + KeyUsageCRLSign,
+			k:                     KeyUsageCertSign + KeyUsageCRLSign,
 			expectCertificateSign: true,
 			expectCrlSign:         true,
 		},

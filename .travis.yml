@@ -10,6 +10,11 @@ install:
   - go install -mod=vendor -v ./...
 
 script:
+  # Fast-fail on non-zero exit codes
+  - set -e
+  # Verify that all files have been gofmt'd with simplification.
+  - diff <(go fmt ./... 2>&1) <(printf "")
+  # Verify that unit tests pass
   - go test -mod=vendor -v ./...
 
 notifications:

@@ -156,7 +156,7 @@ func (s *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
 // the OID is unfortunately stored outside the scope of a
 // SignatureAlgorithm struct and cannot be recovered without access to the
 // entire Certificate if we do not know the signature algorithm.
-func (c *Certificate) jsonifySignatureAlgorithm() (JSONSignatureAlgorithm) {
+func (c *Certificate) jsonifySignatureAlgorithm() JSONSignatureAlgorithm {
 	aux := JSONSignatureAlgorithm{}
 	if c.SignatureAlgorithm == 0 {
 		aux.Name = "unknown_algorithm"
