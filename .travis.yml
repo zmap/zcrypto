@@ -4,8 +4,7 @@ go:
   - "1.11.x"
 
 env:
-  - GO111MODULE=on
-  - GOFLAGS="-mod=vendor"
+  - GO111MODULE="on" GOFLAGS="-mod=vendor"
 
 install:
   - go install -v ./...
