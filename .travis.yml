@@ -5,9 +5,10 @@ go:
 
 env:
   - GO111MODULE=on
+  - GOFLAGS="-mod=vendor"
 
 install:
-  - go install -mod=vendor -v ./...
+  - go install -v ./...
 
 script:
   # Fast-fail on non-zero exit codes
@@ -15,7 +16,7 @@ script:
   # Verify that all files have been gofmt'd with simplification.
   - diff <(go fmt ./... 2>&1) <(printf "")
   # Verify that unit tests pass
-  - go test -mod=vendor -v ./...
+  - go test -v ./...
 
 notifications:
   slack:
