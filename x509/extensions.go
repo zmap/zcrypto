@@ -8,11 +8,11 @@ import (
 	"encoding/asn1"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/smallstep/zcrypto/x509/ct"
 	"github.com/smallstep/zcrypto/x509/pkix"
 )
@@ -119,15 +119,10 @@ func (cp *CertificatePoliciesData) MarshalJSON() ([]byte, error) {
 // StepProvisioner represents identifying information about a provisioner
 // in the step ecosystem encoded as ASN1.
 type StepProvisioner struct {
-	Type         int
-	Name         []byte
-	CredentialID []byte
-}
-
-type jsonStepProvisioner struct {
-	Type         string `json:"type"`
-	Name         string `json:"name"`
-	CredentialID string `json:"credentialID"`
+	Type          int
+	Name          []byte
+	CredentialID  []byte
+	KeyValuePairs []string `asn1:"optional,omitempty"`
 }
 
 // MarshalJSON marshals StepProvisioner to JSON.
@@ -136,33 +131,73 @@ func (sp *StepProvisioner) MarshalJSON() ([]byte, error) {
 	switch sp.Type {
 	case 1:
 		typ = "JWK"
+	case 2:
+		typ = "OIDC"
+	case 3:
+		typ = "GCP"
+	case 4:
+		typ = "AWS"
+	case 5:
+		typ = "Azure"
 	default:
-		return nil, errors.Errorf("unexpected step provisioner type %d", sp.Type)
+		typ = fmt.Sprintf("Unknown (%#x)", sp.Type)
 	}
 
-	return json.Marshal(jsonStepProvisioner{
-		Type:         typ,
-		Name:         string(sp.Name),
-		CredentialID: string(sp.CredentialID),
-	})
+	m := map[string]string{
+		"type":         typ,
+		"name":         string(sp.Name),
+		"credentialID": string(sp.CredentialID),
+	}
+	for i, l := 0, len(sp.KeyValuePairs); i < l; i += 2 {
+		key, value := sp.KeyValuePairs[i], "-"
+		if i+1 < l {
+			value = sp.KeyValuePairs[i+1]
+		}
+		if key != "" {
+			if r := rune(key[0]); r >= 'A' && r <= 'Z' {
+				key = strings.ToLower(string(r)) + key[1:]
+			}
+		}
+		m[key] = value
+	}
+
+	return json.Marshal(m)
 }
 
 // UnmarshalJSON unmarshals data into a StepProvisioner type.
 func (sp *StepProvisioner) UnmarshalJSON(b []byte) error {
-	var jsan jsonStepProvisioner
-	err := json.Unmarshal(b, &jsan)
-	if err != nil {
+	jsan := make(map[string]string)
+	if err := json.Unmarshal(b, &jsan); err != nil {
 		return err
 	}
 
-	switch jsan.Type {
-	case "JWK":
-		sp.Type = 1
-	default:
-		return errors.Errorf("unexpexted step provisioner type %s", jsan.Type)
+	for k, v := range jsan {
+		switch k {
+		case "type":
+			switch v {
+			case "JWK":
+				sp.Type = 1
+			case "OIDC":
+				sp.Type = 2
+			case "GCP":
+				sp.Type = 3
+			case "AWS":
+				sp.Type = 4
+			case "Azure":
+				sp.Type = 5
+			default:
+				if _, err := fmt.Sscanf(v, "Unknown (0x%x)", &sp.Type); err != nil {
+					return fmt.Errorf("unexpected step provisioner type %s", v)
+				}
+			}
+		case "name":
+			sp.Name = []byte(v)
+		case "credentialID":
+			sp.CredentialID = []byte(v)
+		default:
+			sp.KeyValuePairs = append(sp.KeyValuePairs, k, v)
+		}
 	}
-	sp.Name = []byte(jsan.Name)
-	sp.CredentialID = []byte(jsan.CredentialID)
 
 	return nil
 }
