@@ -415,7 +415,6 @@ type JSONCertificate struct {
 	SubjectDN                 string                       `json:"subject_dn,omitempty"`
 	SubjectKeyInfo            JSONSubjectKeyInfo           `json:"subject_key_info"`
 	Extensions                *CertificateExtensions       `json:"extensions,omitempty"`
-	ExtensionsMap             map[string]pkix.Extension    `json:"extensionsMap,omitempty"`
 	UnknownExtensions         UnknownCertificateExtensions `json:"unknown_extensions,omitempty"`
 	Signature                 JSONSignature                `json:"signature"`
 	FingerprintMD5            CertificateFingerprint       `json:"fingerprint_md5"`
@@ -479,7 +478,6 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 
 	jc.SubjectKeyInfo = c.jsonifySubjectKey()
 	jc.Extensions, jc.UnknownExtensions = c.jsonifyExtensions()
-	jc.ExtensionsMap = c.ExtensionsMap
 
 	// TODO: Handle the fact this might not match
 	jc.SignatureAlgorithm = c.jsonifySignatureAlgorithm()
