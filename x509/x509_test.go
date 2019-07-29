@@ -190,6 +190,29 @@ func TestCertificateParse(t *testing.T) {
 	if n := len(certs[0].Extensions); n != expectedExtensions {
 		t.Errorf("want %d extensions, got %d", expectedExtensions, n)
 	}
+
+	if extMap := certs[0].ExtensionsMap; extMap == nil {
+		t.Fatal("expected non-nil ExtensionsMap, got nil")
+	} else if len(extMap) != expectedExtensions {
+		t.Errorf("wanted %d extensions in ExtensionsMap, got %d",
+			expectedExtensions, len(extMap))
+	}
+
+	expectedOIDs := []string{
+		"2.5.29.31",
+		"1.3.6.1.5.5.7.1.1",
+		"2.5.29.19",
+		"2.5.29.37",
+	}
+	for _, expectedOID := range expectedOIDs {
+		if ext, present := certs[0].ExtensionsMap[expectedOID]; !present {
+			t.Errorf("expected oid %q missing in ExtensionsMap", expectedOID)
+		} else if ext.Id.String() != expectedOID {
+			t.Errorf("expected oid %q in ExtensionsMap to key "+
+				"pkix.Extension with same oid, got %q",
+				expectedOID, ext.Id.String())
+		}
+	}
 }
 
 var certBytes = "308203223082028ba00302010202106edf0d9499fd4533dd1297fc42a93be1300d06092a864886" +
