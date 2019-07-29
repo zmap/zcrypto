@@ -693,6 +693,11 @@ type Certificate struct {
 	// field is ignored, see ExtraExtensions.
 	Extensions []pkix.Extension
 
+	// ExtensionsMap contains raw x.509 extensions keyed by OID (in string
+	// representation). It allows fast membership testing of specific OIDs. Like
+	// the Extensions field this field is ignored when marshaling certificates.
+	ExtensionsMap map[string]pkix.Extension
+
 	// ExtraExtensions contains extensions to be copied, raw, into any
 	// marshaled certificates. Values override any extensions that would
 	// otherwise be produced based on the other fields. The ExtraExtensions
@@ -1541,8 +1546,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 	out.IssuerUniqueId = in.TBSCertificate.UniqueId
 	out.SubjectUniqueId = in.TBSCertificate.SubjectUniqueId
 
+	out.ExtensionsMap = make(map[string]pkix.Extension, len(in.TBSCertificate.Extensions))
 	for _, e := range in.TBSCertificate.Extensions {
 		out.Extensions = append(out.Extensions, e)
+		out.ExtensionsMap[e.Id.String()] = e
 
 		if len(e.Id) == 4 && e.Id[0] == 2 && e.Id[1] == 5 && e.Id[2] == 29 {
 			switch e.Id[3] {
