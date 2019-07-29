@@ -695,7 +695,10 @@ type Certificate struct {
 
 	// ExtensionsMap contains raw x.509 extensions keyed by OID (in string
 	// representation). It allows fast membership testing of specific OIDs. Like
-	// the Extensions field this field is ignored when marshaling certificates.
+	// the Extensions field this field is ignored when marshaling certificates. If
+	// multiple extensions with the same OID are present only the last
+	// pkix.Extension will be in this map. Consult the `Extensions` slice when it
+	// is required to process all extensions including duplicates.
 	ExtensionsMap map[string]pkix.Extension
 
 	// ExtraExtensions contains extensions to be copied, raw, into any
