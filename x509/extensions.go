@@ -146,9 +146,11 @@ func (sp *StepProvisioner) MarshalJSON() ([]byte, error) {
 	}
 
 	m := map[string]string{
-		"type":         typ,
-		"name":         string(sp.Name),
-		"credentialID": string(sp.CredentialID),
+		"type": typ,
+		"name": string(sp.Name),
+	}
+	if len(sp.CredentialID) != 0 {
+		m["credentialID"] = string(sp.CredentialID)
 	}
 	for i, l := 0, len(sp.KeyValuePairs); i < l; i += 2 {
 		key, value := sp.KeyValuePairs[i], "-"
