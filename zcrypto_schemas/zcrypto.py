@@ -468,8 +468,8 @@ hash_algorithm_names = getUnknowns({
 # tls/tls_ka.go: auxSignatureAndHash (SignatureAndHash)
 SignatureAndHash = SubRecordType({
     # Defined in tls_names.go (signatureNames).
-    "signature_algorithm": Enum(values=signature_algorithm_names.values(), doc="The name of the signature algorithm, as defined in RFC5246 section 7.4.1.4.1. Unrecognized values are of the form 'unknown.255'."),
-    "hash_algorithm": Enum(values=hash_algorithm_names.values(), doc="The name of the hash algorithm, as defined in RFC5246 section 7.4.1.4.1. Unrecognized values are of the form 'unknown.255'."),
+    "signature_algorithm": Enum(values=list(signature_algorithm_names.values()), doc="The name of the signature algorithm, as defined in RFC5246 section 7.4.1.4.1. Unrecognized values are of the form 'unknown.255'."),
+    "hash_algorithm": Enum(values=list(hash_algorithm_names.values()), doc="The name of the hash algorithm, as defined in RFC5246 section 7.4.1.4.1. Unrecognized values are of the form 'unknown.255'."),
 }, doc="mirrors the TLS 1.2, SignatureAndHashAlgorithm struct. See RFC 5246, section A.4.1.")
 
 # tls_names.go: TLSVersion.String()
