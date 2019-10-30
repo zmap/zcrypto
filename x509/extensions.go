@@ -143,6 +143,8 @@ func (sp *StepProvisioner) MarshalJSON() ([]byte, error) {
 		typ = "ACME"
 	case 7:
 		typ = "X5C"
+	case 8:
+		typ = "K8sSA"
 	default:
 		typ = fmt.Sprintf("Unknown (%#x)", sp.Type)
 	}
@@ -195,6 +197,8 @@ func (sp *StepProvisioner) UnmarshalJSON(b []byte) error {
 				sp.Type = 6
 			case "X5C":
 				sp.Type = 7
+			case "K8sSA":
+				sp.Type = 8
 			default:
 				if _, err := fmt.Sscanf(v, "Unknown (0x%x)", &sp.Type); err != nil {
 					return fmt.Errorf("unexpected step provisioner type %s", v)
