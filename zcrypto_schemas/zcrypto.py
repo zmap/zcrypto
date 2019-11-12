@@ -468,8 +468,8 @@ hash_algorithm_names = getUnknowns({
 # tls/tls_ka.go: auxSignatureAndHash (SignatureAndHash)
 SignatureAndHash = SubRecordType({
     # Defined in tls_names.go (signatureNames).
-    "signature_algorithm": Enum(values=signature_algorithm_names.values(), doc="The name of the signature algorithm, as defined in RFC5246 section 7.4.1.4.1. Unrecognized values are of the form 'unknown.255'."),
-    "hash_algorithm": Enum(values=hash_algorithm_names.values(), doc="The name of the hash algorithm, as defined in RFC5246 section 7.4.1.4.1. Unrecognized values are of the form 'unknown.255'."),
+    "signature_algorithm": Enum(values=list(signature_algorithm_names.values()), doc="The name of the signature algorithm, as defined in RFC5246 section 7.4.1.4.1. Unrecognized values are of the form 'unknown.255'."),
+    "hash_algorithm": Enum(values=list(hash_algorithm_names.values()), doc="The name of the hash algorithm, as defined in RFC5246 section 7.4.1.4.1. Unrecognized values are of the form 'unknown.255'."),
 }, doc="mirrors the TLS 1.2, SignatureAndHashAlgorithm struct. See RFC 5246, section A.4.1.")
 
 # tls_names.go: TLSVersion.String()
@@ -535,7 +535,7 @@ curve_id_names = {
 # Not to be confused with TLSCurveID from json/ecdhe.go.
 CurveID = SubRecordType({
     "hex": String(doc="The hexadecimal encoding of the numeric curve identifier, left-padded with zeroes, prefixed with 0x.", examples=["0x0001", "0x0026", "0xFF01"]),
-    "name": Enum(values=curve_id_names.values(), doc="The enum name of the identified curve; see http://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8."),
+    "name": Enum(values=list(curve_id_names.values()), doc="The enum name of the identified curve; see http://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8."),
     "value": Unsigned16BitInteger(doc="The numerical value of the curve identifier."),
 })
 
