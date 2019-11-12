@@ -51,11 +51,11 @@ func TestGeneralNamesJSON(t *testing.T) {
 				DirectoryNames: []pkix.Name{testName},
 				DNSNames:       []string{"www.censys.io", "censys.singles", "zmap.io"},
 				EDIPartyNames: []pkix.EDIPartyName{
-					pkix.EDIPartyName{
+					{
 						NameAssigner: "test1",
 						PartyName:    "test2",
 					},
-					pkix.EDIPartyName{
+					{
 						NameAssigner: "test3",
 						PartyName:    "test4",
 					},
@@ -63,18 +63,18 @@ func TestGeneralNamesJSON(t *testing.T) {
 				EmailAddresses: []string{"test1@censys.io", "test2@censys.io"},
 				IPAddresses:    []net.IP{net.IPv4(127, 0, 0, 1)},
 				OtherNames: []pkix.OtherName{
-					pkix.OtherName{
+					{
 						TypeID: asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 28},
 						Value:  asn1.RawValue{},
 					},
-					pkix.OtherName{
+					{
 						TypeID: asn1.ObjectIdentifier{1, 2, 840, 10008, 1, 2, 4, 52},
 						Value:  asn1.RawValue{},
 					},
 				},
 				RegisteredIDs: []asn1.ObjectIdentifier{
-					asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 28},
-					asn1.ObjectIdentifier{1, 2, 840, 10008, 1, 2, 4, 52},
+					{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 28},
+					{1, 2, 840, 10008, 1, 2, 4, 52},
 				},
 				URIs: []string{"www.censys.io", "censys.singles", "zmap.io"},
 			},
@@ -199,12 +199,12 @@ func TestNameConstraintJSON(t *testing.T) {
 		{
 			nc: NameConstraints{
 				ExcludedDNSNames: []GeneralSubtreeString{
-					GeneralSubtreeString{
+					{
 						Data: "censys.singles",
 					},
 				},
 				PermittedDirectoryNames: []GeneralSubtreeName{
-					GeneralSubtreeName{
+					{
 						Data: testName,
 					},
 				},
@@ -213,42 +213,42 @@ func TestNameConstraintJSON(t *testing.T) {
 		{
 			nc: NameConstraints{
 				PermittedDNSNames: []GeneralSubtreeString{
-					GeneralSubtreeString{
+					{
 						Data: "censys.io",
 					},
-					GeneralSubtreeString{
+					{
 						Data: "censys.singles",
 					},
 				},
 				PermittedEmailAddresses: []GeneralSubtreeString{
-					GeneralSubtreeString{
+					{
 						Data: "test1@censys.io",
 					},
-					GeneralSubtreeString{
+					{
 						Data: "test2@censys.io",
 					},
 				},
 				PermittedIPAddresses: []GeneralSubtreeIP{
-					GeneralSubtreeIP{
+					{
 						Data: net.IPNet{IP: net.IPv4(127, 0, 0, 1), Mask: net.IPv4Mask(0, 0, 0, 0)},
 					},
-					GeneralSubtreeIP{
+					{
 						Data: net.IPNet{IP: net.IPv4(127, 0, 0, 2), Mask: net.IPv4Mask(0, 0, 0, 0)},
 					},
 				},
 				PermittedDirectoryNames: []GeneralSubtreeName{
-					GeneralSubtreeName{
+					{
 						Data: testName,
 					},
 				},
 				PermittedEdiPartyNames: []GeneralSubtreeEdi{
-					GeneralSubtreeEdi{
+					{
 						Data: pkix.EDIPartyName{
 							NameAssigner: "test1",
 							PartyName:    "test2",
 						},
 					},
-					GeneralSubtreeEdi{
+					{
 						Data: pkix.EDIPartyName{
 							NameAssigner: "test3",
 							PartyName:    "test4",
@@ -256,50 +256,50 @@ func TestNameConstraintJSON(t *testing.T) {
 					},
 				},
 				PermittedRegisteredIDs: []GeneralSubtreeOid{
-					GeneralSubtreeOid{
+					{
 						Data: asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 28},
 					},
-					GeneralSubtreeOid{
+					{
 						Data: asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 29},
 					},
 				},
 				ExcludedEmailAddresses: []GeneralSubtreeString{
-					GeneralSubtreeString{
+					{
 						Data: "test1@censys.io",
 					},
-					GeneralSubtreeString{
+					{
 						Data: "test2@censys.io",
 					},
 				},
 				ExcludedDNSNames: []GeneralSubtreeString{
-					GeneralSubtreeString{
+					{
 						Data: "censys.io",
 					},
-					GeneralSubtreeString{
+					{
 						Data: "censys.singles",
 					},
 				},
 				ExcludedIPAddresses: []GeneralSubtreeIP{
-					GeneralSubtreeIP{
+					{
 						Data: net.IPNet{IP: net.IPv4(127, 0, 0, 1), Mask: net.IPv4Mask(0, 0, 0, 0)},
 					},
-					GeneralSubtreeIP{
+					{
 						Data: net.IPNet{IP: net.IPv4(127, 0, 0, 2), Mask: net.IPv4Mask(0, 0, 0, 0)},
 					},
 				},
 				ExcludedDirectoryNames: []GeneralSubtreeName{
-					GeneralSubtreeName{
+					{
 						Data: testName,
 					},
 				},
 				ExcludedEdiPartyNames: []GeneralSubtreeEdi{
-					GeneralSubtreeEdi{
+					{
 						Data: pkix.EDIPartyName{
 							NameAssigner: "test1",
 							PartyName:    "test2",
 						},
 					},
-					GeneralSubtreeEdi{
+					{
 						Data: pkix.EDIPartyName{
 							NameAssigner: "test3",
 							PartyName:    "test4",
@@ -307,10 +307,10 @@ func TestNameConstraintJSON(t *testing.T) {
 					},
 				},
 				ExcludedRegisteredIDs: []GeneralSubtreeOid{
-					GeneralSubtreeOid{
+					{
 						Data: asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 28},
 					},
-					GeneralSubtreeOid{
+					{
 						Data: asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 29},
 					},
 				},
@@ -501,8 +501,8 @@ func TestExtendedKeyUsageExtensionJSON(t *testing.T) {
 					ExtKeyUsageCodeSigning,
 				},
 				Unknown: []asn1.ObjectIdentifier{
-					asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 28},
-					asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 29},
+					{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 28},
+					{1, 3, 6, 1, 4, 1, 1466, 115, 121, 1, 29},
 				},
 			},
 		},

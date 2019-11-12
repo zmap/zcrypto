@@ -1,7 +1,6 @@
 module github.com/zmap/zcrypto
 
 require (
-	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mreiferson/go-httpclient v0.0.0-20160630210159-31f0106b4474
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7

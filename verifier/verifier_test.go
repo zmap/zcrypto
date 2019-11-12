@@ -321,7 +321,7 @@ var verifyTests = []verifyTest{
 		},
 		CurrentTime: 1501804800, // 2017-08-04T00:00:00
 		ExpectedChains: [][]int{
-			[]int{0},
+			{0},
 		},
 		ExpiredChains:   nil,
 		NeverChains:     nil,
@@ -343,7 +343,7 @@ var verifyTests = []verifyTest{
 		},
 		CurrentTime: 1501804800, // 2017-08-04T00:00:00
 		ExpectedChains: [][]int{
-			[]int{0, 2, 6}, []int{0, 3, 5},
+			{0, 2, 6}, {0, 3, 5},
 		},
 		ExpiredChains:   nil,
 		NeverChains:     nil,
@@ -364,7 +364,7 @@ var verifyTests = []verifyTest{
 		},
 		CurrentTime: 1501804800, // 2017-08-04T00:00:00
 		ExpectedChains: [][]int{
-			[]int{0, 1, 5}, []int{0, 2, 4},
+			{0, 1, 5}, {0, 2, 4},
 		},
 		ExpiredChains:   nil,
 		NeverChains:     nil,
@@ -403,22 +403,22 @@ var verifyTests = []verifyTest{
 		},
 		CurrentTime: 1501545600, // 2017-08-01T00:00:00
 		ExpectedChains: [][]int{
-			[]int{0, 12, 18, 23},
-			[]int{0, 13, 22, 23},
+			{0, 12, 18, 23},
+			{0, 13, 22, 23},
 		},
 		ExpiredChains: [][]int{
-			[]int{0, 8, 15, 17, 23},
-			[]int{0, 8, 15, 18, 23},
-			[]int{0, 9, 17, 23},
-			[]int{0, 9, 18, 23},
-			[]int{0, 10, 17, 23},
-			[]int{0, 10, 18, 23},
-			[]int{0, 11, 17, 23},
-			[]int{0, 11, 18, 23},
-			[]int{0, 12, 17, 23},
+			{0, 8, 15, 17, 23},
+			{0, 8, 15, 18, 23},
+			{0, 9, 17, 23},
+			{0, 9, 18, 23},
+			{0, 10, 17, 23},
+			{0, 10, 18, 23},
+			{0, 11, 17, 23},
+			{0, 11, 18, 23},
+			{0, 12, 17, 23},
 		},
 		NeverChains: [][]int{
-			[]int{0, 8, 16, 23},
+			{0, 8, 16, 23},
 		},
 		ExpectedParents: []int{12, 13},
 	},
@@ -455,22 +455,22 @@ var verifyTests = []verifyTest{
 		},
 		CurrentTime: 1501545600, // 2017-08-01T00:00:00
 		ExpectedChains: [][]int{
-			[]int{0, 12, 18, 23},
-			[]int{0, 13, 22, 23},
+			{0, 12, 18, 23},
+			{0, 13, 22, 23},
 		},
 		ExpiredChains: [][]int{
-			[]int{0, 8, 15, 17, 23},
-			[]int{0, 8, 15, 18, 23},
-			[]int{0, 9, 17, 23},
-			[]int{0, 9, 18, 23},
-			[]int{0, 10, 17, 23},
-			[]int{0, 10, 18, 23},
-			[]int{0, 11, 17, 23},
-			[]int{0, 11, 18, 23},
-			[]int{0, 12, 17, 23},
+			{0, 8, 15, 17, 23},
+			{0, 8, 15, 18, 23},
+			{0, 9, 17, 23},
+			{0, 9, 18, 23},
+			{0, 10, 17, 23},
+			{0, 10, 18, 23},
+			{0, 11, 17, 23},
+			{0, 11, 18, 23},
+			{0, 12, 17, 23},
 		},
 		NeverChains: [][]int{
-			[]int{0, 8, 16, 23},
+			{0, 8, 16, 23},
 		},
 		ExpectedParents: []int{12, 13},
 	},
@@ -486,7 +486,7 @@ var verifyTests = []verifyTest{
 		CurrentTime: 1395785200,
 		DNSName:     "www.google.com",
 		ExpectedChains: [][]int{
-			[]int{0, 1, 2},
+			{0, 1, 2},
 		},
 		ExpectedParents: []int{1},
 	},
@@ -502,7 +502,7 @@ var verifyTests = []verifyTest{
 		CurrentTime: 1395785200,
 		DNSName:     "www.google.com",
 		ExpectedChains: [][]int{
-			[]int{0, 1, 2},
+			{0, 1, 2},
 		},
 		ExpectedParents: []int{1},
 	},
@@ -519,7 +519,7 @@ var verifyTests = []verifyTest{
 		DNSName:        "www.google.com",
 		ExpectedChains: nil,
 		ExpiredChains: [][]int{
-			[]int{0, 1, 2},
+			{0, 1, 2},
 		},
 		ExpectedParents: []int{1},
 	},
@@ -536,7 +536,7 @@ var verifyTests = []verifyTest{
 		DNSName:        "www.google.com",
 		ExpectedChains: nil,
 		ExpiredChains: [][]int{
-			[]int{0, 1, 2},
+			{0, 1, 2},
 		},
 		ExpectedParents: []int{1},
 	},
@@ -552,7 +552,7 @@ var verifyTests = []verifyTest{
 		CurrentTime: 1395785200,
 		DNSName:     "www.example.com",
 		ExpectedChains: [][]int{
-			[]int{0, 1, 2},
+			{0, 1, 2},
 		},
 		ExpectedParents:     []int{1},
 		ExpectHostnameError: true,
@@ -581,7 +581,7 @@ var verifyTests = []verifyTest{
 		CurrentTime: 1395785200,
 		DNSName:     "www.google.com",
 		ExpectedChains: [][]int{
-			[]int{0, 1, 3},
+			{0, 1, 3},
 		},
 		ExpectedParents: []int{1},
 	},
