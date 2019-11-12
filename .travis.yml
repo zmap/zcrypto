@@ -1,10 +1,10 @@
 language: go
 
 go:
-  - "1.12.x"
+  - "1.13.x"
 
 env:
-  - GO111MODULE="on" GOFLAGS="-mod=vendor"
+  - GOFLAGS="-mod=vendor"
 
 install:
   - go install -v ./...
