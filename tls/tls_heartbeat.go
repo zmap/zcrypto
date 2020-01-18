@@ -38,10 +38,7 @@ type heartbleedMessage struct {
 }
 
 func (m *heartbleedMessage) marshal() []byte {
-	x := make([]byte, 3)
-	x[0] = 1
-	x[1] = byte(0x00)
-	x[2] = byte(0x00)
+	x := []byte{1, 0, 0}
 	m.raw = x
 	return x
 }
@@ -63,18 +60,14 @@ func (c *Conn) CheckHeartbleed(b []byte) (n int, err error) {
 		return 0, err
 	}
 
-	if err = c.readRecord(recordTypeHeartbeat); err != nil {
+	if err = c.readRecord(); err != nil {
 		return 0, HeartbleedError
 	}
 	if c.in.err != nil {
 		return 0, HeartbleedError
 	}
-	n, err = c.input.Read(b)
-	if c.input.off >= len(c.input.data) {
-		c.in.freeBlock(c.input)
-		c.input = nil
-	}
 
+	n, err = c.input.Read(b)
 	if n != 0 {
 		return n, HeartbleedError
 	}

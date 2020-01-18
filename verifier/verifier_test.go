@@ -589,7 +589,6 @@ var verifyTests = []verifyTest{
 
 func TestVerify(t *testing.T) {
 	for _, test := range verifyTests {
-
 		t.Run(test.Name, func(t *testing.T) {
 			test.parseSelf()
 			v := test.makeVerifier()

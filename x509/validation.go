@@ -19,7 +19,7 @@ type Validation struct {
 // also check if the domain matches.
 //
 // Deprecated: Use verifier.Verify() instead.
-func (c *Certificate) ValidateWithStupidDetail(opts VerifyOptions) (chains []CertificateChain, validation *Validation, err error) {
+func (c *Certificate) ValidateWithStupidDetail(opts VerifyOptions) (chains [][]*Certificate, validation *Validation, err error) {
 
 	// Manually set the time, so that all verifies we do get the same time
 	if opts.CurrentTime.IsZero() {
@@ -34,7 +34,7 @@ func (c *Certificate) ValidateWithStupidDetail(opts VerifyOptions) (chains []Cer
 	out := new(Validation)
 	out.Domain = domain
 
-	if chains, _, _, err = c.Verify(opts); err != nil {
+	if chains, err = c.Verify(opts); err != nil {
 		out.BrowserError = err.Error()
 	} else {
 		out.BrowserTrusted = true

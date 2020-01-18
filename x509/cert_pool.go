@@ -6,13 +6,14 @@ package x509
 
 import (
 	"encoding/pem"
+	"errors"
+	"runtime"
 )
 
 // CertPool is a set of certificates.
 type CertPool struct {
 	bySubjectKeyId map[string][]int
 	byName         map[string][]int
-	bySHA256       map[string]int
 	certs          []*Certificate
 }
 
@@ -21,90 +22,79 @@ func NewCertPool() *CertPool {
 	return &CertPool{
 		bySubjectKeyId: make(map[string][]int),
 		byName:         make(map[string][]int),
-		bySHA256:       make(map[string]int),
 	}
 }
 
-// findVerifiedParents attempts to find certificates in s which have signed the
-// given certificate. If any candidates were rejected then errCert will be set
-// to one of them, arbitrarily, and err will contain the reason that it was
-// rejected.
-func (s *CertPool) findVerifiedParents(cert *Certificate) (parents []int, errCert *Certificate, err error) {
-	if s == nil {
-		return
+func (s *CertPool) copy() *CertPool {
+	p := &CertPool{
+		bySubjectKeyId: make(map[string][]int, len(s.bySubjectKeyId)),
+		byName:         make(map[string][]int, len(s.byName)),
+		certs:          make([]*Certificate, len(s.certs)),
 	}
-	var candidates []int
+	for k, v := range s.bySubjectKeyId {
+		indexes := make([]int, len(v))
+		copy(indexes, v)
+		p.bySubjectKeyId[k] = indexes
+	}
+	for k, v := range s.byName {
+		indexes := make([]int, len(v))
+		copy(indexes, v)
+		p.byName[k] = indexes
+	}
+	copy(p.certs, s.certs)
+	return p
+}
 
+// SystemCertPool returns a copy of the system cert pool.
+//
+// Any mutations to the returned pool are not written to disk and do
+// not affect any other pool returned by SystemCertPool.
+//
+// New changes in the system cert pool might not be reflected
+// in subsequent calls.
+func SystemCertPool() (*CertPool, error) {
+	if runtime.GOOS == "windows" {
+		// Issue 16736, 18609:
+		return nil, errors.New("crypto/x509: system root pool is not available on Windows")
+	}
+
+	if sysRoots := systemRootsPool(); sysRoots != nil {
+		return sysRoots.copy(), nil
+	}
+
+	return loadSystemRoots()
+}
+
+// findPotentialParents returns the indexes of certificates in s which might
+// have signed cert. The caller must not modify the returned slice.
+func (s *CertPool) findPotentialParents(cert *Certificate) []int {
+	if s == nil {
+		return nil
+	}
+
+	var candidates []int
 	if len(cert.AuthorityKeyId) > 0 {
-		candidates, _ = s.bySubjectKeyId[string(cert.AuthorityKeyId)]
+		candidates = s.bySubjectKeyId[string(cert.AuthorityKeyId)]
 	}
 	if len(candidates) == 0 {
-		candidates, _ = s.byName[string(cert.RawIssuer)]
+		candidates = s.byName[string(cert.RawIssuer)]
 	}
-
-	for _, c := range candidates {
-		if err = cert.CheckSignatureFrom(s.certs[c]); err == nil {
-			cert.validSignature = true
-			parents = append(parents, c)
-		} else {
-			errCert = s.certs[c]
-		}
-	}
-
-	return
+	return candidates
 }
 
-// Contains returns true if c is in s.
-func (s *CertPool) Contains(c *Certificate) bool {
+func (s *CertPool) contains(cert *Certificate) bool {
 	if s == nil {
 		return false
 	}
-	_, ok := s.bySHA256[string(c.FingerprintSHA256)]
-	return ok
-}
 
-// Covers returns true if all certs in pool are in s.
-func (s *CertPool) Covers(pool *CertPool) bool {
-	if pool == nil {
-		return true
-	}
-	for _, c := range pool.certs {
-		if !s.Contains(c) {
-			return false
+	candidates := s.byName[string(cert.RawSubject)]
+	for _, c := range candidates {
+		if s.certs[c].Equal(cert) {
+			return true
 		}
 	}
-	return true
-}
 
-// Certificates returns a list of parsed certificates in the pool.
-func (s *CertPool) Certificates() []*Certificate {
-	out := make([]*Certificate, 0, len(s.certs))
-	out = append(out, s.certs...)
-	return out
-}
-
-// Size returns the number of unique certificates in the CertPool.
-func (s *CertPool) Size() int {
-	if s == nil {
-		return 0
-	}
-	return len(s.certs)
-}
-
-// Sum returns the union of two certificate pools as a new certificate pool.
-func (s *CertPool) Sum(other *CertPool) (sum *CertPool) {
-	sum = NewCertPool()
-	if s != nil {
-		for _, c := range s.certs {
-			sum.AddCert(c)
-		}
-	}
-	if other != nil {
-		for _, c := range other.certs {
-			sum.AddCert(c)
-		}
-	}
-	return
+	return false
 }
 
 // AddCert adds a certificate to a pool.
@@ -114,8 +104,7 @@ func (s *CertPool) AddCert(cert *Certificate) {
 	}
 
 	// Check that the certificate isn't being added twice.
-	sha256fp := string(cert.FingerprintSHA256)
-	if _, ok := s.bySHA256[sha256fp]; ok {
+	if s.contains(cert) {
 		return
 	}
 
@@ -128,7 +117,6 @@ func (s *CertPool) AddCert(cert *Certificate) {
 	}
 	name := string(cert.RawSubject)
 	s.byName[name] = append(s.byName[name], n)
-	s.bySHA256[sha256fp] = n
 }
 
 // AppendCertsFromPEM attempts to parse a series of PEM encoded certificates.

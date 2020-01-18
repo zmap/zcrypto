@@ -42,7 +42,7 @@ func (g *Graph) WalkChainsAsync(c *x509.Certificate, opt WalkOptions) chan x509.
 		parentCandidates := g.nodesBySubject[string(c.RawIssuer)]
 		for _, candidate := range parentCandidates {
 			identity := candidate.SubjectAndKey
-			if err := x509.CheckSignatureFromKey(identity.PublicKey, c.SignatureAlgorithm, c.RawTBSCertificate, c.Signature); err != nil {
+			if err := x509.CheckSignature(c.SignatureAlgorithm, c.RawTBSCertificate, c.Signature, identity.PublicKey); err != nil {
 				continue
 			}
 			start.issuer = candidate

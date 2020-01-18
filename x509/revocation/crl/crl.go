@@ -100,7 +100,6 @@ type RevocationData struct {
 // ListExtensionData - Data from optional, non-critical pkix.CertificateList extensions
 type ListExtensionData struct {
 	CRLNumber int
-	AuthKeyID x509.SubjAuthKeyId `json:"authority_key_id,omitempty"`
 }
 
 // RevokedCertExtensionData - Data from optional, non-critical pkix.RevokedCertificate extensions

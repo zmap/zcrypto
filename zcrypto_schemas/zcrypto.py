@@ -561,7 +561,6 @@ ClientHello = SubRecordType({
     "extended_master_secret": Boolean(doc="This is true if the client has the Extended Master Secret extension (see https://tools.ietf.org/html/rfc7627)."),
     "next_protocol_negotiation": Boolean(doc="This is true if the client has the Next Protocol Negotiation extension (see https://tools.ietf.org/id/draft-agl-tls-nextprotoneg-03.html)."),
     "server_name": String(doc="This contains the server name from the Server Name Identification (SNI) extension, if present (see https://tools.ietf.org/html/rfc6066#section-3)."),
-    "scts": Boolean(doc="This is true if the client has the Signed Certificate Timestamp extension, if present (see https://tools.ietf.org/html/rfc6962#section-3.3.1)"),
     "supported_curves": ListOf(CurveID(), doc="The list of supported curves in the Supported Elliptic Curves extension, if present (see https://tools.ietf.org/html/rfc4492#section-5.1.1)"),
     "supported_point_formats": ListOf(PointFormat(), doc="The list of supported elliptic curve point formats in the Supported Point Formats extension, if present (see https://tools.ietf.org/html/rfc4492#section-5.1.2)."),
     "session_ticket": SessionTicket(doc="The session ticket in the Session Ticket extension, if present (see https://tools.ietf.org/html/rfc5077)."),

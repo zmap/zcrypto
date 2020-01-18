@@ -189,7 +189,7 @@ func main() {
 		if idx > 0 && idx%1000 == 0 {
 			log.Infof("checked %d candidates", idx)
 		}
-		if current, expired, never, _ := candidate.Verify(verifyOpts); len(current) > 0 || len(expired) > 0 || len(never) > 0 {
+		if current, _ := candidate.Verify(verifyOpts); len(current) > 0 {
 			intermediates = append(intermediates, candidate)
 			continue
 		}

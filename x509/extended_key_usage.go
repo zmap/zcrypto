@@ -104,7 +104,6 @@ var (
 	oidExtKeyUsageMicrosoftSmartDisplay          = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 10, 3, 15}
 	oidExtKeyUsageMicrosoftCspSignature          = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 10, 3, 16}
 	oidExtKeyUsageMicrosoftTimestampSigning      = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 10, 3, 2}
-	oidExtKeyUsageMicrosoftServerGatedCrypto     = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 10, 3, 3}
 	oidExtKeyUsageMicrosoftSgcSerialized         = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 10, 3, 3, 1}
 	oidExtKeyUsageMicrosoftEncryptedFileSystem   = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 10, 3, 4}
 	oidExtKeyUsageMicrosoftEfsRecovery           = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 10, 3, 4, 1}
@@ -124,26 +123,20 @@ var (
 	oidExtKeyUsageMicrosoftSystemHealth          = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 47, 1, 1}
 	oidExtKeyUsageMicrosoftSystemHealthLoophole  = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 47, 1, 3}
 	oidExtKeyUsageMicrosoftKernelModeCodeSigning = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 61, 1, 1}
-	oidExtKeyUsageServerAuth                     = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 1}
 	oidExtKeyUsageDvcs                           = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 10}
 	oidExtKeyUsageSbgpCertAaServiceAuth          = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 11}
 	oidExtKeyUsageEapOverPpp                     = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 13}
 	oidExtKeyUsageEapOverLan                     = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 14}
-	oidExtKeyUsageClientAuth                     = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 2}
-	oidExtKeyUsageCodeSigning                    = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 3}
-	oidExtKeyUsageEmailProtection                = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 4}
 	oidExtKeyUsageIpsecEndSystem                 = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 5}
 	oidExtKeyUsageIpsecTunnel                    = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 6}
 	oidExtKeyUsageIpsecUser                      = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 7}
-	oidExtKeyUsageTimeStamping                   = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 8}
 	oidExtKeyUsageOcspSigning                    = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 9}
 	oidExtKeyUsageIpsecIntermediateSystemUsage   = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 8, 2, 2}
-	oidExtKeyUsageNetscapeServerGatedCrypto      = asn1.ObjectIdentifier{2, 16, 840, 1, 113730, 4, 1}
-	oidExtKeyUsageAny                            = asn1.ObjectIdentifier{2, 5, 29, 37, 0}
 )
 
 const (
-	ExtKeyUsageAppleCodeSigning ExtKeyUsage = iota
+	// start with 1024, because there are already constants defined in x509.go
+	ExtKeyUsageAppleCodeSigning ExtKeyUsage = (1024 + iota)
 	ExtKeyUsageAppleCodeSigningDevelopment
 	ExtKeyUsageAppleSoftwareUpdateSigning
 	ExtKeyUsageAppleCodeSigningThirdParty
@@ -170,7 +163,6 @@ const (
 	ExtKeyUsageMicrosoftSmartDisplay
 	ExtKeyUsageMicrosoftCspSignature
 	ExtKeyUsageMicrosoftTimestampSigning
-	ExtKeyUsageMicrosoftServerGatedCrypto
 	ExtKeyUsageMicrosoftSgcSerialized
 	ExtKeyUsageMicrosoftEncryptedFileSystem
 	ExtKeyUsageMicrosoftEfsRecovery
@@ -190,22 +182,15 @@ const (
 	ExtKeyUsageMicrosoftSystemHealth
 	ExtKeyUsageMicrosoftSystemHealthLoophole
 	ExtKeyUsageMicrosoftKernelModeCodeSigning
-	ExtKeyUsageServerAuth
 	ExtKeyUsageDvcs
 	ExtKeyUsageSbgpCertAaServiceAuth
 	ExtKeyUsageEapOverPpp
 	ExtKeyUsageEapOverLan
-	ExtKeyUsageClientAuth
-	ExtKeyUsageCodeSigning
-	ExtKeyUsageEmailProtection
 	ExtKeyUsageIpsecEndSystem
 	ExtKeyUsageIpsecTunnel
 	ExtKeyUsageIpsecUser
-	ExtKeyUsageTimeStamping
 	ExtKeyUsageOcspSigning
 	ExtKeyUsageIpsecIntermediateSystemUsage
-	ExtKeyUsageNetscapeServerGatedCrypto
-	ExtKeyUsageAny
 )
 
 type auxExtendedKeyUsage struct {

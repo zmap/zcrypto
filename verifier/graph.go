@@ -136,7 +136,7 @@ func (g *Graph) AddCert(c *x509.Certificate) {
 	potentialIssuers, _ := g.nodesBySubject[string(c.RawIssuer)]
 	for _, potentialIssuerNode := range potentialIssuers {
 		issuerIdentity := potentialIssuerNode.SubjectAndKey
-		if err := x509.CheckSignatureFromKey(issuerIdentity.PublicKey, c.SignatureAlgorithm, c.RawTBSCertificate, c.Signature); err != nil {
+		if err := x509.CheckSignature(c.SignatureAlgorithm, c.RawTBSCertificate, c.Signature, issuerIdentity.PublicKey); err != nil {
 			// If the signature was not valid, this is not an issuer.
 			continue
 		}
@@ -198,7 +198,7 @@ func (g *Graph) AddCert(c *x509.Certificate) {
 	for _, candidateEdge := range potentialOutgoingEdges.Edges() {
 		pk := node.SubjectAndKey.PublicKey
 		candidateCert := candidateEdge.Certificate
-		if err := x509.CheckSignatureFromKey(pk, candidateCert.SignatureAlgorithm, candidateCert.RawTBSCertificate, candidateCert.Signature); err != nil {
+		if err := x509.CheckSignature(candidateCert.SignatureAlgorithm, candidateCert.RawTBSCertificate, candidateCert.Signature, pk); err != nil {
 			// If the signature was not valid, this node is not an issuer
 			continue
 		}
