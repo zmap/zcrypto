@@ -3,9 +3,6 @@ language: go
 go:
   - "1.13.x"
 
-env:
-  - GOFLAGS="-mod=vendor"
-
 install:
   - go install -v ./...
 
