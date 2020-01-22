@@ -589,12 +589,15 @@ var verifyTests = []verifyTest{
 
 func TestVerify(t *testing.T) {
 	for _, test := range verifyTests {
-		test.parseSelf()
-		v := test.makeVerifier()
-		opts := test.makeVerifyOptions()
-		verifyResult := v.Verify(test.parsedLeaf(), *opts)
-		if err := test.checkVerifyResult(verifyResult); err != nil {
-			t.Errorf("%s: %s", test.Name, err)
-		}
+
+		t.Run(test.Name, func(t *testing.T) {
+			test.parseSelf()
+			v := test.makeVerifier()
+			opts := test.makeVerifyOptions()
+			verifyResult := v.Verify(test.parsedLeaf(), *opts)
+			if err := test.checkVerifyResult(verifyResult); err != nil {
+				t.Error(err)
+			}
+		})
 	}
 }

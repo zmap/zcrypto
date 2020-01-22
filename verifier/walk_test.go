@@ -17,26 +17,26 @@ package verifier
 import "testing"
 
 func TestWalk(t *testing.T) {
-	type empty struct{}
-
 	for _, test := range verifyTests {
-		g := NewGraph()
-		test.parseSelf()
+		t.Run(test.Name, func(t *testing.T) {
+			g := NewGraph()
+			test.parseSelf()
 
-		// Add the presented chain
-		// TODO
+			// Add the presented chain
+			// TODO
 
-		for _, c := range test.parsedIntermediates() {
-			g.AddCert(c)
-		}
-		for _, c := range test.parsedRoots() {
-			g.AddRoot(c)
-		}
+			for _, c := range test.parsedIntermediates() {
+				g.AddCert(c)
+			}
+			for _, c := range test.parsedRoots() {
+				g.AddRoot(c)
+			}
 
-		// See what chains we got
-		actualChains := g.WalkChains(test.parsedLeaf())
-		if err := test.compareChains(test.unionAllExpected(), actualChains); err != nil {
-			t.Errorf("%s: %s", test.Name, err)
-		}
+			// See what chains we got
+			actualChains := g.WalkChains(test.parsedLeaf())
+			if err := test.compareChains(test.unionAllExpected(), actualChains); err != nil {
+				t.Error(err)
+			}
+		})
 	}
 }
