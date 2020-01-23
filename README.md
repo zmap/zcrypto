@@ -16,7 +16,7 @@ ZCrypto is a research library, designed to be used for data collection and analy
 
 
 ### zcrypto/tls (formerly known as ZTLS)
-A _research_ TLS library based on Golang standard library `crypto/tls` that contains that speaks old TLS versions, export ciphers, logs handshake messages, and is highly configurable. Many scary parts are exposed as public variables. It is primarily used for data collection, and is used by [ZGrab](https://github.com/zmap/zagrab). Uses `zcrypto/x509`.
+A _research_ TLS library based on Golang standard library `crypto/tls` that contains that speaks old TLS versions, export ciphers, logs handshake messages, and is highly configurable. Many scary parts are exposed as public variables. It is primarily used for data collection, and is used by [ZGrab](https://github.com/zmap/zgrab). Uses `zcrypto/x509`.
 
 ### zcrypto/x509
 
