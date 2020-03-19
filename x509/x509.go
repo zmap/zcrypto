@@ -1455,7 +1455,7 @@ func parseGeneralNames(value []byte) (otherNames []pkix.OtherName, dnsNames, ema
 }
 
 //TODO
-func parseCertificate(in *certificate) (*Certificate, error) {
+func (cp *CertParser)  parseCertificate(in *certificate) (*Certificate, error) {
 	out := new(Certificate)
 	out.Raw = in.Raw
 	out.RawTBSCertificate = in.TBSCertificate.Raw
@@ -1535,10 +1535,20 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 
 	// Check if self-signed
 	if bytes.Equal(out.RawSubject, out.RawIssuer) {
-		// Possibly self-signed, check the signature against itself.
-		if err := out.CheckSignature(out.SignatureAlgorithm, out.RawTBSCertificate, out.Signature); err == nil {
-			out.SelfSigned = true
+		certFingerprint := out.SPKISubjectFingerprint.Hex()
+		selfSigned, exists := cp.selfSignedCache[certFingerprint]
+		if !exists {
+			// Possibly self-signed, check the signature against itself.
+			if err := out.CheckSignature(out.SignatureAlgorithm, out.RawTBSCertificate, out.Signature); err == nil {
+				cp.selfSignedCache[certFingerprint] = true
+				selfSigned = true
+			} else {
+				cp.selfSignedCache[certFingerprint] = false
+				selfSigned = false
+			}
 		}
+
+		out.SelfSigned = selfSigned
 	}
 
 	out.NotBefore = in.TBSCertificate.Validity.NotBefore
@@ -2248,7 +2258,7 @@ func ParseCertificates(asn1Data []byte) ([]*Certificate, error) {
 
 	ret := make([]*Certificate, len(v))
 	for i, ci := range v {
-		cert, err := parseCertificate(ci)
+		cert, err := NewCertParser().parseCertificate(ci)
 		if err != nil {
 			return nil, err
 		}
@@ -2268,7 +2278,7 @@ func ParseTBSCertificate(asn1Data []byte) (*Certificate, error) {
 	if len(rest) > 0 {
 		return nil, asn1.SyntaxError{Msg: "trailing data"}
 	}
-	return parseCertificate(&certificate{
+	return NewCertParser().parseCertificate(&certificate{
 		Raw:            tbsCert.Raw,
 		TBSCertificate: tbsCert})
 }

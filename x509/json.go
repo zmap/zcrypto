@@ -11,6 +11,7 @@ import (
 	"encoding/asn1"
 	"encoding/json"
 	"errors"
+	"github.com/teamnsrg/zcrypto/util"
 	"net"
 	"sort"
 
@@ -18,7 +19,6 @@ import (
 	"time"
 
 	jsonKeys "github.com/teamnsrg/zcrypto/json"
-	"github.com/teamnsrg/zcrypto/x509/pkix"
 	"github.com/teamnsrg/zcrypto/x509/pkix"
 )
 
