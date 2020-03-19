@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zcrypto/x509/revocation/microsoft"
+	"github.com/teamnsrg/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509/revocation/microsoft"
 )
 
 // obtained from http://ctldl.windowsupdate.com/msdownload/update/v3/static/trustedr/en/disallowedcert.sst

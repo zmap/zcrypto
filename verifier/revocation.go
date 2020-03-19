@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zcrypto/x509/pkix"
-	"github.com/zmap/zcrypto/x509/revocation/crl"
-	"github.com/zmap/zcrypto/x509/revocation/ocsp"
+	"github.com/teamnsrg/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509/pkix"
+	"github.com/teamnsrg/zcrypto/x509/revocation/crl"
+	"github.com/teamnsrg/zcrypto/x509/revocation/ocsp"
 )
 
 // CheckOCSP - check the ocsp status of a provided certificate

@@ -2,7 +2,7 @@ package x509
 
 import (
 	"encoding/asn1"
-	"github.com/zmap/zcrypto/x509/pkix"
+	"github.com/teamnsrg/zcrypto/x509/pkix"
 )
 
 var (

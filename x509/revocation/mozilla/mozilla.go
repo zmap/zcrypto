@@ -8,8 +8,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zcrypto/x509/pkix"
+	"github.com/teamnsrg/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509/pkix"
 )
 
 // const oneCRLDistPoint := "https://firefox.settings.services.mozilla.com/v1/buckets/blocklists/collections/certificates/records"

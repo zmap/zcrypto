@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zcrypto/x509/revocation/mozilla"
+	"github.com/teamnsrg/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509/revocation/mozilla"
 )
 
 // obtained from https://firefox.settings.services.mozilla.com/v1/buckets/blocklists/collections/certificates/records
