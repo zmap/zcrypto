@@ -31,6 +31,8 @@ var (
 	oidExtAuthorityInfoAccess            = oidExtensionAuthorityInfoAccess
 	oidExtensionCTPrecertificatePoison   = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11129, 2, 4, 3}
 	oidExtSignedCertificateTimestampList = oidExtensionSignedCertificateTimestampList
+
+	oidExtCABFOrganizationID = asn1.ObjectIdentifier{2, 23, 140, 3, 1}
 )
 
 type CertificateExtensions struct {
@@ -48,6 +50,7 @@ type CertificateExtensions struct {
 	IsPrecert                      IsPrecert                        `json:"ct_poison,omitempty"`
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp `json:"signed_certificate_timestamps,omitempty"`
 	TorServiceDescriptors          []*TorServiceDescriptorHash      `json:"tor_service_descriptors,omitempty"`
+	CABFOrganizationIdentifier     *CABFOrganizationIdentifier      `json:"cabf_organization_id,omitempty"`
 }
 
 type UnknownCertificateExtensions []pkix.Extension
@@ -672,6 +675,37 @@ type AuthorityInfoAccess struct {
 	IssuingCertificateURL []string `json:"issuer_urls,omitempty"`
 }
 
+/*
+    id-CABFOrganizationIdentifier OBJECT IDENTIFIER ::= { joint-iso-itu-t(2) international-organizations(23) ca-browser-forum(140) certificate-extensions(3) cabf-organization-identifier(1) }
+
+    ext-CABFOrganizationIdentifier EXTENSION ::= { SYNTAX CABFOrganizationIdentifier IDENTIFIED BY id-CABFOrganizationIdentifier }
+
+    CABFOrganizationIdentifier ::= SEQUENCE {
+
+        registrationSchemeIdentifier   PrintableString (SIZE(3)),
+
+        registrationCountry            PrintableString (SIZE(2)),
+
+        registrationStateOrProvince    [0] IMPLICIT PrintableString OPTIONAL (SIZE(0..128)),
+
+        registrationReference          UTF8String
+
+	}
+*/
+type CABFOrganizationIDASN struct {
+	RegistrationSchemeIdentifier string `asn1:"printable"`
+	RegistrationCountry          string `asn1:"printable"`
+	RegistrationStateOrProvince  string `asn1:"printable,optional,tag:0"`
+	RegistrationReference        string `asn1:"utf8"`
+}
+
+type CABFOrganizationIdentifier struct {
+	Scheme    string `json:"scheme,omitempty"`
+	Country   string `json:"country,omitempty"`
+	State     string `json:"state,omitempty"`
+	Reference string `json:"reference,omitempty"`
+}
+
 func (c *Certificate) jsonifyExtensions() (*CertificateExtensions, UnknownCertificateExtensions) {
 	exts := new(CertificateExtensions)
 	unk := make([]pkix.Extension, 0, 2)
@@ -751,6 +785,8 @@ func (c *Certificate) jsonifyExtensions() (*CertificateExtensions, UnknownCertif
 			exts.IsPrecert = true
 		} else if e.Id.Equal(oidBRTorServiceDescriptor) {
 			exts.TorServiceDescriptors = c.TorServiceDescriptors
+		} else if e.Id.Equal(oidExtCABFOrganizationID) {
+			exts.CABFOrganizationIdentifier = c.CABFOrganizationIdentifier
 		} else {
 			// Unknown extension
 			unk = append(unk, e)
