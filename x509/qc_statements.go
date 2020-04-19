@@ -46,10 +46,10 @@ type QCStatements struct {
 type ParsedQCStatements struct {
 	ETSICompliance  bool           `json:"etsi_compliance,omitempty"`
 	SSCD            bool           `json:"sscd,omitempty"`
-	Types           *QCType        `json:"qc_types,omitempty"`
+	Types           *QCType        `json:"types,omitempty"`
 	Limit           *MonetaryValue `json:"limit,omitempty"`
 	PDSLocations    []PDSLocation  `json:"pds_locations,omitempty"`
-	RetentionPeriod int            `json:"retention_peiod,omitempty"`
+	RetentionPeriod int            `json:"retention_period,omitempty"`
 }
 
 type MonetaryValue struct {

@@ -39,6 +39,7 @@ DistinguishedName = SubRecordType({
     "jurisdiction_country":ListOf(WhitespaceAnalyzedString(), doc="jurisdictionCountry elements of the distinguished name (OBJECT IDENTIFIER 1.3.6.1.4.1.311.60.2.1.3)"),
     "jurisdiction_locality":ListOf(WhitespaceAnalyzedString(), doc="jurisdictionLocality elements of the distinguished name (OBJECT IDENTIFIER 1.3.6.1.4.1.311.60.2.1.1)"),
     "jurisdiction_province":ListOf(WhitespaceAnalyzedString(), doc="jurisdictionStateOrProvice elements of the distinguished name (OBJECT IDENTIFIER 1.3.6.1.4.1.311.60.2.1.2)"),
+    "organization_id": ListOf(WhitespaceAnalyzedString(), doc="organizationId elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.97)"),
 })
 
 # x509/pkix/pkix.go: Extension (via auxExtension in x509/json.go)
@@ -59,6 +60,36 @@ EDIPartyName = SubRecordType({
 OtherName = SubRecordType({
     "id": OID(doc="The OBJECT IDENTIFIER identifying the syntax of the otherName value."),
     "value": IndexedBinary(doc="The raw otherName value."),
+})
+
+CABFOrganizationID = SubRecordType({
+    "scheme": WhitespaceAnalyzedString(),
+    "country": WhitespaceAnalyzedString(),
+    "state": WhitespaceAnalyzedString(),
+    "reference": WhitespaceAnalyzedString(),
+})
+
+
+QCStatementsExtensions = SubRecordType({
+    "ids": ListOf(OID(doc="All included statement OIDs")),
+    "parsed": SubRecordType({
+        "etsi_compliance": Boolean(doc="True if present (Statement ID 0.4.0.1862.1.1)"),
+        "sscd": Boolean(doc="True if present (Statement ID 0.4.0.1862.1.4"),
+        "types": SubRecordType({
+            "ids": ListOf(OID(doc="Included QC type OIDs")),
+        }, doc="Statement ID 0.4.0.1862.1.6"),
+        "limit": SubRecordType({
+            "currency": String(doc="Currency, if provided as a string"),
+            "currency_number": Signed64BitInteger(doc="Currency, if provided as an integer"),
+            "amount": Signed64BitInteger(doc="Value in currency"),
+            "exponent": Signed64BitInteger(doc="Total is amount times 10 raised to the exponent"),
+        }, doc="Statement ID 0.4.0.1862.1.2"),
+        "pds_locations": ListOf(SubRecordType({
+            "url": URL(doc="Location of the PDS"),
+            "language": String(doc="Locale code"),
+        }, doc="Statement ID 0.4.0.1862.1.5")),
+        "retention_period": Signed64BitInteger(doc="Value of Statement ID 0.4.0.1862.1.3")
+    }),
 })
 
 # x509/extensions.go: GeneralNames/jsonGeneralNames [RFC 5280 section 4.2.1.6]
@@ -389,7 +420,9 @@ ParsedCertificate = SubRecordType({
             "excluded_edi_party_names": ListOf(EDIPartyName(), doc="Excluded names of type ediPartyName."),
         }, category="Name Constraints", doc="The parsed id-ce-nameConstraints extension (2.5.29.30). Specifies a name space within which all child certificates' subject names MUST be located."),
         "signed_certificate_timestamps": ListOf(SCTRecord(), category="Embedded SCTS / CT Poison", doc="The parsed Certificate Transparency SignedCertificateTimestampsList extension (1.3.6.1.4.1.11129.2.4.2); see RFC 6962."),
-        "ct_poison": Boolean(category="Embedded SCTS / CT Poison", doc="This is true if the certificate possesses the Certificate Transparency Precertificate Poison extension (1.3.6.1.4.1.11129.2.4.3).")
+        "ct_poison": Boolean(category="Embedded SCTS / CT Poison", doc="This is true if the certificate possesses the Certificate Transparency Precertificate Poison extension (1.3.6.1.4.1.11129.2.4.3)."),
+        "cabf_organization_id": CABFOrganizationID(category="CABF Organization ID Extension", doc="The CA/BF organization ID extensions (2.23.140.3.1)"),
+        "qc_statements": QCStatementsExtensions(category="QC Statements Extension", doc="IDs and parsed statements for qualified certificates (1.3.6.1.5.5.7.1.3)"),
     }),
     "unknown_extensions": ListOf(UnknownExtension(), category="Unknown Extensions", doc="List of raw extensions that were not recognized by the application."),
     "signature": SubRecord({
