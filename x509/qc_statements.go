@@ -25,7 +25,7 @@ type QCStatementsASN struct {
 	QCStatements []QCStatementASN
 }
 
-// ETSI OIDS
+// ETSI OIDS from https://www.etsi.org/deliver/etsi_en/319400_319499/31941205/02.02.03_20/en_31941205v020203a.pdf
 var (
 	oidEtsiQcsQcCompliance      = asn1.ObjectIdentifier{0, 4, 0, 1862, 1, 1}
 	oidEtsiQcsQcLimitValue      = asn1.ObjectIdentifier{0, 4, 0, 1862, 1, 2}
