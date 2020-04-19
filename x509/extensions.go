@@ -33,6 +33,7 @@ var (
 	oidExtSignedCertificateTimestampList = oidExtensionSignedCertificateTimestampList
 
 	oidExtCABFOrganizationID = asn1.ObjectIdentifier{2, 23, 140, 3, 1}
+	oidExtQCStatements       = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 1, 3}
 )
 
 type CertificateExtensions struct {
@@ -51,6 +52,7 @@ type CertificateExtensions struct {
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp `json:"signed_certificate_timestamps,omitempty"`
 	TorServiceDescriptors          []*TorServiceDescriptorHash      `json:"tor_service_descriptors,omitempty"`
 	CABFOrganizationIdentifier     *CABFOrganizationIdentifier      `json:"cabf_organization_id,omitempty"`
+	QCStatements                   *QCStatements                    `json:"qc_statements"`
 }
 
 type UnknownCertificateExtensions []pkix.Extension
@@ -787,6 +789,8 @@ func (c *Certificate) jsonifyExtensions() (*CertificateExtensions, UnknownCertif
 			exts.TorServiceDescriptors = c.TorServiceDescriptors
 		} else if e.Id.Equal(oidExtCABFOrganizationID) {
 			exts.CABFOrganizationIdentifier = c.CABFOrganizationIdentifier
+		} else if e.Id.Equal(oidExtQCStatements) {
+			exts.QCStatements = c.QCStatements
 		} else {
 			// Unknown extension
 			unk = append(unk, e)
