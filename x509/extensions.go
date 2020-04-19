@@ -52,7 +52,7 @@ type CertificateExtensions struct {
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp `json:"signed_certificate_timestamps,omitempty"`
 	TorServiceDescriptors          []*TorServiceDescriptorHash      `json:"tor_service_descriptors,omitempty"`
 	CABFOrganizationIdentifier     *CABFOrganizationIdentifier      `json:"cabf_organization_id,omitempty"`
-	QCStatements                   *QCStatements                    `json:"qc_statements"`
+	QCStatements                   *QCStatements                    `json:"qc_statements,omitempty"`
 }
 
 type UnknownCertificateExtensions []pkix.Extension
