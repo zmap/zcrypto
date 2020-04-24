@@ -91,6 +91,9 @@ QCStatementsExtensions = SubRecordType({
             }, doc="PDS Location entry")),
         }, doc="Statement ID 0.4.0.1862.1.5")),
         "retention_period": ListOf(Signed64BitInteger(doc="Value of Statement ID 0.4.0.1862.1.3")),
+        "legislation": ListOf(SubRecordType({
+            "country_codes": ListOf(String(doc="Country codes for the set of countries where this certificate issued as a qualified certificate"))
+        }, doc="Value of Statement ID 0.4.0.1862.1.7")),
     }, doc="Contains known QCStatements. Each field is repeated to handle the case where a single statement appears more than once."),
 })
 
