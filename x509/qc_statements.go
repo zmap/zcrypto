@@ -33,6 +33,7 @@ var (
 	oidEtsiQcsQcSSCD            = asn1.ObjectIdentifier{0, 4, 0, 1862, 1, 4}
 	oidEtsiQcsQcEuPDS           = asn1.ObjectIdentifier{0, 4, 0, 1862, 1, 5}
 	oidEtsiQcsQcType            = asn1.ObjectIdentifier{0, 4, 0, 1862, 1, 6}
+	oidEtsiQcsQcCCLegislation   = asn1.ObjectIdentifier{0, 4, 0, 1862, 1, 7}
 	oidEtsiQcsQctEsign          = asn1.ObjectIdentifier{0, 4, 0, 1862, 1, 6, 1}
 	oidEtsiQcsQctEseal          = asn1.ObjectIdentifier{0, 4, 0, 1862, 1, 6, 2}
 	oidEtsiQcsQctWeb            = asn1.ObjectIdentifier{0, 4, 0, 1862, 1, 6, 3}
@@ -50,6 +51,7 @@ type ParsedQCStatements struct {
 	Limit           []MonetaryValue `json:"limit,omitempty"`
 	PDSLocations    []PDSLocations  `json:"pds_locations,omitempty"`
 	RetentionPeriod []int           `json:"retention_period,omitempty"`
+	Legislation     []QCLegistation `json:"legislation,omitempty"`
 }
 
 type MonetaryValue struct {
@@ -82,6 +84,10 @@ type PDSLocation struct {
 
 type QCType struct {
 	TypeIdentifiers []asn1.ObjectIdentifier
+}
+
+type QCLegistation struct {
+	CountryCodes []string `json:"country_codes,omitempty"`
 }
 
 func (qt *QCType) MarshalJSON() ([]byte, error) {
@@ -144,6 +150,14 @@ func (q *QCStatements) Parse(in *QCStatementsASN) error {
 			}
 			known.Types = append(known.Types, QCType{
 				TypeIdentifiers: typeIds,
+			})
+		} else if s.StatementID.Equal(oidEtsiQcsQcCCLegislation) {
+			countryCodes := make([]string, 0)
+			if _, err := asn1.Unmarshal(val, &countryCodes); err != nil {
+				return err
+			}
+			known.Legislation = append(known.Legislation, QCLegistation{
+				CountryCodes: countryCodes,
 			})
 		}
 	}
