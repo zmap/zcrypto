@@ -88,7 +88,7 @@ QCStatementsExtensions = SubRecordType({
                 "locations": ListOf(SubRecordType({
                     "url": URL(doc="Location of the PDS"),
                     "language": String(doc="Locale code"),
-            }), doc="PDS Location entry"),
+            }, doc="PDS Location entry")),
         }, doc="Statement ID 0.4.0.1862.1.5")),
         "retention_period": ListOf(Signed64BitInteger(doc="Value of Statement ID 0.4.0.1862.1.3")),
     }, doc="Contains known QCStatements. Each field is repeated to handle the case where a single statement appears more than once."),
