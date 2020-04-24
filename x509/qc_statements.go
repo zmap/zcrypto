@@ -44,12 +44,12 @@ type QCStatements struct {
 }
 
 type ParsedQCStatements struct {
-	ETSICompliance  bool           `json:"etsi_compliance,omitempty"`
-	SSCD            bool           `json:"sscd,omitempty"`
-	Types           *QCType        `json:"types,omitempty"`
-	Limit           *MonetaryValue `json:"limit,omitempty"`
-	PDSLocations    []PDSLocation  `json:"pds_locations,omitempty"`
-	RetentionPeriod int            `json:"retention_period,omitempty"`
+	ETSICompliance  []bool          `json:"etsi_compliance,omitempty"`
+	SSCD            []bool          `json:"sscd,omitempty"`
+	Types           []QCType        `json:"types,omitempty"`
+	Limit           []MonetaryValue `json:"limit,omitempty"`
+	PDSLocations    []PDSLocations  `json:"pds_locations,omitempty"`
+	RetentionPeriod []int           `json:"retention_period,omitempty"`
 }
 
 type MonetaryValue struct {
@@ -69,6 +69,10 @@ type monetaryValueASNNumber struct {
 	Currency int
 	Amount   int
 	Exponent int
+}
+
+type PDSLocations struct {
+	Locations []PDSLocation `json:"locations,omitempty"`
 }
 
 type PDSLocation struct {
@@ -99,7 +103,7 @@ func (q *QCStatements) Parse(in *QCStatementsASN) error {
 		val := in.QCStatements[i].StatementInfo.FullBytes
 		q.StatementIDs[i] = s.StatementID.String()
 		if s.StatementID.Equal(oidEtsiQcsQcCompliance) {
-			known.ETSICompliance = true
+			known.ETSICompliance = append(known.ETSICompliance, true)
 		} else if s.StatementID.Equal(oidEtsiQcsQcLimitValue) {
 			// TODO
 			mvs := monetaryValueASNString{}
@@ -116,27 +120,31 @@ func (q *QCStatements) Parse(in *QCStatementsASN) error {
 			} else {
 				return err
 			}
-			known.Limit = &out
+			known.Limit = append(known.Limit, out)
 		} else if s.StatementID.Equal(oidEtsiQcsQcRetentionPeriod) {
-			if _, err := asn1.Unmarshal(val, &known.RetentionPeriod); err != nil {
+			var retentionPeriod int
+			if _, err := asn1.Unmarshal(val, &retentionPeriod); err != nil {
 				return err
 			}
+			known.RetentionPeriod = append(known.RetentionPeriod, retentionPeriod)
 		} else if s.StatementID.Equal(oidEtsiQcsQcSSCD) {
-			known.SSCD = true
+			known.SSCD = append(known.SSCD, true)
 		} else if s.StatementID.Equal(oidEtsiQcsQcEuPDS) {
 			locations := make([]PDSLocation, 0)
 			if _, err := asn1.Unmarshal(val, &locations); err != nil {
 				return err
 			}
-			known.PDSLocations = locations
+			known.PDSLocations = append(known.PDSLocations, PDSLocations{
+				Locations: locations,
+			})
 		} else if s.StatementID.Equal(oidEtsiQcsQcType) {
 			typeIds := make([]asn1.ObjectIdentifier, 0)
 			if _, err := asn1.Unmarshal(val, &typeIds); err != nil {
 				return err
 			}
-			known.Types = &QCType{
+			known.Types = append(known.Types, QCType{
 				TypeIdentifiers: typeIds,
-			}
+			})
 		}
 	}
 	q.ParsedStatements = &known

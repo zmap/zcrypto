@@ -73,23 +73,25 @@ CABFOrganizationID = SubRecordType({
 QCStatementsExtensions = SubRecordType({
     "ids": ListOf(OID(doc="All included statement OIDs")),
     "parsed": SubRecordType({
-        "etsi_compliance": Boolean(doc="True if present (Statement ID 0.4.0.1862.1.1)"),
-        "sscd": Boolean(doc="True if present (Statement ID 0.4.0.1862.1.4"),
-        "types": SubRecordType({
+        "etsi_compliance": ListOf(Boolean(doc="True if present (Statement ID 0.4.0.1862.1.1)")),
+        "sscd": ListOf(Boolean(doc="True if present (Statement ID 0.4.0.1862.1.4")),
+        "types": ListOf(SubRecordType({
             "ids": ListOf(OID(doc="Included QC type OIDs")),
-        }, doc="Statement ID 0.4.0.1862.1.6"),
-        "limit": SubRecordType({
+        }, doc="Statement ID 0.4.0.1862.1.6")),
+        "limit": ListOf(SubRecordType({
             "currency": String(doc="Currency, if provided as a string"),
             "currency_number": Signed64BitInteger(doc="Currency, if provided as an integer"),
             "amount": Signed64BitInteger(doc="Value in currency"),
             "exponent": Signed64BitInteger(doc="Total is amount times 10 raised to the exponent"),
-        }, doc="Statement ID 0.4.0.1862.1.2"),
+        }, doc="Statement ID 0.4.0.1862.1.2")),
         "pds_locations": ListOf(SubRecordType({
-            "url": URL(doc="Location of the PDS"),
-            "language": String(doc="Locale code"),
+                "locations": ListOf(SubRecordType({
+                    "url": URL(doc="Location of the PDS"),
+                    "language": String(doc="Locale code"),
+            }), doc="PDS Location entry"),
         }, doc="Statement ID 0.4.0.1862.1.5")),
-        "retention_period": Signed64BitInteger(doc="Value of Statement ID 0.4.0.1862.1.3")
-    }),
+        "retention_period": ListOf(Signed64BitInteger(doc="Value of Statement ID 0.4.0.1862.1.3")),
+    }, doc="Contains known QCStatements. Each field is repeated to handle the case where a single statement appears more than once."),
 })
 
 # x509/extensions.go: GeneralNames/jsonGeneralNames [RFC 5280 section 4.2.1.6]
