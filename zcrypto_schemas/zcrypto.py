@@ -389,7 +389,7 @@ ParsedCertificate = SubRecordType({
         "authority_key_id": SubjAuthKeyId(category="Authority Key ID (AKID)"),
         "subject_key_id": SubjAuthKeyId(category="Subject Key ID (SKID)", validation_policy="warn"),
         "extended_key_usage": ExtendedKeyUsage(exclude=["bigquery"], doc="The parsed id-ce-extKeyUsage (2.5.29.37) extension."),
-        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies", validation_policy="warn", exclude=["bigquery"], doc="The parsed id-ce-certificatePolicies extension (2.5.29.32)."),
+        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies", validation_policy="warn", doc="The parsed id-ce-certificatePolicies extension (2.5.29.32)."),
         "authority_info_access": SubRecord({
             "ocsp_urls": ListOf(URL(), doc="URLs of accessLocations with accessMethod of id-ad-ocsp, pointing to OCSP servers that can be used to check this certificate's revocation status. Only uniformResourceIdentifier accessLocations are supported; others are omitted."),
             "issuer_urls": ListOf(URL(), doc="URLs of accessLocations with accessMethod of id-ad-caIssuers, pointing to locations where this certificate's issuers can be downloaded. Only uniformResourceIdentifier accessLocations are supported; others are omitted."),
