@@ -69,31 +69,40 @@ CABFOrganizationID = SubRecordType({
     "reference": WhitespaceAnalyzedString(),
 })
 
+QCTypes = SubRecordType({
+    "ids": ListOf(OID(doc="Included QC type OIDs")),
+})
+
+MonetaryLimit = SubRecordType({
+    "currency": String(doc="Currency, if provided as a string"),
+    "currency_number": Signed64BitInteger(doc="Currency, if provided as an integer"),
+    "amount": Signed64BitInteger(doc="Value in currency"),
+    "exponent": Signed64BitInteger(doc="Total is amount times 10 raised to the exponent"),
+}, doc="Value limit for a financial transaction")
+
+PDSLocation = SubRecordType({
+    "url": URL(doc="Location of the PDS"),
+    "language": String(doc="Locale code"),
+}, doc="PDS Location entry")
+
+PDSLocations = SubRecordType({
+    "locations": ListOf(PDSLocation(), doc="Included PDS locations"),
+})
+
+QCLegislation = SubRecordType({
+    "country_codes": ListOf(String(doc="Country codes for the set of countries where this certificate issued as a qualified certificate"))
+}, doc="List of countries where this certificate is qualified")
 
 QCStatementsExtensions = SubRecordType({
     "ids": ListOf(OID(doc="All included statement OIDs")),
-    "parsed": SubRecordType({
+    "parsed": SubRecord({
         "etsi_compliance": ListOf(Boolean(doc="True if present (Statement ID 0.4.0.1862.1.1)")),
         "sscd": ListOf(Boolean(doc="True if present (Statement ID 0.4.0.1862.1.4")),
-        "types": ListOf(SubRecordType({
-            "ids": ListOf(OID(doc="Included QC type OIDs")),
-        }, doc="Statement ID 0.4.0.1862.1.6")),
-        "limit": ListOf(SubRecordType({
-            "currency": String(doc="Currency, if provided as a string"),
-            "currency_number": Signed64BitInteger(doc="Currency, if provided as an integer"),
-            "amount": Signed64BitInteger(doc="Value in currency"),
-            "exponent": Signed64BitInteger(doc="Total is amount times 10 raised to the exponent"),
-        }, doc="Statement ID 0.4.0.1862.1.2")),
-        "pds_locations": ListOf(SubRecordType({
-                "locations": ListOf(SubRecordType({
-                    "url": URL(doc="Location of the PDS"),
-                    "language": String(doc="Locale code"),
-            }, doc="PDS Location entry")),
-        }, doc="Statement ID 0.4.0.1862.1.5")),
-        "retention_period": ListOf(Signed64BitInteger(doc="Value of Statement ID 0.4.0.1862.1.3")),
-        "legislation": ListOf(SubRecordType({
-            "country_codes": ListOf(String(doc="Country codes for the set of countries where this certificate issued as a qualified certificate"))
-        }, doc="Value of Statement ID 0.4.0.1862.1.7")),
+        "types": ListOf(QCTypes(), doc="Statement ID 0.4.0.1862.1.6"),
+        "limit": ListOf(MonetaryLimit(), doc="Statement ID 0.4.0.1862.1.2"),
+        "pds_locations": ListOf(PDSLocations(), doc="Statement ID 0.4.0.1862.1.5"),
+        "retention_period": ListOf(Signed64BitInteger(), doc="Statement ID 0.4.0.1862.1.3"),
+        "legislation": ListOf(QCLegislation(), doc="Statement ID 0.4.0.1862.1.7"),
     }, doc="Contains known QCStatements. Each field is repeated to handle the case where a single statement appears more than once."),
 })
 
