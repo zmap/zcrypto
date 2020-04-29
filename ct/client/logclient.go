@@ -14,6 +14,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
+	"path"
 	"strconv"
 	"time"
 
@@ -327,7 +329,13 @@ func (c *LogClient) AddJSON(data interface{}) (*ct.SignedCertificateTimestamp, e
 // Returns a populated SignedTreeHead, or a non-nil error.
 func (c *LogClient) GetSTH() (sth *ct.SignedTreeHead, err error) {
 	var resp getSTHResponse
-	if err = c.fetchAndParse(c.Uri+GetSTHPath, &resp); err != nil {
+	var u *url.URL
+	u, err = url.Parse(c.Uri)
+	if err != nil {
+		return
+	}
+	u.Path = path.Join(u.Path, GetSTHPath)
+	if err = c.fetchAndParse(u.String(), &resp); err != nil {
 		return
 	}
 	sth = &ct.SignedTreeHead{
@@ -368,7 +376,12 @@ func (c *LogClient) GetEntries(start, end int64) ([]ct.LogEntry, error) {
 		return nil, errors.New("start should be <= end")
 	}
 	var resp getEntriesResponse
-	err := c.fetchAndParse(fmt.Sprintf("%s%s?start=%d&end=%d", c.Uri, GetEntriesPath, start, end), &resp)
+	u, err := url.Parse(c.Uri)
+	if err != nil {
+		return nil, err
+	}
+	u.Path = path.Join(u.Path, fmt.Sprintf("%s?start=%d&end=%d", GetEntriesPath, start, end))
+	err = c.fetchAndParse(u.String(), &resp)
 	if err != nil {
 		return nil, err
 	}
