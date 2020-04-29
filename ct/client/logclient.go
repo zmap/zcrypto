@@ -380,7 +380,8 @@ func (c *LogClient) GetEntries(start, end int64) ([]ct.LogEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	u.Path = path.Join(u.Path, fmt.Sprintf("%s?start=%d&end=%d", GetEntriesPath, start, end))
+	u.Path = path.Join(u.Path, GetEntriesPath)
+	u.RawQuery = fmt.Sprintf("start=%d&end=%d", start, end)
 	err = c.fetchAndParse(u.String(), &resp)
 	if err != nil {
 		return nil, err
