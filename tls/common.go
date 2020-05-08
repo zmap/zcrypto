@@ -253,6 +253,9 @@ var defaultSKXSignatureAlgorithms = []signatureAndHash{
 	{signatureECDSA, hashSHA256},
 	{signatureRSA, hashSHA1},
 	{signatureECDSA, hashSHA1},
+	{signatureRSA, hashSHA256},
+	{signatureRSA, hashSHA384},
+	{signatureRSA, hashSHA512},
 }
 
 // supportedClientCertSignatureAlgorithms contains the signature and hash
