@@ -90,6 +90,7 @@ const (
 	extensionRenegotiationInfo    uint16 = 0xff01
 	extensionExtendedRandom       uint16 = 0x0028 // not IANA assigned
 	extensionSCT                  uint16 = 18
+	extensionSupportedVersions    uint16 = 43
 )
 
 // TLS signaling cipher suite values

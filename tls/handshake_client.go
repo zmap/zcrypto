@@ -330,6 +330,13 @@ func (c *Conn) clientHandshake() error {
 			secureRenegotiation:  true,
 			alpnProtocols:        c.config.NextProtos,
 			extendedMasterSecret: c.config.maxVersion() >= VersionTLS10 && c.config.ExtendedMasterSecret,
+			// supportedVersion is order of preference. TODO: VersionTLS13
+			// This is used for the Version extension (RFC 8446 Sec 4.2.1)
+			supportedVersions: []uint16{
+				VersionTLS12,
+				VersionTLS11,
+				VersionTLS10,
+			},
 		}
 
 		if c.config.ForceSessionTicketExt {
