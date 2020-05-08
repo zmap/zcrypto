@@ -478,7 +478,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 		}
 
 		// Determine the signature type.
-		var signatureAndHash signatureAndHash
+		var signatureAndHash SigAndHash
 		if certVerify.hasSignatureAndHash {
 			signatureAndHash = certVerify.signatureAndHash
 			if !isSupportedSignatureAndHash(signatureAndHash, c.config.signatureAndHashesForServer()) {
@@ -490,15 +490,15 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 			// algorithm was possible. Leave the hash as zero.
 			switch pub.(type) {
 			case *ecdsa.PublicKey:
-				signatureAndHash.signature = signatureECDSA
+				signatureAndHash.Signature = signatureECDSA
 			case *rsa.PublicKey:
-				signatureAndHash.signature = signatureRSA
+				signatureAndHash.Signature = signatureRSA
 			}
 		}
 
 		switch key := pub.(type) {
 		case *x509.AugmentedECDSA:
-			if signatureAndHash.signature != signatureECDSA {
+			if signatureAndHash.Signature != signatureECDSA {
 				err = errors.New("tls: bad signature type for client's ECDSA certificate")
 				break
 			}
@@ -520,7 +520,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 				break
 			}
 		case *ecdsa.PublicKey:
-			if signatureAndHash.signature != signatureECDSA {
+			if signatureAndHash.Signature != signatureECDSA {
 				err = errors.New("tls: bad signature type for client's ECDSA certificate")
 				break
 			}
@@ -542,7 +542,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 				break
 			}
 		case *rsa.PublicKey:
-			if signatureAndHash.signature != signatureRSA {
+			if signatureAndHash.Signature != signatureRSA {
 				err = errors.New("tls: bad signature type for client's RSA certificate")
 				break
 			}
@@ -808,7 +808,7 @@ func (hs *serverHandshakeState) clientHelloInfo() *ClientHelloInfo {
 
 	signatureSchemes := make([]SignatureScheme, 0, len(hs.clientHello.signatureAndHashes))
 	for _, sah := range hs.clientHello.signatureAndHashes {
-		signatureSchemes = append(signatureSchemes, SignatureScheme(sah.hash)<<8+SignatureScheme(sah.signature))
+		signatureSchemes = append(signatureSchemes, SignatureScheme(sah.Hash)<<8+SignatureScheme(sah.Signature))
 	}
 
 	hs.cachedClientHelloInfo = &ClientHelloInfo{
