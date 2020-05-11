@@ -293,7 +293,7 @@ func hashForServerKeyExchange(sigType, hashFunc uint8, version uint16, slices ..
 // pickTLS12HashForSignature returns a TLS 1.2 hash identifier for signing a
 // ServerKeyExchange given the signature type being used and the client's
 // advertised list of supported signature and hash combinations.
-func pickTLS12HashForSignature(sigType uint8, clientList, serverList []signatureAndHash) (uint8, error) {
+func pickTLS12HashForSignature(sigType uint8, clientList, serverList []SigAndHash) (uint8, error) {
 	if len(clientList) == 0 {
 		// If the client didn't specify any signature_algorithms
 		// extension then we can assume that it supports SHA1. See
@@ -302,11 +302,11 @@ func pickTLS12HashForSignature(sigType uint8, clientList, serverList []signature
 	}
 
 	for _, sigAndHash := range clientList {
-		if sigAndHash.signature != sigType {
+		if sigAndHash.Signature != sigType {
 			continue
 		}
 		if isSupportedSignatureAndHash(sigAndHash, serverList) {
-			return sigAndHash.hash, nil
+			return sigAndHash.Hash, nil
 		}
 	}
 
@@ -354,7 +354,7 @@ type signedKeyAgreement struct {
 	sigType uint8
 	raw     []byte
 	valid   bool
-	sh      signatureAndHash
+	sh      SigAndHash
 }
 
 func (ka *signedKeyAgreement) signParameters(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg, params []byte) (*serverKeyExchangeMsg, error) {
@@ -364,9 +364,9 @@ func (ka *signedKeyAgreement) signParameters(config *Config, cert *Certificate, 
 		if tls12HashId, err = pickTLS12HashForSignature(ka.sigType, clientHello.signatureAndHashes, config.signatureAndHashesForServer()); err != nil {
 			return nil, err
 		}
-		ka.sh.hash = tls12HashId
+		ka.sh.Hash = tls12HashId
 	}
-	ka.sh.signature = ka.sigType
+	ka.sh.Signature = ka.sigType
 	digest, hashFunc, err := hashForServerKeyExchange(ka.sigType, tls12HashId, ka.version, clientHello.random, hello.random, params)
 	if err != nil {
 		return nil, err
@@ -429,8 +429,8 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 		var sigAndHash []uint8
 		sigAndHash, sig = sig[:2], sig[2:]
 		tls12HashId = sigAndHash[0]
-		ka.sh.hash = tls12HashId
-		ka.sh.signature = sigAndHash[1]
+		ka.sh.Hash = tls12HashId
+		ka.sh.Signature = sigAndHash[1]
 		if sigAndHash[1] != ka.sigType {
 			return nil, errServerKeyExchange
 		}
@@ -438,7 +438,7 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 			return nil, errServerKeyExchange
 		}
 
-		if !isSupportedSignatureAndHash(signatureAndHash{ka.sigType, tls12HashId}, config.signatureAndHashesForClient()) {
+		if !isSupportedSignatureAndHash(SigAndHash{ka.sigType, tls12HashId}, config.signatureAndHashesForClient()) {
 			return nil, errors.New("tls: unsupported hash function for ServerKeyExchange")
 		}
 	}

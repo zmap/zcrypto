@@ -356,23 +356,23 @@ func (e *SignatureAlgorithmExtension) CheckImplemented() error {
 	for _, algs := range e.getStructuredAlgorithms() {
 		found := false
 		for _, supported := range supportedSKXSignatureAlgorithms {
-			if algs.hash == supported.hash && algs.signature == supported.signature {
+			if algs.Hash == supported.Hash && algs.Signature == supported.Signature {
 				found = true
 				break
 			}
 		}
 		if !found {
-			return errors.New(fmt.Sprintf("Unsupported Hash and Signature Algorithm (%d, %d)", algs.hash, algs.signature))
+			return errors.New(fmt.Sprintf("Unsupported Hash and Signature Algorithm (%d, %d)", algs.Hash, algs.Signature))
 		}
 	}
 	return nil
 }
 
-func (e *SignatureAlgorithmExtension) getStructuredAlgorithms() []signatureAndHash {
-	result := make([]signatureAndHash, len(e.SignatureAndHashes))
+func (e *SignatureAlgorithmExtension) getStructuredAlgorithms() []SigAndHash {
+	result := make([]SigAndHash, len(e.SignatureAndHashes))
 	for i, alg := range e.SignatureAndHashes {
-		result[i].hash = uint8(alg >> 8)
-		result[i].signature = uint8(alg)
+		result[i].Hash = uint8(alg >> 8)
+		result[i].Signature = uint8(alg)
 	}
 	return result
 }
@@ -386,8 +386,8 @@ func (e *SignatureAlgorithmExtension) Marshal() []byte {
 	result[4] = uint8((2 * len(e.SignatureAndHashes)) >> 8)
 	result[5] = uint8((2 * len(e.SignatureAndHashes)))
 	for i, pair := range e.getStructuredAlgorithms() {
-		result[6+2*i] = uint8(pair.hash)
-		result[7+2*i] = uint8(pair.signature)
+		result[6+2*i] = uint8(pair.Hash)
+		result[7+2*i] = uint8(pair.Signature)
 	}
 	return result
 }
