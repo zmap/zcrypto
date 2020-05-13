@@ -1,10 +1,7 @@
 language: go
 
 go:
-  - "1.13.x"
-
-env:
-  - GOFLAGS="-mod=vendor"
+  - "1.14.x"
 
 install:
   - go install -v ./...
@@ -13,13 +10,7 @@ script:
   # Fast-fail on non-zero exit codes
   - set -e
   # Verify that all files have been gofmt'd with simplification.
-  #
-  # NOTE(@cpu): We use this `find` because Go issue 3197[0]
-  # and its many duplicates have yet to be resolved so we can't use `go fmt`
-  # without downloading copies of the already vendored deps.
-  #
-  # [0]: https://github.com/golang/go/issues/3197
-  - diff <(find . -name '*.go' -not -path './vendor/*' -print | xargs -n1 gofmt -l) <(printf "")
+  - diff <(gofmt -l -s ./) <(printf "")
   # Verify that unit tests pass
   - go test -v ./...
 
