@@ -250,6 +250,7 @@ var (
 	oidSignatureECDSAWithSHA384        = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 3, 3}
 	oidSignatureECDSAWithSHA512        = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 3, 4}
 	oidExtensionCTPrecertificatePoison = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11129, 2, 4, 3}
+	oidExtensionSignedCertificateTimestampList = []int{1, 3, 6, 1, 4, 1, 11129, 2, 4, 2}
 )
 
 func getSignatureAlgorithmFromOID(oid asn1.ObjectIdentifier) SignatureAlgorithm {
@@ -472,6 +473,9 @@ type Certificate struct {
 	RawSubjectPublicKeyInfo []byte // DER encoded SubjectPublicKeyInfo.
 	RawSubject              []byte // DER encoded Subject
 	RawIssuer               []byte // DER encoded Issuer
+
+	FingerprintSHA256 CertificateFingerprint
+	FingerprintNoCT   CertificateFingerprint
 
 	Signature          []byte
 	SignatureAlgorithm SignatureAlgorithm
@@ -855,13 +859,43 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 	out.RawSubject = in.TBSCertificate.Subject.FullBytes
 	out.RawIssuer = in.TBSCertificate.Issuer.FullBytes
 
+	out.FingerprintSHA256 = SHA256Fingerprint(in.Raw)
+
+	tbs := in.TBSCertificate
+	originalExtensions := in.TBSCertificate.Extensions
+
+	// Blow away the raw data since it also includes CT data
+	tbs.Raw = nil
+
+	// remove the CT extensions
+	extensions := make([]pkix.Extension, 0, len(originalExtensions))
+	for _, extension := range originalExtensions {
+		if extension.Id.Equal(oidExtensionCTPrecertificatePoison) {
+			continue
+		}
+		if extension.Id.Equal(oidExtensionSignedCertificateTimestampList) {
+			continue
+		}
+		extensions = append(extensions, extension)
+	}
+
+	tbs.Extensions = extensions
+
+	tbsbytes, err := asn1.Marshal(tbs)
+	if err != nil {
+		return nil, err
+	}
+	if tbsbytes == nil {
+		return nil, asn1.SyntaxError{Msg: "Trailing data"}
+	}
+	out.FingerprintNoCT = SHA256Fingerprint(tbsbytes[:])
+
 	out.Signature = in.SignatureValue.RightAlign()
 	out.SignatureAlgorithm =
 		getSignatureAlgorithmFromOID(in.TBSCertificate.SignatureAlgorithm.Algorithm)
 
 	out.PublicKeyAlgorithm =
 		getPublicKeyAlgorithmFromOID(in.TBSCertificate.PublicKey.Algorithm.Algorithm)
-	var err error
 	out.PublicKey, err = parsePublicKey(out.PublicKeyAlgorithm, &in.TBSCertificate.PublicKey)
 	if err != nil {
 		return nil, err
