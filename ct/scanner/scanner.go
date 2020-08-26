@@ -137,6 +137,9 @@ type ScannerOptions struct {
 	Name string
 
 	MaximumIndex int64
+
+	// How long to wait after fetch failure
+	ErrorTimeout time.Duration
 }
 
 // Creates a new ScannerOptions struct with sensible defaults
@@ -151,6 +154,7 @@ func DefaultScannerOptions() *ScannerOptions {
 		Quiet:         false,
 		Name:          "https://ct.googleapis.com/rocketeer",
 		MaximumIndex:  0,
+		ErrorTimeout:  500 * time.Millisecond,
 	}
 }
 
@@ -275,9 +279,7 @@ func (s *Scanner) fetcherJob(id int, ranges <-chan fetchRange, entries chan<- ma
 			logEntries, err := s.logClient.GetEntries(r.start, r.end)
 			if err != nil {
 				s.logger.Infof("Problem fetching from log: %s", err)
-				if err.Error() == "HTTP error: 500 Internal Server Error" {
-					time.Sleep(500 * time.Millisecond)
-				}
+				time.Sleep(s.opts.ErrorTimeout)
 				continue
 			}
 			if len(logEntries) == 0 {
