@@ -390,7 +390,7 @@ ParsedCertificate = SubRecordType({
         "basic_constraints": SubRecord({
             "is_ca": Boolean(doc="Indicates that the certificate is permitted to sign other certificates."),
             "max_path_len": Signed32BitInteger(doc="When present, gives the  maximum number of non-self-issued intermediate certificates that may follow this certificate in a valid certification path."),
-        }, category="Basic Constaints", doc="The parsed id-ce-basicConstraints extension (2.5.29.19); see RFC 5280."),
+        }, category="Basic Constraints", doc="The parsed id-ce-basicConstraints extension (2.5.29.19); see RFC 5280."),
         "subject_alt_name": GeneralNames(category="Subject Alternate Names (SANs)", doc="The parsed Subject Alternative Name extension (id-ce-subjectAltName, 2.5.29.17).", required=False),
         "issuer_alt_name": GeneralNames(doc="The parsed Issuer Alternative Name extension (id-ce-issuerAltName, 2.5.29.18).", required=False),
         "crl_distribution_points": ListOf(URL(), category="CRL Distribution Points", doc="The parsed id-ce-cRLDistributionPoints extension (2.5.29.31). Contents are a list of distributionPoint URLs (other distributionPoint types are omitted)."),
