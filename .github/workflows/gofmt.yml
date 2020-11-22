@@ -1,0 +1,14 @@
+name: Gofmt
+on: [push, pull_request]
+jobs:
+
+  build:
+    name: Gofmt check
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check gofmt
+      uses: Jerome1337/gofmt-action@v1.0.2
+      with:
+        gofmt-path: './'
+        args: '-l -s'
