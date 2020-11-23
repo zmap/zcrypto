@@ -10,10 +10,10 @@ import (
 
 // CertPool is a set of certificates.
 type CertPool struct {
-	bySubjectKeyId map[string][]int
-	byName         map[string][]int
-	bySHA256       map[string]int
-	certs          []*Certificate
+bySubjectKeyId map[string][]int
+byName         map[string][]int
+bySHA256       map[string]int
+certs          []*Certificate
 }
 
 // NewCertPool returns a new, empty CertPool.
