@@ -16,9 +16,8 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v2
 
-    # TODO(@cpu): Switch to v1.0.4 and add `gofmt-args: -l -s` once new release
-    # is available. See https://github.com/Jerome1337/gofmt-action/issues/5
     - name: Check gofmt
-      uses: Jerome1337/gofmt-action@v1.0.3
+      uses: Jerome1337/gofmt-action@v1.0.4
       with:
         gofmt-path: './'
+        gofmt-flags: -l -s
