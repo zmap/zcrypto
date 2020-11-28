@@ -1,13 +1,16 @@
 name: Gofmt
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    # Run every 12 hours, at the 15 minute mark. E.g.
+    # 2020-11-29 00:15:00 UTC, 2020-11-29 12:15:00 UTC, 2020-11-30 00:15:00 UTC
+    - cron:  '15 */12 * * *'
 jobs:
 
   build:
     name: Gofmt check
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: [ '1.14' ]
     steps:
 
     - name: Check out code
