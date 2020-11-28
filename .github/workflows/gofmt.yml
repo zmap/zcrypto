@@ -5,10 +5,17 @@ jobs:
   build:
     name: Gofmt check
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '1.14' ]
     steps:
 
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    # TODO(@cpu): Switch to v1.0.4 and add `gofmt-args: -l -s` once new release
+    # is available. See https://github.com/Jerome1337/gofmt-action/issues/5
     - name: Check gofmt
-      uses: Jerome1337/gofmt-action@v1.0.2
+      uses: Jerome1337/gofmt-action@v1.0.3
       with:
         gofmt-path: './'
-        args: '-l -s'
