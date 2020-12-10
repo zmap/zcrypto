@@ -375,13 +375,18 @@ func TestNameConstraintJSON(t *testing.T) {
 				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
 			}
 		}
-		for _, e := range backToNC.ExcludedIPAddresses {
-			if !containsGeneralSubtreeIP(test.nc.ExcludedIPAddresses, e) {
+		for _, e := range backToNC.ExcludedEmailAddresses {
+			if !containsGeneralSubtreeString(test.nc.ExcludedEmailAddresses, e) {
 				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
 			}
 		}
 		for _, e := range backToNC.ExcludedURIs {
 			if !containsGeneralSubtreeString(test.nc.ExcludedURIs, e) {
+				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
+			}
+		}
+		for _, e := range backToNC.ExcludedIPAddresses {
+			if !containsGeneralSubtreeIP(test.nc.ExcludedIPAddresses, e) {
 				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
 			}
 		}
