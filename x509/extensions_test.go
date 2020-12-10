@@ -228,6 +228,11 @@ func TestNameConstraintJSON(t *testing.T) {
 						Data: "test2@censys.io",
 					},
 				},
+				PermittedURIs: []GeneralSubtreeString{
+					{
+						Data: "http://www.example.com/foo/bar.html",
+					},
+				},
 				PermittedIPAddresses: []GeneralSubtreeIP{
 					{
 						Data: net.IPNet{IP: net.IPv4(127, 0, 0, 1), Mask: net.IPv4Mask(0, 0, 0, 0)},
@@ -340,6 +345,11 @@ func TestNameConstraintJSON(t *testing.T) {
 				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
 			}
 		}
+		for _, e := range backToNC.PermittedURIs {
+			if !containsGeneralSubtreeString(test.nc.PermittedURIs, e) {
+				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
+			}
+		}
 		for _, e := range backToNC.PermittedIPAddresses {
 			if !containsGeneralSubtreeIP(test.nc.PermittedIPAddresses, e) {
 				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
@@ -365,13 +375,13 @@ func TestNameConstraintJSON(t *testing.T) {
 				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
 			}
 		}
-		for _, e := range backToNC.ExcludedEmailAddresses {
-			if !containsGeneralSubtreeString(test.nc.ExcludedEmailAddresses, e) {
+		for _, e := range backToNC.ExcludedIPAddresses {
+			if !containsGeneralSubtreeIP(test.nc.ExcludedIPAddresses, e) {
 				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
 			}
 		}
-		for _, e := range backToNC.ExcludedIPAddresses {
-			if !containsGeneralSubtreeIP(test.nc.ExcludedIPAddresses, e) {
+		for _, e := range backToNC.ExcludedURIs {
+			if !containsGeneralSubtreeString(test.nc.ExcludedURIs, e) {
 				t.Errorf("%d: JSON Unmarshal did not preserve all values", i)
 			}
 		}
