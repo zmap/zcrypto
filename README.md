@@ -1,7 +1,6 @@
 ZCrypto
 =======
 
-[![Build Status](https://travis-ci.org/zmap/zcrypto.svg?branch=master)](https://travis-ci.org/zmap/zcrypto)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zmap/zcrypto)](https://goreportcard.com/report/github.com/zmap/zcrypto)
 [![GoDoc](https://godoc.org/github.com/zmap/zcrypto?status.svg)](https://godoc.org/github.com/zmap/zcrypto)
 
