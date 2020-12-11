@@ -390,14 +390,14 @@ ParsedCertificate = SubRecordType({
         "basic_constraints": SubRecord({
             "is_ca": Boolean(doc="Indicates that the certificate is permitted to sign other certificates."),
             "max_path_len": Signed32BitInteger(doc="When present, gives the  maximum number of non-self-issued intermediate certificates that may follow this certificate in a valid certification path."),
-        }, category="Basic Constaints", doc="The parsed id-ce-basicConstraints extension (2.5.29.19); see RFC 5280."),
+        }, category="Basic Constraints", doc="The parsed id-ce-basicConstraints extension (2.5.29.19); see RFC 5280."),
         "subject_alt_name": GeneralNames(category="Subject Alternate Names (SANs)", doc="The parsed Subject Alternative Name extension (id-ce-subjectAltName, 2.5.29.17).", required=False),
         "issuer_alt_name": GeneralNames(doc="The parsed Issuer Alternative Name extension (id-ce-issuerAltName, 2.5.29.18).", required=False),
         "crl_distribution_points": ListOf(URL(), category="CRL Distribution Points", doc="The parsed id-ce-cRLDistributionPoints extension (2.5.29.31). Contents are a list of distributionPoint URLs (other distributionPoint types are omitted)."),
         # NOTE: inherit the SubjAuthKeyId docs
         "authority_key_id": SubjAuthKeyId(category="Authority Key ID (AKID)"),
         "subject_key_id": SubjAuthKeyId(category="Subject Key ID (SKID)", validation_policy="warn"),
-        "extended_key_usage": ExtendedKeyUsage(exclude=["bigquery"], doc="The parsed id-ce-extKeyUsage (2.5.29.37) extension."),
+        "extended_key_usage": ExtendedKeyUsage(doc="The parsed id-ce-extKeyUsage (2.5.29.37) extension."),
         "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies", validation_policy="warn", doc="The parsed id-ce-certificatePolicies extension (2.5.29.32)."),
         "authority_info_access": SubRecord({
             "ocsp_urls": ListOf(URL(), doc="URLs of accessLocations with accessMethod of id-ad-ocsp, pointing to OCSP servers that can be used to check this certificate's revocation status. Only uniformResourceIdentifier accessLocations are supported; others are omitted."),

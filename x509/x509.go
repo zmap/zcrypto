@@ -824,6 +824,8 @@ type Certificate struct {
 	ExcludedDNSNames        []GeneralSubtreeString
 	PermittedEmailAddresses []GeneralSubtreeString
 	ExcludedEmailAddresses  []GeneralSubtreeString
+	PermittedURIs           []GeneralSubtreeString
+	ExcludedURIs            []GeneralSubtreeString
 	PermittedIPAddresses    []GeneralSubtreeIP
 	ExcludedIPAddresses     []GeneralSubtreeIP
 	PermittedDirectoryNames []GeneralSubtreeName
@@ -1721,6 +1723,8 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 							return out, err
 						}
 						out.PermittedEdiPartyNames = append(out.PermittedEdiPartyNames, GeneralSubtreeEdi{Data: ediName, Max: subtree.Max, Min: subtree.Min})
+					case 6:
+						out.PermittedURIs = append(out.PermittedURIs, GeneralSubtreeString{Data: string(subtree.Value.Bytes), Max: subtree.Max, Min: subtree.Min})
 					case 7:
 						switch len(subtree.Value.Bytes) {
 						case net.IPv4len * 2:
@@ -1764,6 +1768,8 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 							return out, err
 						}
 						out.ExcludedEdiPartyNames = append(out.ExcludedEdiPartyNames, GeneralSubtreeEdi{Data: ediName, Max: subtree.Max, Min: subtree.Min})
+					case 6:
+						out.ExcludedURIs = append(out.ExcludedURIs, GeneralSubtreeString{Data: string(subtree.Value.Bytes), Max: subtree.Max, Min: subtree.Min})
 					case 7:
 						switch len(subtree.Value.Bytes) {
 						case net.IPv4len * 2:
