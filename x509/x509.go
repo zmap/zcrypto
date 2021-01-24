@@ -2025,7 +2025,7 @@ func parseSignedCertificateTimestampList(out *Certificate, ext pkix.Extension) e
 	}
 	scts = scts[2:]
 	headerLength := 2
-	for  {
+	for {
 		switch len(scts) {
 		case 0:
 			return nil
@@ -2038,7 +2038,7 @@ func parseSignedCertificateTimestampList(out *Certificate, ext pkix.Extension) e
 			}
 			sct, err := ct.DeserializeSCT(bytes.NewReader(scts[headerLength:sctLength]))
 			if err != nil {
-				return err
+				return fmt.Errorf("malformed SCT extension: SCT parse err: %v", err)
 			}
 			out.SignedCertificateTimestampList = append(out.SignedCertificateTimestampList, sct)
 			scts = scts[sctLength:]
