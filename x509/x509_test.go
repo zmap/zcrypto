@@ -1303,3 +1303,55 @@ func TestTimeInValidityPeriod(t *testing.T) {
 		}
 	}
 }
+
+func TestParseSignedCertificateTimestampListErrors(t *testing.T) {
+	incompleteList, _ := asn1.Marshal([]byte{0x00})
+	nodataList, _ := asn1.Marshal([]byte{0x00, 0x00})
+	trailingDataList, _ := asn1.Marshal([]byte{0x00, 0x00, 0x00})
+	incompleteSCTList, _ := asn1.Marshal([]byte{0x00, 0x00, 0x00, 0x99})
+	badSCTList, _ := asn1.Marshal([]byte{0x00, 0x00, 0x00, 0x00, 0x00})
+
+	testCases := []struct {
+		name           string
+		ext            pkix.Extension
+		expectedErrMsg string
+	}{
+		{
+			name:           "incomplete len",
+			ext:            pkix.Extension{Value: incompleteList},
+			expectedErrMsg: "malformed SCT extension: incomplete length field",
+		},
+		{
+			name:           "trailing data",
+			ext:            pkix.Extension{Value: trailingDataList},
+			expectedErrMsg: "malformed SCT extension: trailing data",
+		},
+		{
+			name:           "incomplete SCT in list",
+			ext:            pkix.Extension{Value: incompleteSCTList},
+			expectedErrMsg: "malformed SCT extension: incomplete SCT",
+		},
+		{
+			name:           "bad SCT in list",
+			ext:            pkix.Extension{Value: badSCTList},
+			expectedErrMsg: "malformed SCT extension: SCT parse err: EOF",
+		},
+		{
+			name: "no data",
+			ext:  pkix.Extension{Value: nodataList},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := &Certificate{}
+			err := parseSignedCertificateTimestampList(out, tc.ext)
+
+			if err != nil && err.Error() != tc.expectedErrMsg {
+				t.Errorf("expected err %q got %q", tc.expectedErrMsg, err.Error())
+			} else if err == nil && tc.expectedErrMsg != "" {
+				t.Errorf("expected err %q got nil", tc.expectedErrMsg)
+			}
+		})
+	}
+}
