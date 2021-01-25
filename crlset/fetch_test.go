@@ -45,14 +45,12 @@ func TestFetch(t *testing.T) {
 	server := httptest.NewServer(h)
 	defer server.Close()
 
-	VersionRequestURL = server.URL
-
 	versionResponse = strings.Replace(versionResponse,
 		"http://dl.google.com/APm1SaUzZaPllaSDuZS5yng",
 		server.URL+"/APm1SaUzZaPllaSDuZS5yng", 1)
 
-	t.Logf("fetching from: %s", VersionRequestURL)
-	set, err := Fetch()
+	p := NewProvider(server.URL)
+	set, err := p.Fetch()
 	require.NoError(t, err)
 	assert.Equal(t, 6376, set.Sequence)
 }

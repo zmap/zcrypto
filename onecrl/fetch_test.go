@@ -21,9 +21,9 @@ func TestFetch(t *testing.T) {
 	server := httptest.NewServer(h)
 	defer server.Close()
 
-	KintoRequestURL = server.URL
+	p := NewProvider(server.URL)
 
-	set, err := Fetch()
+	set, err := p.Fetch()
 	require.NoError(t, err)
 	assert.NotNil(t, set.Set)
 	assert.Len(t, set.Set, 251)

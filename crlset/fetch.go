@@ -9,7 +9,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -24,11 +23,41 @@ type CRLSet struct {
 	Set map[string][][]byte
 }
 
+// Provider specifies CRLSet provider interface
+type Provider interface {
+	Fetch() (*CRLSet, error)
+}
+
 // Fetch returns the current fetched CRLSet
 func Fetch() (*CRLSet, error) {
-	log.Printf("crlset: fetching CRLSet version from %s\n", VersionRequestURL)
+	return NewProvider(VersionRequestURL).Fetch()
+}
 
-	resp, err := http.Get(VersionRequestURL)
+// DefaultProvider provides default Provider
+type DefaultProvider struct {
+	requestURL string
+	log        Logger
+}
+
+// NewProvider returns default Provider
+func NewProvider(requestURL string) *DefaultProvider {
+	return &DefaultProvider{
+		requestURL: requestURL,
+		log:        noopLogger{},
+	}
+}
+
+// WithLogger allows to specify custom logger
+func (p *DefaultProvider) WithLogger(log Logger) *DefaultProvider {
+	p.log = log
+	return p
+}
+
+// Fetch returns the current fetched CRLSet
+func (p *DefaultProvider) Fetch() (*CRLSet, error) {
+	p.log.Printf("crlset: fetching CRLSet version from %s\n", p.requestURL)
+
+	resp, err := http.Get(p.requestURL)
 	if err != nil {
 		return nil, fmt.Errorf("crlset: failed to get current version: %v", err)
 	}
@@ -57,7 +86,7 @@ func Fetch() (*CRLSet, error) {
 		return nil, fmt.Errorf("crlset: failed to parse Omaha response: version: %s", version)
 	}
 
-	log.Printf("crlset: downloading CRLSet version %s from %s\n", version, crxURL)
+	p.log.Printf("crlset: downloading CRLSet version %s from %s\n", version, crxURL)
 	resp, err = http.Get(crxURL)
 	if err != nil {
 		return nil, fmt.Errorf("crlset: failed to get CRX: %v", err)
@@ -262,3 +291,11 @@ type crlSetHeader struct {
 	KnownInterceptionSPKIs   []string
 	BlockedInterceptionSPKIs []string
 }
+
+// Logger provides a simple log interface
+type Logger interface {
+	Printf(format string, v ...interface{})
+}
+type noopLogger struct{}
+
+func (noopLogger) Printf(format string, v ...interface{}) {}
