@@ -6,7 +6,6 @@ require (
 	github.com/mreiferson/go-httpclient v0.0.0-20160630210159-31f0106b4474
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/sirupsen/logrus v1.6.0
-	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/weppos/publicsuffix-go v0.13.1-0.20210123135404-5fd73613514e
 	github.com/zmap/rc2 v0.0.0-20131011165748-24b9757f5521
