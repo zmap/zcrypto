@@ -12,6 +12,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
+	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
 
 go 1.15
