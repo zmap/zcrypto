@@ -61,11 +61,12 @@ func loadRevokedList(t *testing.T) (onecrl *mozilla.OneCRL) {
 	if err != nil {
 		t.Error(err.Error())
 	}
+	defer oneCRLFile.Close()
 	oneCRLBytes, err := ioutil.ReadAll(oneCRLFile)
 	if err != nil {
 		t.Error(err.Error())
 	}
-	oneCRLFile.Close()
+
 	onecrl, err = mozilla.Parse(oneCRLBytes)
 	if err != nil {
 		t.Error(err.Error())

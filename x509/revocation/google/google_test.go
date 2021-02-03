@@ -82,12 +82,13 @@ func loadRevokedList(t *testing.T) (crlset *google.CRLSet) {
 	if err != nil {
 		t.Error(err.Error())
 	}
+	defer crlSetFile.Close()
 
 	crlSetBytes, err := ioutil.ReadAll(crlSetFile)
 	if err != nil {
 		t.Error(err.Error())
 	}
-	crlSetFile.Close()
+
 	crlSetReadCloser := ioutil.NopCloser(bytes.NewReader(crlSetBytes))
 	crlset, err = google.Parse(crlSetReadCloser, VERSION)
 	if err != nil {

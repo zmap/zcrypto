@@ -16,14 +16,19 @@ package verifier
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/revocation/google"
+	"github.com/zmap/zcrypto/x509/revocation/mozilla"
 
 	data "github.com/zmap/zcrypto/data/test/certificates"
 )
@@ -72,6 +77,9 @@ func (e *parentError) Error() string {
 	return out
 }
 
+type crlSetLoader func() (*google.CRLSet, error)
+type oneCRLLoader func() (*mozilla.OneCRL, error)
+
 type verifyTest struct {
 	Name string
 
@@ -89,6 +97,10 @@ type verifyTest struct {
 	ExpectedParents []int
 
 	ExpectHostnameError bool
+
+	InRevocationSet bool
+	CRLSetFn        crlSetLoader
+	OneCRLFn        oneCRLLoader
 
 	certificates                    []*x509.Certificate
 	leaf                            *x509.Certificate
@@ -252,6 +264,23 @@ func (vt *verifyTest) makeVerifyOptions() (opts *VerificationOptions) {
 	opts = new(VerificationOptions)
 	opts.Name = vt.DNSName
 	opts.VerifyTime = time.Unix(vt.CurrentTime, 0)
+
+	if vt.CRLSetFn != nil {
+		crl, err := vt.CRLSetFn()
+		if err != nil {
+			panic(err)
+		}
+		opts.CRLSet = crl
+	}
+	if vt.OneCRLFn != nil {
+		crl, err := vt.OneCRLFn()
+		if err != nil {
+			panic(err)
+		}
+
+		opts.OneCRL = crl
+	}
+
 	return opts
 }
 
@@ -277,10 +306,104 @@ func (vt *verifyTest) checkVerifyResult(res *VerificationResult) error {
 	if err := vt.compareParentSPKISubjectToParents(res); err != nil {
 		return err
 	}
+
+	if vt.InRevocationSet != res.InRevocationSet {
+		return fmt.Errorf("unexpected InRevocationSet: %t", res.InRevocationSet)
+	}
 	return nil
 }
 
 var verifyTests = []verifyTest{
+	{
+		Name:      "PEMLEX3SignedByISRGRootX1-in-CRLSet",
+		Leaf:      data.PEMDAdrianIOSignedByLEX3, // idx=0
+		Presented: nil,
+		Intermediates: []string{
+			data.PEMLEX3SignedByDSTRootCAX3, // idx=1
+			data.PEMLEX3SignedByISRGRootX1,
+		},
+		Roots: []string{
+			data.PEMDSTRootCAX3SignedBySelf, // idx=3
+		},
+		CurrentTime: 1501804800, // 2017-08-04T00:00:00
+		ExpectedChains: [][]int{
+			{0, 1, 3},
+		},
+		ExpectedParents: []int{1},
+		CRLSetFn: func() (*google.CRLSet, error) {
+			return crlSetIntermediate(data.PEMDAdrianIOSignedByLEX3, []string{
+				data.PEMLEX3SignedByDSTRootCAX3, // idx=1
+				data.PEMLEX3SignedByISRGRootX1,
+			})
+		},
+		InRevocationSet: true,
+	},
+	{
+		Name:      "PEMLEX3SignedByISRGRootX1-in-CRLSet-clocked",
+		Leaf:      data.PEMDAdrianIOSignedByLEX3, // idx=0
+		Presented: nil,
+		Intermediates: []string{
+			data.PEMLEX3SignedByDSTRootCAX3, // idx=1
+			data.PEMLEX3SignedByISRGRootX1,
+		},
+		Roots: []string{
+			data.PEMDSTRootCAX3SignedBySelf, // idx=3
+		},
+		CurrentTime: 1501804800, // 2017-08-04T00:00:00
+		ExpectedChains: [][]int{
+			{0, 1, 3},
+		},
+		ExpectedParents: []int{1},
+		CRLSetFn: func() (*google.CRLSet, error) {
+			return crlSetBlocked([]string{data.PEMLEX3SignedByDSTRootCAX3})
+		},
+		InRevocationSet: true,
+	},
+	{
+		Name:      "PEMLEX3SignedByISRGRootX1-in-OneCRL",
+		Leaf:      data.PEMDAdrianIOSignedByLEX3, // idx=0
+		Presented: nil,
+		Intermediates: []string{
+			data.PEMLEX3SignedByDSTRootCAX3, // idx=1
+			data.PEMLEX3SignedByISRGRootX1,
+		},
+		Roots: []string{
+			data.PEMDSTRootCAX3SignedBySelf, // idx=3
+		},
+		CurrentTime: 1501804800, // 2017-08-04T00:00:00
+		ExpectedChains: [][]int{
+			{0, 1, 3},
+		},
+		ExpectedParents: []int{1},
+		OneCRLFn: func() (*mozilla.OneCRL, error) {
+			return oneCrlIntermediate(data.PEMDAdrianIOSignedByLEX3, []string{
+				data.PEMLEX3SignedByDSTRootCAX3, // idx=1
+				data.PEMLEX3SignedByISRGRootX1,
+			})
+		},
+		InRevocationSet: true,
+	},
+	{
+		Name:      "PEMLEX3SignedByISRGRootX1-in-OneCRL-blocked",
+		Leaf:      data.PEMDAdrianIOSignedByLEX3, // idx=0
+		Presented: nil,
+		Intermediates: []string{
+			data.PEMLEX3SignedByDSTRootCAX3, // idx=1
+			data.PEMLEX3SignedByISRGRootX1,
+		},
+		Roots: []string{
+			data.PEMDSTRootCAX3SignedBySelf, // idx=3
+		},
+		CurrentTime: 1501804800, // 2017-08-04T00:00:00
+		ExpectedChains: [][]int{
+			{0, 1, 3},
+		},
+		ExpectedParents: []int{1},
+		OneCRLFn: func() (*mozilla.OneCRL, error) {
+			return oneCrlBlocked(data.PEMDAdrianIOSignedByLEX3)
+		},
+		InRevocationSet: true,
+	},
 	{
 		Name:      "le-two-intermediate-dst-root",
 		Leaf:      data.PEMDAdrianIOSignedByLEX3, // idx=0
@@ -489,6 +612,8 @@ var verifyTests = []verifyTest{
 			{0, 1, 2},
 		},
 		ExpectedParents: []int{1},
+		CRLSetFn:        loadCrlSet6375,
+		OneCRLFn:        loadTestOneCRL,
 	},
 	{
 		Name: "google-mixed-case",
@@ -505,6 +630,8 @@ var verifyTests = []verifyTest{
 			{0, 1, 2},
 		},
 		ExpectedParents: []int{1},
+		CRLSetFn:        loadCrlSet6375,
+		OneCRLFn:        loadTestOneCRL,
 	},
 	{
 		Name: "google-not-yet-valid",
@@ -539,6 +666,8 @@ var verifyTests = []verifyTest{
 			{0, 1, 2},
 		},
 		ExpectedParents: []int{1},
+		CRLSetFn:        loadCrlSet6375,
+		OneCRLFn:        loadTestOneCRL,
 	},
 	{
 		Name: "google-name-mismatch",
@@ -597,4 +726,131 @@ func TestVerify(t *testing.T) {
 			t.Errorf("%s: %s", test.Name, err)
 		}
 	}
+}
+
+func loadCRLSet(data string) (*google.CRLSet, error) {
+	crlSetFile, err := os.Open(data)
+	if err != nil {
+		return nil, err
+	}
+	defer crlSetFile.Close()
+
+	crlSetBytes, err := ioutil.ReadAll(crlSetFile)
+	if err != nil {
+		return nil, err
+	}
+
+	crlset, err := google.Parse(bytes.NewReader(crlSetBytes), "6375")
+	if err != nil {
+		return nil, err
+	}
+	return crlset, nil
+}
+
+func loadOneCRL(data string) (*mozilla.OneCRL, error) {
+	oneCRLFile, err := os.Open(data)
+	if err != nil {
+		return nil, err
+	}
+	defer oneCRLFile.Close()
+	oneCRLBytes, err := ioutil.ReadAll(oneCRLFile)
+	if err != nil {
+		return nil, err
+	}
+
+	onecrl, err := mozilla.Parse(oneCRLBytes)
+	if err != nil {
+		return nil, err
+	}
+	return onecrl, nil
+}
+
+func loadCrlSet6375() (*google.CRLSet, error) {
+	return loadCRLSet("testdata/crl-set-6375")
+}
+
+func loadTestOneCRL() (*mozilla.OneCRL, error) {
+	return loadOneCRL("testdata/test_onecrl.json")
+}
+
+func crlSetIntermediate(leafPEM string, intermediatesPEM []string) (*google.CRLSet, error) {
+	crl := &google.CRLSet{
+		IssuerLists: make(map[string]*google.IssuerList),
+	}
+
+	leaf := loadPEM(leafPEM)
+	for _, ca := range loadPEMs(intermediatesPEM) {
+		if ca.Subject.CommonName == leaf.Issuer.CommonName {
+			spki := hex.EncodeToString(ca.SPKIFingerprint)
+
+			entries := &google.IssuerList{
+				SPKIHash: spki,
+				Entries: []*google.Entry{
+					{SerialNumber: leaf.SerialNumber},
+				},
+			}
+
+			crl.IssuerLists[spki] = entries
+		}
+	}
+	return crl, nil
+}
+
+func crlSetBlocked(intermediatesPEM []string) (*google.CRLSet, error) {
+	crl := &google.CRLSet{
+		IssuerLists:  make(map[string]*google.IssuerList),
+		BlockedSPKIs: make([]string, 0),
+	}
+
+	for _, ca := range loadPEMs(intermediatesPEM) {
+		spki := hex.EncodeToString(ca.SPKIFingerprint)
+		crl.BlockedSPKIs = append(crl.BlockedSPKIs, spki)
+
+	}
+	return crl, nil
+}
+
+func oneCrlIntermediate(leafPEM string, intermediatesPEM []string) (*mozilla.OneCRL, error) {
+	crl := &mozilla.OneCRL{
+		IssuerLists: make(map[string]*mozilla.IssuerList),
+	}
+
+	leaf := loadPEM(leafPEM)
+	for _, ca := range loadPEMs(intermediatesPEM) {
+		if ca.Subject.CommonName == leaf.Issuer.CommonName {
+			entries := &mozilla.IssuerList{
+				Issuer: &ca.Subject,
+				Entries: []*mozilla.Entry{
+					{
+						Issuer:       &ca.Subject,
+						SerialNumber: leaf.SerialNumber,
+					},
+				},
+			}
+
+			crl.IssuerLists[leaf.Issuer.String()] = entries
+		}
+	}
+	return crl, nil
+}
+
+func oneCrlBlocked(leafPEM string) (*mozilla.OneCRL, error) {
+	crl := &mozilla.OneCRL{
+		IssuerLists: make(map[string]*mozilla.IssuerList),
+		Blocked:     make([]*mozilla.SubjectAndPublicKey, 0),
+	}
+
+	leaf := loadPEM(leafPEM)
+
+	pubKeyData, _ := x509.MarshalPKIXPublicKey(leaf.PublicKey)
+	hash := sha256.Sum256(pubKeyData)
+
+	spk := &mozilla.SubjectAndPublicKey{
+		RawSubject: leaf.RawSubject,
+		Subject:    &leaf.Subject,
+		PubKeyHash: hash[:],
+	}
+
+	crl.Blocked = append(crl.Blocked, spk)
+	return crl, nil
 }
