@@ -1,6 +1,8 @@
 package mozilla
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/asn1"
 	"encoding/base64"
 	"encoding/json"
@@ -72,8 +74,9 @@ type Entry struct {
 
 // SubjectAndPublicKey specifies a revocation entry by Subject and PubKeyHash
 type SubjectAndPublicKey struct {
-	Subject    string `json:"subject,omitempty"`
-	PubKeyHash string `json:"pubKeyHash,omitempty"`
+	RawSubject []byte
+	Subject    *pkix.Name
+	PubKeyHash []byte
 }
 
 // EntryDetails - revocation details for a single entry
@@ -103,6 +106,21 @@ type record struct {
 	} `json:"details"`
 }
 
+func decodePkixName(name string) (*pkix.Name, []byte, error) {
+	issuerBytes, err := base64.StdEncoding.DecodeString(name)
+	if err != nil {
+		return nil, nil, err
+	}
+	var issuerRDN pkix.RDNSequence
+	_, err = asn1.Unmarshal(issuerBytes, &issuerRDN)
+	if err != nil {
+		return nil, nil, err
+	}
+	iss := new(pkix.Name)
+	iss.FillFromRDNSequence(&issuerRDN)
+	return iss, issuerBytes, nil
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface
 func (entry *Entry) UnmarshalJSON(b []byte) error {
 	aux := &record{}
@@ -122,31 +140,33 @@ func (entry *Entry) UnmarshalJSON(b []byte) error {
 		}
 	}
 
+	var err error
 	var subjectAndPublicKey *SubjectAndPublicKey
 	var issuer *pkix.Name
 	var serialNumber *big.Int
 
 	if aux.Subject != "" && aux.PubKeyHash != "" {
+		subj, rawSubj, err := decodePkixName(aux.Subject)
+		if err != nil {
+			return fmt.Errorf("failed to unbase64 Subject: %v", err)
+		}
+		rawPubKey, err := base64.StdEncoding.DecodeString(aux.PubKeyHash)
+		if err != nil {
+			return fmt.Errorf("failed to unbase64 Subject: %v", err)
+		}
+
 		subjectAndPublicKey = &SubjectAndPublicKey{
-			Subject:    aux.Subject,
-			PubKeyHash: aux.PubKeyHash,
+			Subject:    subj,
+			RawSubject: rawSubj,
+			PubKeyHash: rawPubKey,
 		}
 	} else {
 		serialNumberBytes, _ := base64.StdEncoding.DecodeString(aux.SerialNumber)
 		serialNumber = new(big.Int).SetBytes(serialNumberBytes)
-
-		issuerBytes, err := base64.StdEncoding.DecodeString(aux.IssuerName)
+		issuer, _, err = decodePkixName(aux.IssuerName)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to unbase64 IssuerName: %v", err)
 		}
-		var issuerRDN pkix.RDNSequence
-		_, err = asn1.Unmarshal(issuerBytes, &issuerRDN)
-		if err != nil {
-			return err
-		}
-		var iss pkix.Name
-		iss.FillFromRDNSequence(&issuerRDN)
-		issuer = &iss
 	}
 
 	*entry = Entry{
@@ -233,6 +253,23 @@ func Parse(raw []byte) (*OneCRL, error) {
 
 // Check - Given a parsed OneCRL, check if a given cert is present
 func (c *OneCRL) Check(cert *x509.Certificate) *Entry {
+	// check for BlockedSPKIs first
+	for _, blocked := range c.Blocked {
+		if bytes.Equal(blocked.RawSubject, cert.RawSubject) {
+			pubKeyData, _ := x509.MarshalPKIXPublicKey(cert.PublicKey)
+			hash := sha256.Sum256(pubKeyData)
+			if bytes.Equal(blocked.PubKeyHash, hash[:]) {
+				return &Entry{
+					SubjectAndPublicKey: &SubjectAndPublicKey{
+						RawSubject: cert.RawSubject,
+						Subject:    &cert.Subject,
+						PubKeyHash: hash[:],
+					},
+				}
+			}
+		}
+	}
+
 	issuersRevokedCerts := c.FindIssuer(&cert.Issuer)
 	if issuersRevokedCerts == nil { // no entries for this issuer
 		return nil
@@ -242,5 +279,6 @@ func (c *OneCRL) Check(cert *x509.Certificate) *Entry {
 			return entry
 		} // cert not found if for loop completes
 	}
+
 	return nil
 }

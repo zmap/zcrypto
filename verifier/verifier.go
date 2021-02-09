@@ -15,9 +15,12 @@
 package verifier
 
 import (
+	"encoding/hex"
 	"time"
 
 	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/revocation/google"
+	"github.com/zmap/zcrypto/x509/revocation/mozilla"
 )
 
 // VerificationResult contains the result of a verification of a certificate
@@ -133,6 +136,8 @@ type VerificationOptions struct {
 	PresentedChain  *Graph // XXX: Unused
 	ShouldCheckOCSP bool
 	ShouldCheckCRL  bool
+	CRLSet          *google.CRLSet
+	OneCRL          *mozilla.OneCRL
 }
 
 func (opt *VerificationOptions) clean() {
@@ -210,6 +215,18 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 		res.Parents = parentsFromChains(res.ValidAtExpirationChains)
 	} else {
 		res.Parents = parentsFromChains(res.CurrentChains)
+	}
+
+	if opts.OneCRL != nil && opts.OneCRL.Check(c) != nil {
+		res.InRevocationSet = true
+	}
+	if !res.InRevocationSet && opts.CRLSet != nil {
+		for _, parent := range res.Parents {
+			if opts.CRLSet.Check(c, hex.EncodeToString(parent.SPKIFingerprint)) != nil {
+				res.InRevocationSet = true
+				break
+			}
+		}
 	}
 
 	if opts.ShouldCheckOCSP {
