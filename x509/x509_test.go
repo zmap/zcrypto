@@ -17,6 +17,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
+	"io"
 	"io/ioutil"
 	"math/big"
 	"net"
@@ -27,6 +28,8 @@ import (
 	"time"
 
 	"github.com/zmap/zcrypto/x509/pkix"
+	"golang.org/x/crypto/curve25519"
+	"golang.org/x/crypto/ed25519"
 )
 
 func TestParsePKCS1PrivateKey(t *testing.T) {
@@ -275,6 +278,17 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 	byt := make([]byte, 0)
 	null := asn1.BitString{Bytes: byt, BitLength: 0}
 
+	ed25519Pub, ed25519Priv, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		t.Fatalf("Failed to generate Ed25519 key: %s", err)
+	}
+	var pubkey, privkey [32]byte
+	if _, err := io.ReadFull(rand.Reader, privkey[:]); err != nil {
+		panic(err)
+	}
+	curve25519.ScalarBaseMult(&pubkey, &privkey)
+	x25519Pub := X25519PublicKey(pubkey[:])
+
 	tests := []struct {
 		name       string
 		pub, priv  interface{}
@@ -286,6 +300,8 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 		{"RSA/ECDSA", &rsaPriv.PublicKey, ecdsaPriv, false, ECDSAWithSHA384, false},
 		{"ECDSA/RSA", &AugmentedECDSA{Pub: &ecdsaPriv.PublicKey, Raw: null}, rsaPriv, false, SHA256WithRSA, false},
 		{"ECDSA/ECDSA", &AugmentedECDSA{Pub: &ecdsaPriv.PublicKey, Raw: null}, ecdsaPriv, true, ECDSAWithSHA1, true},
+		{"Ed25519/Ed25519", ed25519Pub, ed25519Priv, true, Ed25519Sig, true},
+		{"X25519/Ed25519", x25519Pub, ed25519Priv, false, Ed25519Sig, false},
 	}
 
 	testExtKeyUsage := []ExtKeyUsage{ExtKeyUsageClientAuth, ExtKeyUsageServerAuth}
@@ -540,6 +556,97 @@ func TestECDSA(t *testing.T) {
 			t.Errorf("%d: public key algorithm is %v, want ECDSA", i, pka)
 		}
 		if err = cert.CheckSignatureFrom(cert); err != nil {
+			t.Errorf("%d: certificate verification failed: %s", i, err)
+		}
+	}
+}
+
+var ed25519CertPem = `-----BEGIN CERTIFICATE-----
+MIIBFTCByKADAgECAghNZYIhB/z9UjAFBgMrZXAwDzENMAsGA1UEAxMEcm9vdDAe
+Fw0xNzAyMTIxOTQ5NDVaFw0xNzAyMTMxOTQ5NDVaMA8xDTALBgNVBAMTBHJvb3Qw
+KjAFBgMrZXADIQB1mSjGpYU8nliw5Ah7Uq6pElOk/QofMn476Lr4CII0zKNCMEAw
+DgYDVR0PAQH/BAQDAgKEMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFKeTKKir
+Wabr+CP52M0stAf7KInwMAUGAytlcANBAFRwyNSg/F3Zfeqiptn99pbeQsoIApvb
+zKfb2zXCmF6OdhUSWrtHFY0y5rsCo1ha7cQQttRjOGiuKSKkjkmzHAg=
+-----END CERTIFICATE-----`
+var x25519CertPem = `-----BEGIN CERTIFICATE-----
+MIIBTDCB/6ADAgECAgh4YpoPXz8WTzAFBgMrZXAwDzENMAsGA1UEAxMEcm9vdDAe
+Fw0xNzAyMTIxOTQ5NDVaFw0xNzAyMTMxOTQ5NDVaMBMxETAPBgNVBAMTCHRlc3Qu
+Y29tMCowBQYDK2VuAyEAFKwi3LTY6apEQDNMrx2WagCHpGVFL7tIB/uTwzoyUiCj
+dTBzMA4GA1UdDwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMB
+Af8EAjAAMB0GA1UdDgQWBBQG9I1UYG2pAHSs6nYKQFo/YTAkpTAfBgNVHSMEGDAW
+gBSnkyioq1mm6/gj+djNLLQH+yiJ8DAFBgMrZXADQQBbuoByEYlgzxTskoUtCwBo
+dVaJPEZmR+AHGHAFcBTEISEK5sl6h9Z923i6xMwHTjWbYw3JYwqeuJUfm3qCncQL
+-----END CERTIFICATE-----`
+var ed25519Tests = []struct {
+	sigAlgo    SignatureAlgorithm
+	pemCert    string
+	signerCert string
+}{
+	{Ed25519Sig, ed25519CertPem, ed25519CertPem},
+}
+
+func Test25519(t *testing.T) {
+	for i, test := range ed25519Tests {
+		pemBlock, _ := pem.Decode([]byte(test.pemCert))
+		cert, err := ParseCertificate(pemBlock.Bytes)
+		if err != nil {
+			t.Errorf("%d: failed to parse certificate: %s", i, err)
+			continue
+		}
+		pemBlock, _ = pem.Decode([]byte(test.signerCert))
+		signerCert, err := ParseCertificate(pemBlock.Bytes)
+		if err != nil {
+			t.Errorf("%d: failed to parse certificate: %s", i, err)
+			continue
+		}
+		if sa := cert.SignatureAlgorithm; sa != test.sigAlgo {
+			t.Errorf("%d: signature algorithm is %v, want %v", i, sa, test.sigAlgo)
+		}
+		if parsedKey, ok := cert.PublicKey.(ed25519.PublicKey); !ok {
+			t.Errorf("%d: wanted an Ed25519 public key but found: %#v", i, parsedKey)
+		}
+		if pka := cert.PublicKeyAlgorithm; pka != Ed25519 {
+			t.Errorf("%d: public key algorithm is %v, want Ed25519", i, pka)
+		}
+		if err = cert.CheckSignatureFrom(signerCert); err != nil {
+			t.Errorf("%d: certificate verification failed: %s", i, err)
+		}
+	}
+}
+
+var x25519Tests = []struct {
+	sigAlgo    SignatureAlgorithm
+	pemCert    string
+	signerCert string
+}{
+	{Ed25519Sig, x25519CertPem, ed25519CertPem},
+}
+
+func TestX25519(t *testing.T) {
+	for i, test := range x25519Tests {
+		pemBlock, _ := pem.Decode([]byte(test.pemCert))
+		cert, err := ParseCertificate(pemBlock.Bytes)
+		if err != nil {
+			t.Errorf("%d: failed to parse certificate: %s", i, err)
+			continue
+		}
+		pemBlock, _ = pem.Decode([]byte(test.signerCert))
+		signerCert, err := ParseCertificate(pemBlock.Bytes)
+		if err != nil {
+			t.Errorf("%d: failed to parse certificate: %s", i, err)
+			continue
+		}
+		if sa := cert.SignatureAlgorithm; sa != test.sigAlgo {
+			t.Errorf("%d: signature algorithm is %v, want %v", i, sa, test.sigAlgo)
+		}
+		if parsedKey, ok := cert.PublicKey.(X25519PublicKey); !ok {
+			t.Errorf("%d: wanted an Ed25519 public key but found: %#v", i, parsedKey)
+		}
+		if pka := cert.PublicKeyAlgorithm; pka != X25519 {
+			t.Errorf("%d: public key algorithm is %v, want Ed25519", i, pka)
+		}
+		if err = cert.CheckSignatureFrom(signerCert); err != nil {
 			t.Errorf("%d: certificate verification failed: %s", i, err)
 		}
 	}
@@ -1194,5 +1301,57 @@ func TestTimeInValidityPeriod(t *testing.T) {
 		if actual := c.TimeInValidityPeriod(timestamp); actual != test.expected {
 			t.Errorf("#%d: for time %d got %t, expected %v", idx, test.unixTime, actual, test.expected)
 		}
+	}
+}
+
+func TestParseSignedCertificateTimestampListErrors(t *testing.T) {
+	incompleteList, _ := asn1.Marshal([]byte{0x00})
+	nodataList, _ := asn1.Marshal([]byte{0x00, 0x00})
+	trailingDataList, _ := asn1.Marshal([]byte{0x00, 0x00, 0x00})
+	incompleteSCTList, _ := asn1.Marshal([]byte{0x00, 0x00, 0x00, 0x99})
+	badSCTList, _ := asn1.Marshal([]byte{0x00, 0x00, 0x00, 0x00, 0x00})
+
+	testCases := []struct {
+		name           string
+		ext            pkix.Extension
+		expectedErrMsg string
+	}{
+		{
+			name:           "incomplete len",
+			ext:            pkix.Extension{Value: incompleteList},
+			expectedErrMsg: "malformed SCT extension: incomplete length field",
+		},
+		{
+			name:           "trailing data",
+			ext:            pkix.Extension{Value: trailingDataList},
+			expectedErrMsg: "malformed SCT extension: trailing data",
+		},
+		{
+			name:           "incomplete SCT in list",
+			ext:            pkix.Extension{Value: incompleteSCTList},
+			expectedErrMsg: "malformed SCT extension: incomplete SCT",
+		},
+		{
+			name:           "bad SCT in list",
+			ext:            pkix.Extension{Value: badSCTList},
+			expectedErrMsg: "malformed SCT extension: SCT parse err: EOF",
+		},
+		{
+			name: "no data",
+			ext:  pkix.Extension{Value: nodataList},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := &Certificate{}
+			err := parseSignedCertificateTimestampList(out, tc.ext)
+
+			if err != nil && err.Error() != tc.expectedErrMsg {
+				t.Errorf("expected err %q got %q", tc.expectedErrMsg, err.Error())
+			} else if err == nil && tc.expectedErrMsg != "" {
+				t.Errorf("expected err %q got nil", tc.expectedErrMsg)
+			}
+		})
 	}
 }

@@ -17,6 +17,11 @@ import (
 	"github.com/zmap/zcrypto/x509"
 )
 
+// Provider specifies CRLSet provider interface
+type Provider interface {
+	FetchAndParse() (*CRLSet, error)
+}
+
 // CRLSet - data structure for storing CRLSet data, used by methods below
 type CRLSet struct {
 	Version      string
@@ -37,17 +42,44 @@ type Entry struct {
 	SerialNumber *big.Int
 }
 
+// defaultProvider provides default Provider
+type defaultProvider struct {
+	requestURL string
+}
+
+// NewProvider returns default Provider
+func NewProvider(requestURL string) Provider {
+	return &defaultProvider{
+		requestURL: requestURL,
+	}
+}
+
 // FetchAndParse - fetch from distribution point, parse to CRLSet struct as defined above
 func FetchAndParse() (*CRLSet, error) {
-	crlSetReader, version, err := fetch()
+	return NewProvider(buildVersionRequestURL()).FetchAndParse()
+}
+
+// FetchAndParse - fetch from distribution point, parse to CRLSet struct as defined above
+func (p *defaultProvider) FetchAndParse() (*CRLSet, error) {
+	crlSetReader, version, err := fetch(p.requestURL)
 	if err != nil {
 		return nil, err
 	}
+	defer crlSetReader.Close()
 	return Parse(crlSetReader, version)
 }
 
 // Check - Given a parsed CRLSet, check if a given cert is present
 func (crlSet *CRLSet) Check(cert *x509.Certificate, issuerSPKIHash string) *Entry {
+	// check for BlockedSPKIs first
+	for _, spki := range crlSet.BlockedSPKIs {
+		if issuerSPKIHash == spki {
+			return &Entry{
+				SerialNumber: cert.SerialNumber,
+			}
+		}
+	}
+
 	issuersRevokedCerts := crlSet.IssuerLists[issuerSPKIHash]
 	if issuersRevokedCerts == nil { // no entries for this issuer
 		return nil
@@ -117,8 +149,8 @@ func (z ZipReader) ReadAt(p []byte, pos int64) (int, error) {
 }
 
 // internal method to fetch (Ohama-wrapped) CRLSet
-func fetch() (io.ReadCloser, string, error) {
-	resp, err := http.Get(buildVersionRequestURL())
+func fetch(url string) (io.ReadCloser, string, error) {
+	resp, err := http.Get(url)
 	if err != nil {
 		err = errors.New("Failed to get current version: " + err.Error())
 		return nil, "", err
@@ -237,7 +269,7 @@ type RawCRLSetSerial struct {
 // parse the file into a usable CRLSet struct instance.
 // DUE TO THE DIFFICULTY OF RETRIEVING A CRLSET, IT IS HIGHLY RECOMMENDED
 // TO JUST USE THE FetchAndParseCRLSet FUNCTION PROVIDED ABOVE
-func Parse(crlSetReader io.ReadCloser, version string) (*CRLSet, error) {
+func Parse(crlSetReader io.Reader, version string) (*CRLSet, error) {
 	header, remainingBytes, err := getHeader(crlSetReader)
 	if err != nil {
 		return nil, err
@@ -301,7 +333,7 @@ func Parse(crlSetReader io.ReadCloser, version string) (*CRLSet, error) {
 }
 
 // internal method for parsing header when parsing a CRLSet
-func getHeader(crlSetReader io.ReadCloser) (header CRLSetHeader, rest []byte, err error) {
+func getHeader(crlSetReader io.Reader) (header CRLSetHeader, rest []byte, err error) {
 	c, err := ioutil.ReadAll(crlSetReader)
 	if err != nil {
 		return
