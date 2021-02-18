@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"io"
 	"io/ioutil"
 	"math/big"
 	"net/http"
@@ -56,16 +55,15 @@ func NewProvider(requestURL string) Provider {
 
 // FetchAndParse - fetch from distribution point, parse to CRLSet struct as defined above
 func FetchAndParse() (*CRLSet, error) {
-	return NewProvider(buildVersionRequestURL()).FetchAndParse()
+	return NewProvider(VersionRequestURL()).FetchAndParse()
 }
 
 // FetchAndParse - fetch from distribution point, parse to CRLSet struct as defined above
 func (p *defaultProvider) FetchAndParse() (*CRLSet, error) {
-	crlSetReader, version, err := fetch(p.requestURL)
+	crlSetReader, version, err := Fetch(p.requestURL)
 	if err != nil {
 		return nil, err
 	}
-	defer crlSetReader.Close()
 	return Parse(crlSetReader, version)
 }
 
@@ -116,9 +114,9 @@ type updateCheck struct {
 // the CRL sets.
 const crlSetAppID = "hfnkpimlhhgieaddgfemjhofmfblmnib"
 
-// buildVersionRequestURL returns a URL from which the current CRLSet version
+// VersionRequestURL returns a URL from which the current CRLSet version
 // information can be fetched.
-func buildVersionRequestURL() string {
+func VersionRequestURL() string {
 	args := url.Values(make(map[string][]string))
 	args.Add("x", "id="+crlSetAppID+"&v=&uc"+"&acceptformat=crx3")
 
@@ -148,8 +146,8 @@ func (z ZipReader) ReadAt(p []byte, pos int64) (int, error) {
 	return copy(p, []byte(z)[int(pos):]), nil
 }
 
-// internal method to fetch (Ohama-wrapped) CRLSet
-func fetch(url string) (io.ReadCloser, string, error) {
+// Fetch returns reader to be passed to Parse
+func Fetch(url string) ([]byte, string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		err = errors.New("Failed to get current version: " + err.Error())
@@ -242,7 +240,12 @@ func fetch(url string) (io.ReadCloser, string, error) {
 		return nil, version, err
 	}
 
-	return crlSetReader, version, nil
+	raw, err := ioutil.ReadAll(crlSetReader)
+	if err != nil {
+		return nil, version, err
+	}
+
+	return raw, version, nil
 }
 
 // CRLSetHeader is used to parse the JSON header found in CRLSet files.
@@ -269,8 +272,8 @@ type RawCRLSetSerial struct {
 // parse the file into a usable CRLSet struct instance.
 // DUE TO THE DIFFICULTY OF RETRIEVING A CRLSET, IT IS HIGHLY RECOMMENDED
 // TO JUST USE THE FetchAndParseCRLSet FUNCTION PROVIDED ABOVE
-func Parse(crlSetReader io.Reader, version string) (*CRLSet, error) {
-	header, remainingBytes, err := getHeader(crlSetReader)
+func Parse(in []byte, version string) (*CRLSet, error) {
+	header, remainingBytes, err := getHeader(in)
 	if err != nil {
 		return nil, err
 	}
@@ -333,12 +336,7 @@ func Parse(crlSetReader io.Reader, version string) (*CRLSet, error) {
 }
 
 // internal method for parsing header when parsing a CRLSet
-func getHeader(crlSetReader io.Reader) (header CRLSetHeader, rest []byte, err error) {
-	c, err := ioutil.ReadAll(crlSetReader)
-	if err != nil {
-		return
-	}
-
+func getHeader(c []byte) (header CRLSetHeader, rest []byte, err error) {
 	if len(c) < 2 {
 		err = errors.New("CRLSet truncated at header length")
 		return

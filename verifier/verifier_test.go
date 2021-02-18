@@ -740,7 +740,7 @@ func loadCRLSet(data string) (*google.CRLSet, error) {
 		return nil, err
 	}
 
-	crlset, err := google.Parse(bytes.NewReader(crlSetBytes), "6375")
+	crlset, err := google.Parse(crlSetBytes, "6375")
 	if err != nil {
 		return nil, err
 	}
