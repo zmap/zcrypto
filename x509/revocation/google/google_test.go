@@ -1,7 +1,6 @@
 package google_test
 
 import (
-	"bytes"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -89,8 +88,7 @@ func loadRevokedList(t *testing.T) (crlset *google.CRLSet) {
 		t.Error(err.Error())
 	}
 
-	crlSetReadCloser := ioutil.NopCloser(bytes.NewReader(crlSetBytes))
-	crlset, err = google.Parse(crlSetReadCloser, VERSION)
+	crlset, err = google.Parse(crlSetBytes, VERSION)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -110,7 +108,7 @@ func TestParse6375(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	set, err := google.Parse(bytes.NewReader(raw), "6375")
+	set, err := google.Parse(raw, "6375")
 	if err != nil {
 		t.Error(err.Error())
 	}
