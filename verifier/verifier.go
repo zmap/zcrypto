@@ -15,10 +15,13 @@
 package verifier
 
 import (
+	"context"
 	"encoding/hex"
 	"time"
 
 	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/pkix"
+	"github.com/zmap/zcrypto/x509/revocation/crl"
 	"github.com/zmap/zcrypto/x509/revocation/google"
 	"github.com/zmap/zcrypto/x509/revocation/mozilla"
 )
@@ -51,9 +54,15 @@ type VerificationResult struct {
 	// which is only checked if VerificationOptions.ShouldCheckOCSP flag is set
 	OCSPRevoked bool
 
+	// OCSPRevocationInfo provides revocation info when OCSPRevoked is true
+	OCSPRevocationInfo *RevocationInfo
+
 	// CRLRevoked is true if the certificate has been revoked through CRL,
 	// which is only checked if VerificationOptions.ShouldCheckCRL flag is set
 	CRLRevoked bool
+
+	// CRLRevocationInfo provides revocation info when CRLRevoked is true
+	CRLRevocationInfo *RevocationInfo
 
 	// ValiditionError will be non-nil when there was some sort of error during
 	// validation not involving a name mismatch, e.g. if a chain could not be
@@ -128,16 +137,33 @@ type VerifyProcedure interface {
 	// TODO
 }
 
+// RevocationInfo provides basic revocation information
+type RevocationInfo struct {
+	RevocationTime time.Time
+	NextUpdate     time.Time
+	Reason         crl.RevocationReasonCode
+}
+
+// RevocationProvider is an interface to implement revocation status provider
+type RevocationProvider interface {
+	// CheckOCSP - check the ocsp status of a provided certificate
+	CheckOCSP(ctx context.Context, c *x509.Certificate, issuer *x509.Certificate) (isRevoked bool, info *RevocationInfo, e error)
+	// CheckCRL - check whether the provided certificate has been revoked through
+	// a CRL. If no certList is provided, function will attempt to fetch it.
+	CheckCRL(ctx context.Context, c *x509.Certificate, certList *pkix.CertificateList) (isRevoked bool, info *RevocationInfo, err error)
+}
+
 // VerificationOptions contains settings for Verifier.Verify().
 // VerificationOptions should be safely copyable.
 type VerificationOptions struct {
-	VerifyTime      time.Time
-	Name            string
-	PresentedChain  *Graph // XXX: Unused
-	ShouldCheckOCSP bool
-	ShouldCheckCRL  bool
-	CRLSet          *google.CRLSet
-	OneCRL          *mozilla.OneCRL
+	VerifyTime         time.Time
+	Name               string
+	PresentedChain     *Graph // XXX: Unused
+	ShouldCheckOCSP    bool
+	ShouldCheckCRL     bool
+	RevocationProvider RevocationProvider
+	CRLSet             *google.CRLSet
+	OneCRL             *mozilla.OneCRL
 }
 
 func (opt *VerificationOptions) clean() {
@@ -187,6 +213,14 @@ func parentsFromChains(chains []x509.CertificateChain) (parents []*x509.Certific
 // checks if the Name in the VerificationOptions matches the name on the
 // certificate.
 func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *VerificationResult) {
+	return v.VerifyWithContext(context.Background(), c, opts)
+}
+
+// VerifyWithContext checks if c chains back to a certificate in Roots, possibly via a
+// certificate in Intermediates, and returns all such chains. It additional
+// checks if the Name in the VerificationOptions matches the name on the
+// certificate.
+func (v *Verifier) VerifyWithContext(ctx context.Context, c *x509.Certificate, opts VerificationOptions) (res *VerificationResult) {
 	opts.clean()
 
 	res = new(VerificationResult)
@@ -229,24 +263,23 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 		}
 	}
 
-	if opts.ShouldCheckOCSP {
+	rp := opts.RevocationProvider
+	if rp == nil {
+		rp = defaultRevocation{}
+	}
+
+	if opts.ShouldCheckOCSP && len(c.OCSPServer) > 0 {
 		var issuer *x509.Certificate
 		if res.Parents != nil {
 			issuer = res.Parents[0] // only need issuer SPKI, so any parent will do
 		} else {
 			issuer = nil
 		}
-		isRevoked, err := CheckOCSP(c, issuer)
-		if err == nil {
-			res.OCSPRevoked = isRevoked
-		}
+		res.OCSPRevoked, res.OCSPRevocationInfo, _ = rp.CheckOCSP(ctx, c, issuer)
 	}
 
-	if opts.ShouldCheckCRL {
-		isRevoked, err := CheckCRL(c, nil)
-		if err == nil {
-			res.CRLRevoked = isRevoked
-		}
+	if opts.ShouldCheckCRL && len(c.CRLDistributionPoints) > 0 {
+		res.CRLRevoked, res.CRLRevocationInfo, _ = rp.CheckCRL(ctx, c, nil)
 	}
 
 	// Determine certificate type.
@@ -279,4 +312,17 @@ func (v *Verifier) Verify(c *x509.Certificate, opts VerificationOptions) (res *V
 	}
 
 	return
+}
+
+type defaultRevocation struct{}
+
+// CheckOCSP - check the ocsp status of a provided certificate
+func (defaultRevocation) CheckOCSP(ctx context.Context, c *x509.Certificate, issuer *x509.Certificate) (isRevoked bool, info *RevocationInfo, e error) {
+	return CheckOCSP(ctx, c, issuer)
+}
+
+// CheckCRL - check whether the provided certificate has been revoked through
+// a CRL. If no certList is provided, function will attempt to fetch it.
+func (defaultRevocation) CheckCRL(ctx context.Context, c *x509.Certificate, certList *pkix.CertificateList) (isRevoked bool, info *RevocationInfo, err error) {
+	return CheckCRL(ctx, c, certList)
 }
