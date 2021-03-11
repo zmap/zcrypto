@@ -249,37 +249,41 @@ func (v *Verifier) VerifyWithContext(ctx context.Context, c *x509.Certificate, o
 		res.Parents = parentsFromChains(res.ValidAtExpirationChains)
 	} else {
 		res.Parents = parentsFromChains(res.CurrentChains)
-	}
 
-	if opts.OneCRL != nil && opts.OneCRL.Check(c) != nil {
-		res.InRevocationSet = true
-	}
-	if !res.InRevocationSet && opts.CRLSet != nil {
-		for _, parent := range res.Parents {
-			if opts.CRLSet.Check(c, hex.EncodeToString(parent.SPKIFingerprint)) != nil {
-				res.InRevocationSet = true
-				break
+		//
+		// Check revocation on non expired cert only
+		//
+
+		if opts.OneCRL != nil && opts.OneCRL.Check(c) != nil {
+			res.InRevocationSet = true
+		}
+		if !res.InRevocationSet && opts.CRLSet != nil {
+			for _, parent := range res.Parents {
+				if opts.CRLSet.Check(c, hex.EncodeToString(parent.SPKIFingerprint)) != nil {
+					res.InRevocationSet = true
+					break
+				}
 			}
 		}
-	}
 
-	rp := opts.RevocationProvider
-	if rp == nil {
-		rp = defaultRevocation{}
-	}
-
-	if opts.ShouldCheckOCSP && len(c.OCSPServer) > 0 {
-		var issuer *x509.Certificate
-		if res.Parents != nil {
-			issuer = res.Parents[0] // only need issuer SPKI, so any parent will do
-		} else {
-			issuer = nil
+		rp := opts.RevocationProvider
+		if rp == nil {
+			rp = defaultRevocation{}
 		}
-		res.OCSPRevoked, res.OCSPRevocationInfo, _ = rp.CheckOCSP(ctx, c, issuer)
-	}
 
-	if opts.ShouldCheckCRL && len(c.CRLDistributionPoints) > 0 {
-		res.CRLRevoked, res.CRLRevocationInfo, _ = rp.CheckCRL(ctx, c, nil)
+		if opts.ShouldCheckOCSP && len(c.OCSPServer) > 0 {
+			var issuer *x509.Certificate
+			if res.Parents != nil {
+				issuer = res.Parents[0] // only need issuer SPKI, so any parent will do
+			} else {
+				issuer = nil
+			}
+			res.OCSPRevoked, res.OCSPRevocationInfo, _ = rp.CheckOCSP(ctx, c, issuer)
+		}
+
+		if opts.ShouldCheckCRL && len(c.CRLDistributionPoints) > 0 {
+			res.CRLRevoked, res.CRLRevocationInfo, _ = rp.CheckCRL(ctx, c, nil)
+		}
 	}
 
 	// Determine certificate type.

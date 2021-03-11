@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -36,7 +37,7 @@ func CheckOCSP(ctx context.Context, c *x509.Certificate, issuer *x509.Certificat
 		}
 	}
 	// create and send OCSP request
-	keyHash, err := ocsp.GetKeyHashSHA1(issuer)
+	keyHash, _ := ocsp.GetKeyHashSHA1(issuer)
 	nameHash := ocsp.GetNameHashSHA1(issuer)
 	ocspRequestBytes, err := ocsp.CreateRequest(c, keyHash, nameHash)
 	if err != nil {
@@ -44,14 +45,15 @@ func CheckOCSP(ctx context.Context, c *x509.Certificate, issuer *x509.Certificat
 	}
 
 	requestReader := bytes.NewReader(ocspRequestBytes)
-	ocspRespBytes, err := httpPost(ctx, c.OCSPServer[0], "application/ocsp-request", requestReader)
+	ocspURL := c.OCSPServer[0]
+	ocspRespBytes, err := httpPost(ctx, ocspURL, "application/ocsp-request", requestReader)
 	if err != nil {
-		return false, nil, errors.New("Failed sending OCSP HTTP Request: " + err.Error())
+		return false, nil, fmt.Errorf("failed sending OCSP HTTP Request to %q : %v", ocspURL, err.Error())
 	}
 
 	ocspResp, err := ocsp.ParseResponseForCert(ocspRespBytes, c, issuer)
 	if err != nil {
-		return false, nil, errors.New("Failed to parse OCSP Response: " + err.Error())
+		return false, nil, fmt.Errorf("failed to parse OCSP Response from %q : %v", ocspURL, err.Error())
 	}
 
 	if ocspResp.IsRevoked {
@@ -75,9 +77,9 @@ func CheckOCSP(ctx context.Context, c *x509.Certificate, issuer *x509.Certificat
 func CheckCRL(ctx context.Context, c *x509.Certificate, certList *pkix.CertificateList) (isRevoked bool, info *RevocationInfo, err error) {
 	if certList == nil {
 		certList, err = GetCRL(ctx, c.CRLDistributionPoints[0])
-	}
-	if err != nil {
-		return false, nil, err
+		if err != nil {
+			return false, nil, err
+		}
 	}
 	crlData, err := crl.CheckCRLForCert(certList, c, nil)
 	if err != nil {
