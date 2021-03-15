@@ -202,7 +202,7 @@ func fermatInverse(k, P *big.Int) *big.Int {
 // Be aware that calling Sign with an attacker-controlled PrivateKey may
 // require an arbitrary amount of CPU.
 func Sign(rand io.Reader, priv *PrivateKey, hash []byte) (r, s *big.Int, err error) {
-	MaybeReadByte(rand)
+	maybeReadByte(rand)
 
 	// FIPS 186-3, section 4.6
 
@@ -316,13 +316,13 @@ var (
 	closedChan     chan struct{}
 )
 
-// MaybeReadByte reads a single byte from r with ~50% probability. This is used
+// maybeReadByte reads a single byte from r with ~50% probability. This is used
 // to ensure that callers do not depend on non-guaranteed behaviour, e.g.
 // assuming that rsa.GenerateKey is deterministic w.r.t. a given random stream.
 //
 // This does not affect tests that pass a stream of fixed bytes as the random
 // source (e.g. a zeroReader).
-func MaybeReadByte(r io.Reader) {
+func maybeReadByte(r io.Reader) {
 	closedChanOnce.Do(func() {
 		closedChan = make(chan struct{})
 		close(closedChan)
