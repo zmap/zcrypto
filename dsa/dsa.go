@@ -17,7 +17,8 @@ import (
 	"errors"
 	"io"
 	"math/big"
-	"sync"
+
+	"github.com/zmap/zcrypto/internal/randutil"
 )
 
 // Parameters represents the domain parameters for a key. These parameters can
@@ -202,7 +203,7 @@ func fermatInverse(k, P *big.Int) *big.Int {
 // Be aware that calling Sign with an attacker-controlled PrivateKey may
 // require an arbitrary amount of CPU.
 func Sign(rand io.Reader, priv *PrivateKey, hash []byte) (r, s *big.Int, err error) {
-	maybeReadByte(rand)
+	randutil.MaybeReadByte(rand)
 
 	// FIPS 186-3, section 4.6
 
@@ -305,34 +306,4 @@ func Verify(pub *PublicKey, hash []byte, r, s *big.Int) bool {
 	v.Mod(v, pub.Q)
 
 	return v.Cmp(r) == 0
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// The following is a copy of the contents
-// src/crypto/internal/randutil/randutil.go
-
-var (
-	closedChanOnce sync.Once
-	closedChan     chan struct{}
-)
-
-// maybeReadByte reads a single byte from r with ~50% probability. This is used
-// to ensure that callers do not depend on non-guaranteed behaviour, e.g.
-// assuming that rsa.GenerateKey is deterministic w.r.t. a given random stream.
-//
-// This does not affect tests that pass a stream of fixed bytes as the random
-// source (e.g. a zeroReader).
-func maybeReadByte(r io.Reader) {
-	closedChanOnce.Do(func() {
-		closedChan = make(chan struct{})
-		close(closedChan)
-	})
-
-	select {
-	case <-closedChan:
-		return
-	case <-closedChan:
-		var buf [1]byte
-		r.Read(buf[:])
-	}
 }
