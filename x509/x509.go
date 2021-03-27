@@ -21,7 +21,6 @@ import (
 
 	"bytes"
 	"crypto"
-	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rsa"
@@ -36,6 +35,8 @@ import (
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/zmap/zcrypto/dsa"
 
 	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"github.com/zmap/zcrypto/x509/ct"

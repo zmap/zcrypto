@@ -6,7 +6,6 @@ package tls
 
 import (
 	"bytes"
-	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/subtle"
@@ -19,6 +18,8 @@ import (
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/zmap/zcrypto/dsa"
 
 	"github.com/zmap/zcrypto/x509"
 )

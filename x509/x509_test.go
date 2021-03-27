@@ -6,7 +6,6 @@ package x509
 
 import (
 	"bytes"
-	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -26,6 +25,8 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/zmap/zcrypto/dsa"
 
 	"github.com/zmap/zcrypto/x509/pkix"
 	"golang.org/x/crypto/curve25519"
