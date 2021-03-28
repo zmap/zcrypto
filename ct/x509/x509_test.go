@@ -6,26 +6,31 @@ package x509
 
 import (
 	"bytes"
-	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
+
+	"github.com/zmap/zcrypto/dsa"
+
 	// START CT CHANGES
 	"github.com/zmap/zcrypto/ct/asn1"
 	"github.com/zmap/zcrypto/ct/x509/pkix"
+
 	// END CT CHANGES
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
+
 	// START CT CHANGES
 	"errors"
 	// END CT CHANGES
 	"math/big"
 	"net"
 	"reflect"
+
 	// START CT CHANGES
 	"strings"
 	// END CT CHANGES

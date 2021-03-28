@@ -6,7 +6,6 @@ package tls
 
 import (
 	"crypto"
-	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/md5"
@@ -19,6 +18,8 @@ import (
 	"errors"
 	"io"
 	"math/big"
+
+	"github.com/zmap/zcrypto/dsa"
 
 	"github.com/zmap/zcrypto/x509"
 )
