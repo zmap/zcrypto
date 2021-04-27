@@ -4,7 +4,11 @@
 
 package pkix
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestNameString(t *testing.T) {
 	tests := []struct {
@@ -29,7 +33,7 @@ func TestNameString(t *testing.T) {
 				DomainComponent:    nil,
 				ExtraNames:         []AttributeTypeAndValue{{Type: oidCommonName, Value: "name"}, {Type: oidSerialNumber, Value: "67890"}},
 			},
-			expected: `CN=common, OU=0x21, O=University of Michigan, street=2260 Hayward St, L=Ann Arbor, ST=Michigan, postalCode=48109, C=US, C=RU, serialNumber=12345, CN=name, serialNumber=67890`,
+			expected: "SERIALNUMBER=67890, CN=name, SERIALNUMBER=12345, C=US, C=RU, POSTALCODE=48109, ST=Michigan, L=Ann Arbor, STREET=2260 Hayward St, O=University of Michigan, OU=0x21, CN=common",
 		},
 		{
 			name: Name{
@@ -44,13 +48,11 @@ func TestNameString(t *testing.T) {
 					},
 				},
 			},
-			expected: `postalCode=48109, serialNumber=12345, CN=common`,
+			expected: "POSTALCODE=48109, SERIALNUMBER=12345, CN=common",
 		},
 	}
-	for i, test := range tests {
+	for _, test := range tests {
 		s := test.name.String()
-		if s != test.expected {
-			t.Errorf("%d: expected %s, got %s", i, test.expected, s)
-		}
+		assert.Equal(t, test.expected, s)
 	}
 }

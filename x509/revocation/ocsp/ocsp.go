@@ -2,12 +2,12 @@ package ocsp
 
 import (
 	"crypto"
-	"encoding/asn1"
 	"encoding/json"
 	"errors"
 	"math/big"
 	"time"
 
+	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/x509"
 	"github.com/zmap/zcrypto/x509/pkix"
 	"github.com/zmap/zcrypto/x509/revocation/crl"

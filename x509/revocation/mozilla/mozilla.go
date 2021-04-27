@@ -3,7 +3,6 @@ package mozilla
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/asn1"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -13,6 +12,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/x509"
 	"github.com/zmap/zcrypto/x509/pkix"
 )

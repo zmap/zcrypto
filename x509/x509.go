@@ -27,7 +27,6 @@ import (
 	_ "crypto/sha1"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
-	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -36,9 +35,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/zmap/zcrypto/dsa"
-
 	"github.com/weppos/publicsuffix-go/publicsuffix"
+	"github.com/zmap/zcrypto/dsa"
+	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/x509/ct"
 	"github.com/zmap/zcrypto/x509/pkix"
 	"golang.org/x/crypto/ed25519"
@@ -838,6 +837,10 @@ type Certificate struct {
 	PermittedX400Addresses  []GeneralSubtreeRaw
 	ExcludedX400Addresses   []GeneralSubtreeRaw
 
+	// FailedToParseNames contains values that are failed to parse,
+	// without returning an error.
+	FailedToParseNames []asn1.RawValue
+
 	// CRL Distribution Points
 	CRLDistributionPoints []string
 
@@ -1298,13 +1301,14 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 			return nil, errors.New("x509: trailing data after RSA public key")
 		}
 
+		/* allow to parse
 		if p.N.Sign() <= 0 {
 			return nil, errors.New("x509: RSA modulus is not a positive number")
 		}
 		if p.E <= 0 {
 			return nil, errors.New("x509: RSA public exponent is not a positive number")
 		}
-
+		*/
 		pub := &rsa.PublicKey{
 			E: p.E,
 			N: p.N,
@@ -1442,7 +1446,7 @@ func parseSANExtension(value []byte) (dnsNames, emailAddresses []string, ipAddre
 	return
 }
 
-func parseGeneralNames(value []byte) (otherNames []pkix.OtherName, dnsNames, emailAddresses, URIs []string, directoryNames []pkix.Name, ediPartyNames []pkix.EDIPartyName, ipAddresses []net.IP, registeredIDs []asn1.ObjectIdentifier, err error) {
+func parseGeneralNames(value []byte) (otherNames []pkix.OtherName, dnsNames, emailAddresses, URIs []string, directoryNames []pkix.Name, ediPartyNames []pkix.EDIPartyName, ipAddresses []net.IP, registeredIDs []asn1.ObjectIdentifier, failedToParse []asn1.RawValue, err error) {
 	// RFC 5280, 4.2.1.6
 
 	// SubjectAltName ::= GeneralNames
@@ -1478,9 +1482,10 @@ func parseGeneralNames(value []byte) (otherNames []pkix.OtherName, dnsNames, ema
 		switch v.Tag {
 		case 0:
 			var oName pkix.OtherName
-			_, err = asn1.UnmarshalWithParams(v.FullBytes, &oName, "tag:0")
-			if err != nil {
-				return
+			_, perr := asn1.UnmarshalWithParams(v.FullBytes, &oName, "tag:0")
+			if perr != nil {
+				failedToParse = append(failedToParse, v)
+				continue
 			}
 			otherNames = append(otherNames, oName)
 		case 1:
@@ -1489,18 +1494,20 @@ func parseGeneralNames(value []byte) (otherNames []pkix.OtherName, dnsNames, ema
 			dnsNames = append(dnsNames, string(v.Bytes))
 		case 4:
 			var rdn pkix.RDNSequence
-			_, err = asn1.Unmarshal(v.Bytes, &rdn)
-			if err != nil {
-				return
+			_, perr := asn1.Unmarshal(v.Bytes, &rdn)
+			if perr != nil {
+				failedToParse = append(failedToParse, v)
+				continue
 			}
 			var dir pkix.Name
 			dir.FillFromRDNSequence(&rdn)
 			directoryNames = append(directoryNames, dir)
 		case 5:
 			var ediName pkix.EDIPartyName
-			_, err = asn1.UnmarshalWithParams(v.FullBytes, &ediName, "tag:5")
-			if err != nil {
-				return
+			_, perr := asn1.UnmarshalWithParams(v.FullBytes, &ediName, "tag:5")
+			if perr != nil {
+				failedToParse = append(failedToParse, v)
+				continue
 			}
 			ediPartyNames = append(ediPartyNames, ediName)
 		case 6:
@@ -1510,14 +1517,14 @@ func parseGeneralNames(value []byte) (otherNames []pkix.OtherName, dnsNames, ema
 			case net.IPv4len, net.IPv6len:
 				ipAddresses = append(ipAddresses, v.Bytes)
 			default:
-				err = errors.New("x509: certificate contained IP address of length " + strconv.Itoa(len(v.Bytes)))
-				return
+				failedToParse = append(failedToParse, v)
 			}
 		case 8:
 			var id asn1.ObjectIdentifier
-			_, err = asn1.UnmarshalWithParams(v.FullBytes, &id, "tag:8")
-			if err != nil {
-				return
+			_, perr := asn1.UnmarshalWithParams(v.FullBytes, &id, "tag:8")
+			if perr != nil {
+				failedToParse = append(failedToParse, v)
+				continue
 			}
 			registeredIDs = append(registeredIDs, id)
 		}
@@ -1656,7 +1663,9 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 					continue
 				}
 			case 17:
-				out.OtherNames, out.DNSNames, out.EmailAddresses, out.URIs, out.DirectoryNames, out.EDIPartyNames, out.IPAddresses, out.RegisteredIDs, err = parseGeneralNames(e.Value)
+				out.OtherNames, out.DNSNames, out.EmailAddresses,
+					out.URIs, out.DirectoryNames, out.EDIPartyNames,
+					out.IPAddresses, out.RegisteredIDs, out.FailedToParseNames, err = parseGeneralNames(e.Value)
 				if err != nil {
 					return nil, err
 				}
@@ -1667,7 +1676,9 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				// If we didn't parse any of the names then we
 				// fall through to the critical check below.
 			case 18:
-				out.IANOtherNames, out.IANDNSNames, out.IANEmailAddresses, out.IANURIs, out.IANDirectoryNames, out.IANEDIPartyNames, out.IANIPAddresses, out.IANRegisteredIDs, err = parseGeneralNames(e.Value)
+				out.IANOtherNames, out.IANDNSNames, out.IANEmailAddresses,
+					out.IANURIs, out.IANDirectoryNames, out.IANEDIPartyNames,
+					out.IANIPAddresses, out.IANRegisteredIDs, out.FailedToParseNames, err = parseGeneralNames(e.Value)
 				if err != nil {
 					return nil, err
 				}
@@ -1907,25 +1918,24 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 						cpsURIOID := asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 2, 1}
 						if qualifier.PolicyQualifierId.Equal(userNoticeOID) {
 							var un userNotice
-							if _, err = asn1.Unmarshal(qualifier.Qualifier.FullBytes, &un); err != nil {
-								return nil, err
-							}
-							if len(un.ExplicitText.Bytes) != 0 {
-								out.ExplicitTexts[i] = append(out.ExplicitTexts[i], un.ExplicitText)
-								out.ParsedExplicitTexts[i] = append(out.ParsedExplicitTexts[i], string(un.ExplicitText.Bytes))
-							}
-							if un.NoticeRef.Organization.Bytes != nil || un.NoticeRef.NoticeNumbers != nil {
-								out.NoticeRefOrgnization[i] = append(out.NoticeRefOrgnization[i], un.NoticeRef.Organization)
-								out.NoticeRefNumbers[i] = append(out.NoticeRefNumbers[i], un.NoticeRef.NoticeNumbers)
-								out.ParsedNoticeRefOrganization[i] = append(out.ParsedNoticeRefOrganization[i], string(un.NoticeRef.Organization.Bytes))
+							_, err := asn1.Unmarshal(qualifier.Qualifier.FullBytes, &un)
+							if err == nil {
+								if len(un.ExplicitText.Bytes) != 0 {
+									out.ExplicitTexts[i] = append(out.ExplicitTexts[i], un.ExplicitText)
+									out.ParsedExplicitTexts[i] = append(out.ParsedExplicitTexts[i], string(un.ExplicitText.Bytes))
+								}
+								if un.NoticeRef.Organization.Bytes != nil || un.NoticeRef.NoticeNumbers != nil {
+									out.NoticeRefOrgnization[i] = append(out.NoticeRefOrgnization[i], un.NoticeRef.Organization)
+									out.NoticeRefNumbers[i] = append(out.NoticeRefNumbers[i], un.NoticeRef.NoticeNumbers)
+									out.ParsedNoticeRefOrganization[i] = append(out.ParsedNoticeRefOrganization[i], string(un.NoticeRef.Organization.Bytes))
+								}
 							}
 						}
 						if qualifier.PolicyQualifierId.Equal(cpsURIOID) {
 							var cpsURIRaw asn1.RawValue
-							if _, err = asn1.Unmarshal(qualifier.Qualifier.FullBytes, &cpsURIRaw); err != nil {
-								return nil, err
+							if _, err = asn1.Unmarshal(qualifier.Qualifier.FullBytes, &cpsURIRaw); err == nil {
+								out.CPSuri[i] = append(out.CPSuri[i], string(cpsURIRaw.Bytes))
 							}
-							out.CPSuri[i] = append(out.CPSuri[i], string(cpsURIRaw.Bytes))
 						}
 					}
 				}

@@ -1,10 +1,10 @@
 package crl
 
 import (
-	"encoding/asn1"
 	"encoding/json"
 	"time"
 
+	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/x509"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
