@@ -1,11 +1,12 @@
 package x509
 
 import (
-	"encoding/asn1"
 	"fmt"
-	"github.com/zmap/zcrypto/x509/pkix"
 	"reflect"
 	"testing"
+
+	"github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/zmap/zcrypto/x509/pkix"
 )
 
 // TestParseTorServiceDescriptorSyntax tests that parsing certificates with the
