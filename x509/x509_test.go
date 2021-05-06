@@ -12,7 +12,6 @@ import (
 	"crypto/rsa"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
-	"encoding/asn1"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
@@ -26,8 +25,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/zmap/zcrypto/dsa"
-
+	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/x509/pkix"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/ed25519"
@@ -1127,7 +1128,7 @@ const sanManyOtherName = "MEmgEAYIKwYBBAHZWy6gBAICAc2CCHRlc3QuZ292oA8GCCsGAQQB2V
 
 func TestParseGeneralNamesOtherName(t *testing.T) {
 	sanMultipleOther := fromBase64(sanManyOtherName)
-	otherNames, dnsNames, emailAddresses, URIs, directoryNames, ediPartyNames, ipAddresses, registeredIDs, err := parseGeneralNames(sanMultipleOther)
+	otherNames, dnsNames, emailAddresses, URIs, directoryNames, ediPartyNames, ipAddresses, registeredIDs, _, err := parseGeneralNames(sanMultipleOther)
 
 	if err != nil {
 		t.Errorf("parseGeneralNames returned error %v", err)
@@ -1173,7 +1174,7 @@ const sanManyURI = "MF6GGGh0dHA6Ly9nb3YudXMvaW5kZXguaHRtbIIIKi5nb3YudXOGE2h0dHA6
 
 func TestParseGeneralNamesUniformResourceIdentifier(t *testing.T) {
 	sanMultipleURI := fromBase64(sanManyURI)
-	otherNames, dnsNames, emailAddresses, URIs, directoryNames, ediPartyNames, ipAddresses, registeredIDs, err := parseGeneralNames(sanMultipleURI)
+	otherNames, dnsNames, emailAddresses, URIs, directoryNames, ediPartyNames, ipAddresses, registeredIDs, _, err := parseGeneralNames(sanMultipleURI)
 
 	if err != nil {
 		t.Errorf("parseGeneralNames returned error %v", err)
@@ -1200,7 +1201,7 @@ const sanManyRegisteredID = "MDGICCsGAQUFBw0Bggh0ZXN0LmdvdogIKwYBBAHZWyqCB2dvdi5
 
 func TestParseGeneralNamesRegisteredID(t *testing.T) {
 	sanMultipleRID := fromBase64(sanManyRegisteredID)
-	otherNames, dnsNames, emailAddresses, URIs, directoryNames, ediPartyNames, ipAddresses, registeredIDs, err := parseGeneralNames(sanMultipleRID)
+	otherNames, dnsNames, emailAddresses, URIs, directoryNames, ediPartyNames, ipAddresses, registeredIDs, _, err := parseGeneralNames(sanMultipleRID)
 
 	if err != nil {
 		t.Errorf("parseGeneralNames returned error %v", err)
@@ -1227,7 +1228,7 @@ const sanManyEDI = "MIGjpRigBwwFRWFydGihDQwLVW5kZXJncm91bmSCCHRlc3QuZ292pQ6hDBMK
 
 func TestParseGeneralNamesEDIPartyName(t *testing.T) {
 	sanMultipleEDI := fromBase64(sanManyEDI)
-	otherNames, dnsNames, emailAddresses, URIs, directoryNames, ediPartyNames, ipAddresses, registeredIDs, err := parseGeneralNames(sanMultipleEDI)
+	otherNames, dnsNames, emailAddresses, URIs, directoryNames, ediPartyNames, ipAddresses, registeredIDs, _, err := parseGeneralNames(sanMultipleEDI)
 
 	if err != nil {
 		t.Errorf("parseGeneralNames returned error %v", err)
@@ -1353,6 +1354,47 @@ func TestParseSignedCertificateTimestampListErrors(t *testing.T) {
 			} else if err == nil && tc.expectedErrMsg != "" {
 				t.Errorf("expected err %q got nil", tc.expectedErrMsg)
 			}
+		})
+	}
+}
+
+func TestParseCert(t *testing.T) {
+	tcases := []string{
+		"testdata/parsecert1.pem",
+		"testdata/parsecert2.pem",
+		"testdata/parsecert3.pem",
+		"testdata/parsecert4-time.pem",
+		"testdata/parsecert5-printable.pem",
+		"testdata/parsecert6-explicittag.pem",
+		"testdata/parsecert7-tagmatch.pem",
+		"testdata/parsecert8-rsapositive.pem",
+	}
+
+	for _, tc := range tcases {
+		t.Run(tc, func(t *testing.T) {
+			b, err := ioutil.ReadFile(tc)
+			require.NoError(t, err)
+
+			block, _ := pem.Decode(b)
+			require.NotNil(t, block)
+
+			_, err = ParseCertificate(block.Bytes)
+			assert.Error(t, err)
+		})
+	}
+
+	asn1.AllowPermissiveParsing = true
+
+	for _, tc := range tcases {
+		t.Run(tc, func(t *testing.T) {
+			b, err := ioutil.ReadFile(tc)
+			require.NoError(t, err)
+
+			block, _ := pem.Decode(b)
+			require.NotNil(t, block)
+
+			_, err = ParseCertificate(block.Bytes)
+			assert.NoError(t, err)
 		})
 	}
 }
