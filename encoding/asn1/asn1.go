@@ -394,9 +394,11 @@ func parseGeneralizedTime(bytes []byte) (ret time.Time, err error) {
 // parseNumericString parses an ASN.1 NumericString from the given byte array
 // and returns it.
 func parseNumericString(bytes []byte) (ret string, err error) {
-	for _, b := range bytes {
-		if !isNumeric(b) {
-			return "", SyntaxError{"NumericString contains invalid character"}
+	if !AllowPermissiveParsing {
+		for _, b := range bytes {
+			if !isNumeric(b) {
+				return "", SyntaxError{"NumericString contains invalid character"}
+			}
 		}
 	}
 	return string(bytes), nil
