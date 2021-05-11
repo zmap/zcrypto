@@ -1770,7 +1770,9 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 							ip := net.IPNet{IP: subtree.Value.Bytes[:net.IPv6len], Mask: subtree.Value.Bytes[net.IPv6len:]}
 							out.PermittedIPAddresses = append(out.PermittedIPAddresses, GeneralSubtreeIP{Data: ip, Max: subtree.Max, Min: subtree.Min})
 						default:
-							return out, errors.New("x509: certificate name constraint contained IP address range of length " + strconv.Itoa(len(subtree.Value.Bytes)))
+							if !asn1.AllowPermissiveParsing {
+								return out, errors.New("x509: certificate name constraint contained IP address range of length " + strconv.Itoa(len(subtree.Value.Bytes)))
+							}
 						}
 					case 8:
 						var id asn1.ObjectIdentifier
@@ -1815,7 +1817,9 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 							ip := net.IPNet{IP: subtree.Value.Bytes[:net.IPv6len], Mask: subtree.Value.Bytes[net.IPv6len:]}
 							out.ExcludedIPAddresses = append(out.ExcludedIPAddresses, GeneralSubtreeIP{Data: ip, Max: subtree.Max, Min: subtree.Min})
 						default:
-							return out, errors.New("x509: certificate name constraint contained IP address range of length " + strconv.Itoa(len(subtree.Value.Bytes)))
+							if !asn1.AllowPermissiveParsing {
+								return out, errors.New("x509: certificate name constraint contained IP address range of length " + strconv.Itoa(len(subtree.Value.Bytes)))
+							}
 						}
 					case 8:
 						var id asn1.ObjectIdentifier
@@ -1895,7 +1899,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				var keyUsage []asn1.ObjectIdentifier
 				_, err = asn1.Unmarshal(e.Value, &keyUsage)
 				if err != nil {
-					return nil, err
+					if !asn1.AllowPermissiveParsing {
+						return nil, err
+					}
+					continue
 				}
 
 				for _, u := range keyUsage {
@@ -2015,7 +2022,9 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				out.IsPrecert = true
 				continue
 			} else {
-				return nil, UnhandledCriticalExtension{e.Id, "Malformed precert poison"}
+				if !asn1.AllowPermissiveParsing {
+					return nil, UnhandledCriticalExtension{e.Id, "Malformed precert poison"}
+				}
 			}
 		} else if e.Id.Equal(oidBRTorServiceDescriptor) {
 			descs, err := parseTorServiceDescriptorSyntax(e)

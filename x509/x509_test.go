@@ -1368,6 +1368,8 @@ func TestParseCert(t *testing.T) {
 		"testdata/parsecert6-explicittag.pem",
 		"testdata/parsecert7-tagmatch.pem",
 		"testdata/parsecert8-rsapositive.pem",
+		"testdata/parsecert9-intminlen.pem",
+		"testdata/parsecert10-tag.pem",
 	}
 
 	for _, tc := range tcases {

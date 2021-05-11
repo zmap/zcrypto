@@ -85,8 +85,10 @@ func checkInteger(bytes []byte) error {
 	if len(bytes) == 1 {
 		return nil
 	}
-	if (bytes[0] == 0 && bytes[1]&0x80 == 0) || (bytes[0] == 0xff && bytes[1]&0x80 == 0x80) {
-		return StructuralError{"integer not minimally-encoded"}
+	if !AllowPermissiveParsing {
+		if (bytes[0] == 0 && bytes[1]&0x80 == 0) || (bytes[0] == 0xff && bytes[1]&0x80 == 0x80) {
+			return StructuralError{"integer not minimally-encoded"}
+		}
 	}
 	return nil
 }
@@ -488,7 +490,9 @@ func parseT61String(bytes []byte) (ret string, err error) {
 // array and returns it.
 func parseUTF8String(bytes []byte) (ret string, err error) {
 	if !utf8.Valid(bytes) {
-		return "", errors.New("asn1: invalid UTF-8 string")
+		if !AllowPermissiveParsing {
+			return "", errors.New("asn1: invalid UTF-8 string")
+		}
 	}
 	return string(bytes), nil
 }
@@ -687,7 +691,7 @@ func parseField(v reflect.Value, bytes []byte, initOffset int, params fieldParam
 	offset = initOffset
 	fieldType := v.Type()
 
-	// log.Printf("field: %x\ntype: %v\n\n", bytes, fieldType)
+	// log.Printf("field: %x\ntype: %v, %s\n\n", bytes, fieldType, v.Type().Name())
 
 	// If we have run out of data, it may be that there are optional elements at the end.
 	if offset == len(bytes) {
