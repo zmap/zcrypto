@@ -468,10 +468,12 @@ func isPrintable(b byte, asterisk asteriskFlag, ampersand ampersandFlag) bool {
 // parseIA5String parses an ASN.1 IA5String (ASCII string) from the given
 // byte slice and returns it.
 func parseIA5String(bytes []byte) (ret string, err error) {
-	for _, b := range bytes {
-		if b >= utf8.RuneSelf {
-			err = SyntaxError{"IA5String contains invalid character"}
-			return
+	if !AllowPermissiveParsing {
+		for _, b := range bytes {
+			if b >= utf8.RuneSelf {
+				err = SyntaxError{"IA5String contains invalid character"}
+				return
+			}
 		}
 	}
 	ret = string(bytes)
@@ -606,10 +608,13 @@ func parseTagAndLength(bytes []byte, initOffset int) (ret tagAndLength, offset i
 				return
 			}
 		}
-		// Short lengths must be encoded in short form.
-		if ret.length < 0x80 {
-			err = StructuralError{"non-minimal length"}
-			return
+
+		if !AllowPermissiveParsing {
+			// Short lengths must be encoded in short form.
+			if ret.length < 0x80 {
+				err = StructuralError{"non-minimal length"}
+				return
+			}
 		}
 	}
 
