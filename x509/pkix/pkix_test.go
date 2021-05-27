@@ -14,10 +14,12 @@ func TestNameString(t *testing.T) {
 	tests := []struct {
 		name     Name
 		expected string
+		legacy   string
 	}{
 		{
 			name:     Name{},
 			expected: "",
+			legacy:   "",
 		},
 		{
 			name: Name{
@@ -34,6 +36,7 @@ func TestNameString(t *testing.T) {
 				ExtraNames:         []AttributeTypeAndValue{{Type: oidCommonName, Value: "name"}, {Type: oidSerialNumber, Value: "67890"}},
 			},
 			expected: "SERIALNUMBER=67890, CN=name, SERIALNUMBER=12345, C=US, C=RU, POSTALCODE=48109, ST=Michigan, L=Ann Arbor, STREET=2260 Hayward St, O=University of Michigan, OU=0x21, CN=common",
+			legacy:   "CN=common, OU=0x21, O=University of Michigan, street=2260 Hayward St, L=Ann Arbor, ST=Michigan, postalCode=48109, C=US, C=RU, serialNumber=12345, CN=name, serialNumber=67890",
 		},
 		{
 			name: Name{
@@ -49,10 +52,16 @@ func TestNameString(t *testing.T) {
 				},
 			},
 			expected: "POSTALCODE=48109, SERIALNUMBER=12345, CN=common",
+			legacy:   "postalCode=48109, serialNumber=12345, CN=common",
 		},
 	}
 	for _, test := range tests {
 		s := test.name.String()
 		assert.Equal(t, test.expected, s)
+	}
+	LegacyNameString = true
+	for _, test := range tests {
+		s := test.name.String()
+		assert.Equal(t, test.legacy, s)
 	}
 }

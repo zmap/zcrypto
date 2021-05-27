@@ -15,6 +15,10 @@ import (
 	"github.com/zmap/zcrypto/encoding/asn1"
 )
 
+// LegacyNameString allows to specify legacy ZCrypto behaviour
+// for X509Name.String() in reverse order
+var LegacyNameString = false
+
 // AlgorithmIdentifier represents the ASN.1 structure of the same name. See RFC
 // 5280, section 4.1.1.2.
 type AlgorithmIdentifier struct {
@@ -34,6 +38,18 @@ var attributeTypeNames = map[string]string{
 	"2.5.4.8":  "ST",
 	"2.5.4.9":  "STREET",
 	"2.5.4.17": "POSTALCODE",
+}
+
+var attributeTypeNamesLegacy = map[string]string{
+	"2.5.4.6":  "C",
+	"2.5.4.10": "O",
+	"2.5.4.11": "OU",
+	"2.5.4.3":  "CN",
+	"2.5.4.5":  "serialNumber",
+	"2.5.4.7":  "L",
+	"2.5.4.8":  "ST",
+	"2.5.4.9":  "street",
+	"2.5.4.17": "postalCode",
 }
 
 type RelativeDistinguishedNameSET []AttributeTypeAndValue
@@ -202,7 +218,11 @@ func (n Name) appendRDNs(in RDNSequence, values []string, oid asn1.ObjectIdentif
 func (r RDNSequence) String() string {
 	s := ""
 	for i := 0; i < len(r); i++ {
-		rdn := r[len(r)-1-i]
+		idx := len(r) - 1 - i
+		if LegacyNameString {
+			idx = i
+		}
+		rdn := r[idx]
 		if i > 0 {
 			s += ", "
 		}
@@ -212,7 +232,11 @@ func (r RDNSequence) String() string {
 			}
 
 			oidString := tv.Type.String()
-			typeName, ok := attributeTypeNames[oidString]
+			table := attributeTypeNames
+			if LegacyNameString {
+				table = attributeTypeNamesLegacy
+			}
+			typeName, ok := table[oidString]
 			if !ok {
 				derBytes, err := asn1.Marshal(tv.Value)
 				if err == nil {
