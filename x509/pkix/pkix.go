@@ -28,30 +28,6 @@ type AlgorithmIdentifier struct {
 
 type RDNSequence []RelativeDistinguishedNameSET
 
-var attributeTypeNames = map[string]string{
-	"2.5.4.6":  "C",
-	"2.5.4.10": "O",
-	"2.5.4.11": "OU",
-	"2.5.4.3":  "CN",
-	"2.5.4.5":  "SERIALNUMBER",
-	"2.5.4.7":  "L",
-	"2.5.4.8":  "ST",
-	"2.5.4.9":  "STREET",
-	"2.5.4.17": "POSTALCODE",
-}
-
-var attributeTypeNamesLegacy = map[string]string{
-	"2.5.4.6":  "C",
-	"2.5.4.10": "O",
-	"2.5.4.11": "OU",
-	"2.5.4.3":  "CN",
-	"2.5.4.5":  "serialNumber",
-	"2.5.4.7":  "L",
-	"2.5.4.8":  "ST",
-	"2.5.4.9":  "street",
-	"2.5.4.17": "postalCode",
-}
-
 type RelativeDistinguishedNameSET []AttributeTypeAndValue
 
 // AttributeTypeAndValue mirrors the ASN.1 structure of the same name in
@@ -232,12 +208,11 @@ func (r RDNSequence) String() string {
 			}
 
 			oidString := tv.Type.String()
-			table := attributeTypeNames
-			if LegacyNameString {
-				table = attributeTypeNamesLegacy
+			var typeName string
+			if oidName, ok := oidDotNotationToNames[oidString]; ok {
+				typeName = oidName.ShortName
 			}
-			typeName, ok := table[oidString]
-			if !ok {
+			if typeName == "" {
 				derBytes, err := asn1.Marshal(tv.Value)
 				if err == nil {
 					s += oidString + "=#" + hex.EncodeToString(derBytes)
@@ -319,17 +294,6 @@ func (n Name) ToRDNSequence() (ret RDNSequence) {
 	}
 
 	return ret
-}
-
-// oidInAttributeTypeAndValue reports whether a type with the given OID exists
-// in atv.
-func oidInAttributeTypeAndValue(oid asn1.ObjectIdentifier, atv []AttributeTypeAndValue) bool {
-	for _, a := range atv {
-		if a.Type.Equal(oid) {
-			return true
-		}
-	}
-	return false
 }
 
 // CertificateList represents the ASN.1 structure of the same name. See RFC
