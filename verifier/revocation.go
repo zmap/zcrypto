@@ -3,6 +3,7 @@ package verifier
 import (
 	"bytes"
 	"context"
+	"crypto"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -13,6 +14,11 @@ import (
 	"github.com/zmap/zcrypto/x509/pkix"
 	"github.com/zmap/zcrypto/x509/revocation/crl"
 	"github.com/zmap/zcrypto/x509/revocation/ocsp"
+)
+
+const (
+	ocspReqContentType = "application/ocsp-request"
+	ocspResContentType = "application/ocsp-response"
 )
 
 // CheckOCSP - check the ocsp status of a provided certificate
@@ -36,15 +42,14 @@ func CheckOCSP(ctx context.Context, c *x509.Certificate, issuer *x509.Certificat
 		}
 	}
 	// create and send OCSP request
-	keyHash, err := ocsp.GetKeyHashSHA1(issuer)
-	nameHash := ocsp.GetNameHashSHA1(issuer)
-	ocspRequestBytes, err := ocsp.CreateRequest(c, keyHash, nameHash)
+	opts := &ocsp.RequestOptions{Hash: crypto.SHA1}
+	ocspRequestBytes, err := ocsp.CreateRequest(c, issuer, opts)
 	if err != nil {
 		return false, nil, errors.New("failed to construct OCSP request" + err.Error())
 	}
 
 	requestReader := bytes.NewReader(ocspRequestBytes)
-	ocspRespBytes, err := httpPost(ctx, c.OCSPServer[0], "application/ocsp-request", requestReader)
+	ocspRespBytes, err := httpPost(ctx, c.OCSPServer[0], ocspReqContentType, ocspResContentType, requestReader)
 	if err != nil {
 		return false, nil, errors.New("Failed sending OCSP HTTP Request: " + err.Error())
 	}
@@ -137,12 +142,13 @@ func httpGet(ctx context.Context, url string) ([]byte, error) {
 	return body, nil
 }
 
-func httpPost(ctx context.Context, url string, contentType string, reqBody io.Reader) ([]byte, error) {
+func httpPost(ctx context.Context, url string, contentType, accept string, reqBody io.Reader) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Accept", accept)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
