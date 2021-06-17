@@ -11,13 +11,13 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/sha1"
-	"encoding/asn1"
 	"encoding/hex"
 	"math/big"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/x509"
 	"github.com/zmap/zcrypto/x509/pkix"
 )

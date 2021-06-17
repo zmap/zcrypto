@@ -6,13 +6,13 @@ package x509
 
 import (
 	"bytes"
-	"encoding/asn1"
 	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
 	"testing"
 
+	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
 

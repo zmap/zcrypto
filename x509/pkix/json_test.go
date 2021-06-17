@@ -5,9 +5,10 @@
 package pkix
 
 import (
-	"encoding/asn1"
 	"encoding/json"
 	"testing"
+
+	"github.com/zmap/zcrypto/encoding/asn1"
 )
 
 func TestAttributeTypeValueJSON(t *testing.T) {
