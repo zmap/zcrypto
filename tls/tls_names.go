@@ -505,15 +505,17 @@ func hashToName(n string) uint8 {
 }
 
 func nameForSuite(cs uint16) string {
-	cipher := CipherSuite(cs)
+	cipher := CipherSuiteID(cs)
 	return cipher.String()
 }
 
-func (cs CipherSuite) Bytes() []byte {
+type CipherSuiteID uint16
+
+func (cs CipherSuiteID) Bytes() []byte {
 	return []byte{uint8(cs >> 8), uint8(cs)}
 }
 
-func (cs CipherSuite) String() string {
+func (cs CipherSuiteID) String() string {
 	if name, ok := cipherSuiteNames[int(cs)]; ok {
 		return name
 	}
@@ -527,12 +529,14 @@ func (cm CompressionMethod) String() string {
 	return "unknown"
 }
 
+/*
 func (curveID CurveID) String() string {
 	if name, ok := curveNames[uint16(curveID)]; ok {
 		return name
 	}
 	return "unknown"
 }
+*/
 
 func (pFormat PointFormat) String() string {
 	if name, ok := pointFormatNames[uint8(pFormat)]; ok {
@@ -580,12 +584,14 @@ func nameForSignatureScheme(scheme uint16) string {
 	return sigScheme.String()
 }
 
+/*
 func (sigScheme *SignatureScheme) String() string {
 	if name, ok := signatureSchemeNames[uint16(*sigScheme)]; ok {
 		return name
 	}
 	return "unknown"
 }
+*/
 
 func (sigScheme *SignatureScheme) Bytes() []byte {
 	return []byte{byte(*sigScheme >> 8), byte(*sigScheme)}
