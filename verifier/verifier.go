@@ -64,6 +64,12 @@ type VerificationResult struct {
 	// CRLRevocationInfo provides revocation info when CRLRevoked is true
 	CRLRevocationInfo *RevocationInfo
 
+	// OCSPCheckError will be non-nil when there was some sort of error from OCSP check
+	OCSPCheckError error
+
+	// CRLCheckError will be non-nil when there was some sort of error from CRL check
+	CRLCheckError error
+
 	// ValiditionError will be non-nil when there was some sort of error during
 	// validation not involving a name mismatch, e.g. if a chain could not be
 	// built.
@@ -275,11 +281,11 @@ func (v *Verifier) VerifyWithContext(ctx context.Context, c *x509.Certificate, o
 		} else {
 			issuer = nil
 		}
-		res.OCSPRevoked, res.OCSPRevocationInfo, _ = rp.CheckOCSP(ctx, c, issuer)
+		res.OCSPRevoked, res.OCSPRevocationInfo, res.OCSPCheckError = rp.CheckOCSP(ctx, c, issuer)
 	}
 
 	if opts.ShouldCheckCRL && len(c.CRLDistributionPoints) > 0 {
-		res.CRLRevoked, res.CRLRevocationInfo, _ = rp.CheckCRL(ctx, c, nil)
+		res.CRLRevoked, res.CRLRevocationInfo, res.CRLCheckError = rp.CheckCRL(ctx, c, nil)
 	}
 
 	// Determine certificate type.
