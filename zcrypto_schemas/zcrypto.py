@@ -366,8 +366,7 @@ ParsedCertificate = SubRecordType({
         "end": Timestamp(doc="Timestamp of when certificate expires. Timezone is UTC."),
         "length": Signed64BitInteger(doc="The length of time, in seconds, that the certificate is valid."),
     }, category="Validity Period"),
-    "signature_algorithm": SignatureAlgorithm(doc="Identifies the algorithm used by the CA to sign the certificate.",
-                                              category="Signature"),
+    "signature_algorithm": SignatureAlgorithm(doc="Identifies the algorithm used by the CA to sign the certificate.", category="Signature"),
     "subject_key_info": SubRecord({
         "fingerprint_sha256": HexString(doc="The SHA2-256 digest calculated over the certificate's DER-encoded SubjectPublicKeyInfo field."),
         "key_algorithm": PublicKeyAlgorithm(doc="Identifies the type of key and any relevant parameters."),
