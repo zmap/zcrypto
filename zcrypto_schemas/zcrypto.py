@@ -366,7 +366,7 @@ ParsedCertificate = SubRecordType({
         "end": Timestamp(doc="Timestamp of when certificate expires. Timezone is UTC."),
         "length": Signed64BitInteger(doc="The length of time, in seconds, that the certificate is valid."),
     }, category="Validity Period"),
-    "signature_algorithm": SignatureAlgorithm(doc="Identifies the algorithm used by the CA to sign the certificate."),
+    "signature_algorithm": SignatureAlgorithm(doc="Identifies the algorithm used by the CA to sign the certificate.", category="Signature"),
     "subject_key_info": SubRecord({
         "fingerprint_sha256": HexString(doc="The SHA2-256 digest calculated over the certificate's DER-encoded SubjectPublicKeyInfo field."),
         "key_algorithm": PublicKeyAlgorithm(doc="Identifies the type of key and any relevant parameters."),
@@ -392,7 +392,7 @@ ParsedCertificate = SubRecordType({
             "max_path_len": Signed32BitInteger(doc="When present, gives the  maximum number of non-self-issued intermediate certificates that may follow this certificate in a valid certification path."),
         }, category="Basic Constraints", doc="The parsed id-ce-basicConstraints extension (2.5.29.19); see RFC 5280."),
         "subject_alt_name": GeneralNames(category="Subject Alternate Names (SANs)", doc="The parsed Subject Alternative Name extension (id-ce-subjectAltName, 2.5.29.17).", required=False),
-        "issuer_alt_name": GeneralNames(doc="The parsed Issuer Alternative Name extension (id-ce-issuerAltName, 2.5.29.18).", required=False),
+        "issuer_alt_name": GeneralNames(category="Issuer Alternate Names (IANs)", doc="The parsed Issuer Alternative Name extension (id-ce-issuerAltName, 2.5.29.18).", required=False),
         "crl_distribution_points": ListOf(URL(), category="CRL Distribution Points", doc="The parsed id-ce-cRLDistributionPoints extension (2.5.29.31). Contents are a list of distributionPoint URLs (other distributionPoint types are omitted)."),
         # NOTE: inherit the SubjAuthKeyId docs
         "authority_key_id": SubjAuthKeyId(category="Authority Key ID (AKID)"),
