@@ -34,6 +34,7 @@ type clientHelloMsg struct {
 	sctEnabled            bool
 	alpnProtocols         []string
 	unknownExtensions     [][]byte
+	supportedVersions     []uint16
 }
 
 func (m *clientHelloMsg) equal(i interface{}) bool {
@@ -130,6 +131,10 @@ func (m *clientHelloMsg) marshal() []byte {
 	}
 	if m.sctEnabled {
 		numExtensions++
+	}
+	if len(m.supportedVersions) > 0 {
+		numExtensions++
+		extensionsLength += 1 + len(m.supportedVersions)*2
 	}
 	if len(m.unknownExtensions) > 0 {
 		// we do not update numExtensions because the extension code and length
@@ -345,6 +350,23 @@ func (m *clientHelloMsg) marshal() []byte {
 		z[1] = byte(extensionSCT)
 		// zero uint16 for the zero-length extension_data
 		z = z[4:]
+	}
+	// RFC 8446 Sec 4.2.1
+	// https://tools.ietf.org/html/rfc8446#section-4.2.1
+	if len(m.supportedVersions) > 0 {
+		z[0] = byte(extensionSupportedVersions >> 8)
+		z[1] = byte(extensionSupportedVersions & 0xff)
+		extLen := len(m.supportedVersions) * 2
+		length := extLen + 1
+		z[2] = byte(length >> 8)
+		z[3] = byte(length & 0xff)
+		z[4] = byte(extLen & 0xff)
+		z = z[5:]
+		for _, ver := range m.supportedVersions {
+			z[0] = byte(ver >> 8)
+			z[1] = byte(ver & 0xff)
+			z = z[2:]
+		}
 	}
 	if len(m.unknownExtensions) > 0 {
 		for _, ext := range m.unknownExtensions {
