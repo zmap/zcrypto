@@ -25,6 +25,11 @@ func NewCertPool() *CertPool {
 	}
 }
 
+// cert returns cert index n in s.
+func (s *CertPool) cert(n int) (*Certificate, error) {
+	return s.certs[n], nil
+}
+
 // findVerifiedParents attempts to find certificates in s which have signed the
 // given certificate. If any candidates were rejected then errCert will be set
 // to one of them, arbitrarily, and err will contain the reason that it was
