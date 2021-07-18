@@ -1470,3 +1470,7 @@ func (c *Conn) VerifyHostname(host string) error {
 func (c *Conn) handshakeComplete() bool {
 	return atomic.LoadUint32(&c.handshakeStatus) == 1
 }
+
+func (c *Conn) Config() *Config {
+	return c.config
+}
