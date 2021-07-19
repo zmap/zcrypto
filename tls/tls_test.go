@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"crypto"
+	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -825,6 +826,16 @@ func TestCloneNonFuncFields(t *testing.T) {
 			f.Set(reflect.ValueOf([]CurveID{CurveP256}))
 		case "Renegotiation":
 			f.Set(reflect.ValueOf(RenegotiateOnceAsClient))
+		case "ExplicitCurvePreferences", "ForceSuites", "HeartbeatEnabled",
+			"ClientDSAEnabled", "ExtendedRandom", "ForceSessionTicketExt",
+			"ExtendedMasterSecret", "SignedCertificateTimestampExt", "CertsOnly", "DontBufferHandshakes":
+			f.Set(reflect.ValueOf(true))
+		case "ClientRandom", "ExternalClientHello":
+			f.Set(reflect.ValueOf([]byte{}))
+		case "SignatureAndHashes":
+			f.Set(reflect.ValueOf([]SigAndHash{}))
+		case "ExportRSAKey":
+			f.Set(reflect.ValueOf((*rsa.PrivateKey)(nil)))
 		case "mutex", "autoSessionTicketKeys", "sessionTicketKeys":
 			continue // these are unexported fields that are handled separately
 		default:
