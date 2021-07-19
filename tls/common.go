@@ -42,12 +42,13 @@ const (
 )
 
 const (
-	maxPlaintext       = 16384        // maximum plaintext payload length
-	maxCiphertext      = 16384 + 2048 // maximum ciphertext payload length
-	maxCiphertextTLS13 = 16384 + 256  // maximum ciphertext length in TLS 1.3
-	recordHeaderLen    = 5            // record header length
-	maxHandshake       = 65536        // maximum handshake we support (protocol max is 16 MB)
-	maxUselessRecords  = 16           // maximum number of consecutive non-advancing records
+	maxPlaintext        = 16384        // maximum plaintext payload length
+	maxCiphertext       = 16384 + 2048 // maximum ciphertext payload length
+	maxCiphertextTLS13  = 16384 + 256  // maximum ciphertext length in TLS 1.3
+	recordHeaderLen     = 5            // record header length
+	dtlsRecordHeaderLen = 13
+	maxHandshake        = 65536 // maximum handshake we support (protocol max is 16 MB)
+	maxUselessRecords   = 16    // maximum number of consecutive non-advancing records
 
 	minVersion = VersionSSL30
 	maxVersion = VersionTLS13
@@ -268,6 +269,53 @@ const (
 	signatureEd25519
 )
 
+// SigAndHash mirrors the TLS 1.2, SignatureAndHashAlgorithm struct. See
+// RFC 5246, section A.4.1.
+type SigAndHash struct {
+	Signature, Hash uint8
+}
+
+// supportedSKXSignatureAlgorithms contains the signature and hash algorithms
+// that the code advertises as supported in a TLS 1.2 ClientHello.
+var supportedSKXSignatureAlgorithms = []SigAndHash{
+	{signatureRSA, hashSHA512},
+	{signatureECDSA, hashSHA512},
+	{signatureDSA, hashSHA512},
+	{signatureRSA, hashSHA384},
+	{signatureECDSA, hashSHA384},
+	{signatureDSA, hashSHA384},
+	{signatureRSA, hashSHA256},
+	{signatureECDSA, hashSHA256},
+	{signatureDSA, hashSHA256},
+	{signatureRSA, hashSHA224},
+	{signatureECDSA, hashSHA224},
+	{signatureDSA, hashSHA224},
+	{signatureRSA, hashSHA1},
+	{signatureECDSA, hashSHA1},
+	{signatureDSA, hashSHA1},
+	{signatureRSA, hashMD5},
+	{signatureECDSA, hashMD5},
+	{signatureDSA, hashMD5},
+}
+
+var defaultSKXSignatureAlgorithms = []SigAndHash{
+	{signatureRSA, hashSHA256},
+	{signatureECDSA, hashSHA256},
+	{signatureRSA, hashSHA1},
+	{signatureECDSA, hashSHA1},
+	{signatureRSA, hashSHA256},
+	{signatureRSA, hashSHA384},
+	{signatureRSA, hashSHA512},
+}
+
+// supportedClientCertSignatureAlgorithms contains the signature and hash
+// algorithms that the code advertises as supported in a TLS 1.2
+// CertificateRequest.
+var supportedClientCertSignatureAlgorithms = []SigAndHash{
+	{signatureRSA, hashSHA256},
+	{signatureECDSA, hashSHA256},
+}
+
 // directSigning is a standard Hash value that signals that no pre-hashing
 // should be performed, and that the input should be signed directly. It is the
 // hash function associated with the Ed25519 signature scheme.
@@ -415,6 +463,14 @@ const (
 	// to be sent by the client.
 	RequireAndVerifyClientCert
 )
+
+func (authType *ClientAuthType) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + authType.String() + `"`), nil
+}
+
+func (authType *ClientAuthType) UnmarshalJSON(b []byte) error {
+	panic("unimplemented")
+}
 
 // requiresClientCert reports whether the ClientAuthType requires a client
 // certificate to be provided.
@@ -772,6 +828,52 @@ type Config struct {
 	// its key share in TLS 1.3. This may change in the future.
 	CurvePreferences []CurveID
 
+	// If enabled, empty CurvePreferences indicates that there are no curves
+	// supported for ECDHE key exchanges
+	ExplicitCurvePreferences bool
+
+	// If enabled, specifies the signature and hash algorithms to be accepted by
+	// a server, or sent by a client
+	SignatureAndHashes []SigAndHash
+
+	// Add all ciphers in CipherSuites to Client Hello even if unimplemented
+	// Client-side Only
+	ForceSuites bool
+
+	// Export RSA Key
+	ExportRSAKey *rsa.PrivateKey
+
+	// HeartbeatEnabled sets whether the heartbeat extension is sent
+	HeartbeatEnabled bool
+
+	// ClientDSAEnabled sets whether a TLS client will accept server DSA keys
+	// and DSS signatures
+	ClientDSAEnabled bool
+
+	// Use extended random
+	ExtendedRandom bool
+
+	// Force Client Hello to send TLS Session Ticket extension
+	ForceSessionTicketExt bool
+
+	// Enable use of the Extended Master Secret extension
+	ExtendedMasterSecret bool
+
+	SignedCertificateTimestampExt bool
+
+	// Explicitly set Client random
+	ClientRandom []byte
+
+	// Explicitly set ClientHello with raw data
+	ExternalClientHello []byte
+
+	// CertsOnly is used to cause a client to close the TLS connection
+	// as soon as the server's certificates have been received
+	CertsOnly bool
+
+	// DontBufferHandshakes causes Handshake() to act like older versions of the go crypto library, where each TLS packet is sent in a separate Write.
+	DontBufferHandshakes bool
+
 	// DynamicRecordSizingDisabled disables adaptive sizing of TLS records.
 	// When true, the largest possible TLS record size is always used. When
 	// false, the size of TLS records may be adjusted in an attempt to
@@ -853,34 +955,48 @@ func (c *Config) Clone() *Config {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	return &Config{
-		Rand:                        c.Rand,
-		Time:                        c.Time,
-		Certificates:                c.Certificates,
-		NameToCertificate:           c.NameToCertificate,
-		GetCertificate:              c.GetCertificate,
-		GetClientCertificate:        c.GetClientCertificate,
-		GetConfigForClient:          c.GetConfigForClient,
-		VerifyPeerCertificate:       c.VerifyPeerCertificate,
-		VerifyConnection:            c.VerifyConnection,
-		RootCAs:                     c.RootCAs,
-		NextProtos:                  c.NextProtos,
-		ServerName:                  c.ServerName,
-		ClientAuth:                  c.ClientAuth,
-		ClientCAs:                   c.ClientCAs,
-		InsecureSkipVerify:          c.InsecureSkipVerify,
-		CipherSuites:                c.CipherSuites,
-		PreferServerCipherSuites:    c.PreferServerCipherSuites,
-		SessionTicketsDisabled:      c.SessionTicketsDisabled,
-		SessionTicketKey:            c.SessionTicketKey,
-		ClientSessionCache:          c.ClientSessionCache,
-		MinVersion:                  c.MinVersion,
-		MaxVersion:                  c.MaxVersion,
-		CurvePreferences:            c.CurvePreferences,
-		DynamicRecordSizingDisabled: c.DynamicRecordSizingDisabled,
-		Renegotiation:               c.Renegotiation,
-		KeyLogWriter:                c.KeyLogWriter,
-		sessionTicketKeys:           c.sessionTicketKeys,
-		autoSessionTicketKeys:       c.autoSessionTicketKeys,
+		Rand:                          c.Rand,
+		Time:                          c.Time,
+		Certificates:                  c.Certificates,
+		NameToCertificate:             c.NameToCertificate,
+		GetCertificate:                c.GetCertificate,
+		GetClientCertificate:          c.GetClientCertificate,
+		GetConfigForClient:            c.GetConfigForClient,
+		VerifyPeerCertificate:         c.VerifyPeerCertificate,
+		VerifyConnection:              c.VerifyConnection,
+		RootCAs:                       c.RootCAs,
+		NextProtos:                    c.NextProtos,
+		ServerName:                    c.ServerName,
+		ClientAuth:                    c.ClientAuth,
+		ClientCAs:                     c.ClientCAs,
+		InsecureSkipVerify:            c.InsecureSkipVerify,
+		CipherSuites:                  c.CipherSuites,
+		PreferServerCipherSuites:      c.PreferServerCipherSuites,
+		SessionTicketsDisabled:        c.SessionTicketsDisabled,
+		SessionTicketKey:              c.SessionTicketKey,
+		ClientSessionCache:            c.ClientSessionCache,
+		MinVersion:                    c.MinVersion,
+		MaxVersion:                    c.MaxVersion,
+		CurvePreferences:              c.CurvePreferences,
+		DynamicRecordSizingDisabled:   c.DynamicRecordSizingDisabled,
+		Renegotiation:                 c.Renegotiation,
+		KeyLogWriter:                  c.KeyLogWriter,
+		ExplicitCurvePreferences:      c.ExplicitCurvePreferences,
+		SignatureAndHashes:            c.SignatureAndHashes,
+		ForceSuites:                   c.ForceSuites,
+		ExportRSAKey:                  c.ExportRSAKey,
+		HeartbeatEnabled:              c.HeartbeatEnabled,
+		ClientDSAEnabled:              c.ClientDSAEnabled,
+		ExtendedRandom:                c.ExtendedRandom,
+		ForceSessionTicketExt:         c.ForceSessionTicketExt,
+		ExtendedMasterSecret:          c.ExtendedMasterSecret,
+		SignedCertificateTimestampExt: c.SignedCertificateTimestampExt,
+		ClientRandom:                  c.ClientRandom,
+		ExternalClientHello:           c.ExternalClientHello,
+		CertsOnly:                     c.CertsOnly,
+		DontBufferHandshakes:          c.DontBufferHandshakes,
+		sessionTicketKeys:             c.sessionTicketKeys,
+		autoSessionTicketKeys:         c.autoSessionTicketKeys,
 	}
 }
 
@@ -1080,6 +1196,9 @@ func supportedVersionsFromMax(maxVersion uint16) []uint16 {
 var defaultCurvePreferences = []CurveID{X25519, CurveP256, CurveP384, CurveP521}
 
 func (c *Config) curvePreferences() []CurveID {
+	if c.ExplicitCurvePreferences {
+		return c.CurvePreferences
+	}
 	if c == nil || len(c.CurvePreferences) == 0 {
 		return defaultCurvePreferences
 	}
@@ -1403,25 +1522,25 @@ var writerMutex sync.Mutex
 
 // A Certificate is a chain of one or more certificates, leaf first.
 type Certificate struct {
-	Certificate [][]byte
+	Certificate [][]byte `json:"certificate_chain,omitempty"`
 	// PrivateKey contains the private key corresponding to the public key in
 	// Leaf. This must implement crypto.Signer with an RSA, ECDSA or Ed25519 PublicKey.
 	// For a server up to TLS 1.2, it can also implement crypto.Decrypter with
 	// an RSA PublicKey.
-	PrivateKey crypto.PrivateKey
+	PrivateKey crypto.PrivateKey `json:"-"`
 	// SupportedSignatureAlgorithms is an optional list restricting what
 	// signature algorithms the PrivateKey can be used for.
-	SupportedSignatureAlgorithms []SignatureScheme
+	SupportedSignatureAlgorithms []SignatureScheme `json:"supported_sig_algos,omitempty"`
 	// OCSPStaple contains an optional OCSP response which will be served
 	// to clients that request it.
-	OCSPStaple []byte
+	OCSPStaple []byte `json:"ocsp_staple,omitempty"`
 	// SignedCertificateTimestamps contains an optional list of Signed
 	// Certificate Timestamps which will be served to clients that request it.
-	SignedCertificateTimestamps [][]byte
+	SignedCertificateTimestamps [][]byte `json:"signed_cert_timestamps,omitempty"`
 	// Leaf is the parsed form of the leaf certificate, which may be initialized
 	// using x509.ParseCertificate to reduce per-handshake processing. If nil,
 	// the leaf certificate will be parsed as needed.
-	Leaf *x509.Certificate
+	Leaf *x509.Certificate `json:"leaf,omitempty"`
 }
 
 // leaf returns the parsed leaf certificate, either from c.Leaf or by parsing
