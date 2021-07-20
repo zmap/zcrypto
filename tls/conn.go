@@ -115,6 +115,11 @@ type Conn struct {
 	activeCall int32
 
 	tmp [16]byte
+
+	// tls
+	heartbeat     bool
+	handshakeLog  *ServerHandshake
+	heartbleedLog *Heartbleed
 }
 
 // Access to net.Conn methods.
