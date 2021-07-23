@@ -117,9 +117,7 @@ type Conn struct {
 	tmp [16]byte
 
 	// tls
-	heartbeat     bool
-	handshakeLog  *ServerHandshake
-	heartbleedLog *Heartbleed
+	handshakeLog *ServerHandshake
 }
 
 // Access to net.Conn methods.
