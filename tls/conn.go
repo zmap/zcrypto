@@ -1392,7 +1392,13 @@ func (c *Conn) Handshake() error {
 	c.in.Lock()
 	defer c.in.Unlock()
 
-	c.handshakeErr = c.handshakeFn()
+	//c.handshakeErr = c.handshakeFn()
+	if c.isClient {
+		c.handshakeErr = c.clientHandshake()
+	} else {
+		c.handshakeErr = c.serverHandshake()
+	}
+
 	if c.handshakeErr == nil {
 		c.handshakes++
 	} else {

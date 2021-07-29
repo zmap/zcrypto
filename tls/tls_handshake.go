@@ -5,6 +5,7 @@
 package tls
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -261,7 +262,6 @@ func (c *Conn) OutSeq() []byte {
 	return c.out.seq[:]
 }
 
-/* TODO
 func (m *clientHelloMsg) MakeLog() *ClientHello {
 	ch := new(ClientHello)
 
@@ -285,14 +285,16 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 
 	ch.OcspStapling = m.ocspStapling
 	ch.TicketSupported = m.ticketSupported
-	ch.SecureRenegotiation = m.secureRenegotiation
-	ch.HeartbeatSupported = m.heartbeatEnabled
+	// TODO: ZGrab2
+	//ch.SecureRenegotiation = m.secureRenegotiation
+	// ch.HeartbeatSupported = m.heartbeatEnabled
 
+	/* TODO:
 	if len(m.extendedRandom) > 0 {
 		ch.ExtendedRandom = make([]byte, len(m.extendedRandom))
 		copy(ch.ExtendedRandom, m.extendedRandom)
 	}
-
+	*/
 	ch.NextProtoNeg = m.nextProtoNeg
 	ch.ServerName = m.serverName
 	ch.Scts = m.scts
@@ -312,22 +314,27 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 		ch.SessionTicket.LifetimeHint = 0 // Clients don't send
 	}
 
-	ch.SignatureAndHashes = make([]SignatureAndHash, len(m.signatureAndHashes))
-	for i, aGroup := range m.signatureAndHashes {
-		ch.SignatureAndHashes[i] = SignatureAndHash(aGroup)
-	}
-
-	ch.SctEnabled = m.sctEnabled
+	// TODO: ZGrab2
+	/*
+		ch.SignatureAndHashes = make([]SignatureAndHash, len(m.signatureAndHashes))
+		for i, aGroup := range m.signatureAndHashes {
+			ch.SignatureAndHashes[i] = SignatureAndHash(aGroup)
+		}
+	*/
+	//ch.SctEnabled = m.sctEnabled
 
 	ch.AlpnProtocols = make([]string, len(m.alpnProtocols))
 	copy(ch.AlpnProtocols, m.alpnProtocols)
 
-	ch.UnknownExtensions = make([][]byte, len(m.unknownExtensions))
-	for i, extBytes := range m.unknownExtensions {
-		tempBytes := make([]byte, len(extBytes))
-		copy(tempBytes, extBytes)
-		ch.UnknownExtensions[i] = tempBytes
-	}
+	// TODO: ZGrab2
+	/*
+		ch.UnknownExtensions = make([][]byte, len(m.unknownExtensions))
+		for i, extBytes := range m.unknownExtensions {
+			tempBytes := make([]byte, len(extBytes))
+			copy(tempBytes, extBytes)
+			ch.UnknownExtensions[i] = tempBytes
+		}
+	*/
 	return ch
 }
 
@@ -342,12 +349,16 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	sh.CompressionMethod = m.compressionMethod
 	sh.OcspStapling = m.ocspStapling
 	sh.TicketSupported = m.ticketSupported
-	sh.SecureRenegotiation = m.secureRenegotiation
-	sh.HeartbeatSupported = m.heartbeatEnabled
-	if len(m.extendedRandom) > 0 {
-		sh.ExtendedRandom = make([]byte, len(m.extendedRandom))
-		copy(sh.ExtendedRandom, m.extendedRandom)
-	}
+
+	// TODO: ZGrab2
+	/*
+		sh.SecureRenegotiation = m.secureRenegotiation
+		sh.HeartbeatSupported = m.heartbeatEnabled
+		if len(m.extendedRandom) > 0 {
+			sh.ExtendedRandom = make([]byte, len(m.extendedRandom))
+			copy(sh.ExtendedRandom, m.extendedRandom)
+		}
+	*/
 	if len(m.scts) > 0 {
 		for _, rawSCT := range m.scts {
 			var out ParsedAndRawSCT
@@ -360,7 +371,8 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 			sh.SignedCertificateTimestamps = append(sh.SignedCertificateTimestamps, out)
 		}
 	}
-	sh.ExtendedMasterSecret = m.extendedMasterSecret
+	// TODO: ZGrab2
+	//sh.ExtendedMasterSecret = m.extendedMasterSecret
 	return sh
 }
 
@@ -397,6 +409,8 @@ func (c *Certificates) addParsed(certs []*x509.Certificate, validation *x509.Val
 	c.Validation = validation
 }
 
+// TODO: ZGrab2
+/*
 func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 	skx := new(ServerKeyExchange)
 	skx.Raw = make([]byte, len(m.key))
@@ -438,6 +452,7 @@ func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 
 	return skx
 }
+*/
 
 func (m *finishedMsg) MakeLog() *Finished {
 	sf := new(Finished)
@@ -451,7 +466,8 @@ func (m *ClientSessionState) MakeLog() *SessionTicket {
 	st.Length = len(m.sessionTicket)
 	st.Value = make([]uint8, st.Length)
 	copy(st.Value, m.sessionTicket)
-	st.LifetimeHint = m.lifetimeHint
+	// TODO: ZGrab2
+	//st.LifetimeHint = m.lifetimeHint
 	return st
 }
 
@@ -464,10 +480,12 @@ func (m *clientHandshakeState) MakeLog() *KeyMaterial {
 	copy(keymat.MasterSecret.Value, m.masterSecret)
 
 	keymat.PreMasterSecret = new(PreMasterSecret)
-	keymat.PreMasterSecret.Length = len(m.preMasterSecret)
-	keymat.PreMasterSecret.Value = make([]byte, len(m.preMasterSecret))
-	copy(keymat.PreMasterSecret.Value, m.preMasterSecret)
-
+	// TODO: ZGrab2
+	/*
+		keymat.PreMasterSecret.Length = len(m.preMasterSecret)
+		keymat.PreMasterSecret.Value = make([]byte, len(m.preMasterSecret))
+		copy(keymat.PreMasterSecret.Value, m.preMasterSecret)
+	*/
 	return keymat
 }
 
@@ -480,10 +498,12 @@ func (m *serverHandshakeState) MakeLog() *KeyMaterial {
 	copy(keymat.MasterSecret.Value, m.masterSecret)
 
 	keymat.PreMasterSecret = new(PreMasterSecret)
-	keymat.PreMasterSecret.Length = len(m.preMasterSecret)
-	keymat.PreMasterSecret.Value = make([]byte, len(m.preMasterSecret))
-	copy(keymat.PreMasterSecret.Value, m.preMasterSecret)
-
+	// TODO: ZGrab2
+	/*
+		keymat.PreMasterSecret.Length = len(m.preMasterSecret)
+		keymat.PreMasterSecret.Value = make([]byte, len(m.preMasterSecret))
+		copy(keymat.PreMasterSecret.Value, m.preMasterSecret)
+	*/
 	return keymat
 }
 
@@ -492,21 +512,22 @@ func (m *clientKeyExchangeMsg) MakeLog(ka keyAgreement) *ClientKeyExchange {
 	ckx.Raw = make([]byte, len(m.raw))
 	copy(ckx.Raw, m.raw)
 
-	switch ka := ka.(type) {
+	// TODO: ZGrab2
+	switch /*ka := */ ka.(type) {
 	case *rsaKeyAgreement:
 		ckx.RSAParams = new(jsonKeys.RSAClientParams)
 		ckx.RSAParams.Length = uint16(len(m.ciphertext) - 2) // First 2 bytes are length
 		ckx.RSAParams.EncryptedPMS = make([]byte, len(m.ciphertext)-2)
 		copy(ckx.RSAParams.EncryptedPMS, m.ciphertext[2:])
-		// Premaster-Secret is available in KeyMaterial record
-	case *dheKeyAgreement:
-		ckx.DHParams = ka.ClientDHParams()
+	// Premaster-Secret is available in KeyMaterial record
+	// TODO: ZGrab2
+	//case *dheKeyAgreement:
+	//	ckx.DHParams = ka.ClientDHParams()
 	case *ecdheKeyAgreement:
-		ckx.ECDHParams = ka.ClientECDHParams()
+		//ckx.ECDHParams = ka.ClientECDHParams()
 	default:
 		break
 	}
 
 	return ckx
 }
-*/

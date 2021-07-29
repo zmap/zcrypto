@@ -73,6 +73,7 @@ type clientHelloMsg struct {
 	sessionId                        []byte
 	cipherSuites                     []uint16
 	compressionMethods               []uint8
+	nextProtoNeg                     bool
 	serverName                       string
 	ocspStapling                     bool
 	supportedCurves                  []CurveID

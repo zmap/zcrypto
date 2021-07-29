@@ -121,11 +121,15 @@ func (hs *serverHandshakeState) handshake() error {
 	c.ekm = ekmFromMasterSecret(c.vers, hs.suite, hs.masterSecret, hs.clientHello.random, hs.hello.random)
 	atomic.StoreUint32(&c.handshakeStatus, 1)
 
+	c.handshakeLog.KeyMaterial = hs.MakeLog()
+
 	return nil
 }
 
 // readClientHello reads a ClientHello message and selects the protocol version.
 func (c *Conn) readClientHello() (*clientHelloMsg, error) {
+	c.handshakeLog = new(ServerHandshake)
+
 	msg, err := c.readHandshake()
 	if err != nil {
 		return nil, err
@@ -135,6 +139,7 @@ func (c *Conn) readClientHello() (*clientHelloMsg, error) {
 		c.sendAlert(alertUnexpectedMessage)
 		return nil, unexpectedMessageError(clientHello, msg)
 	}
+	c.handshakeLog.ClientHello = clientHello.MakeLog()
 
 	var configForClient *Config
 	originalConfig := c.config
@@ -436,6 +441,7 @@ func (hs *serverHandshakeState) doResumeHandshake() error {
 	if _, err := c.writeRecord(recordTypeHandshake, hs.hello.marshal()); err != nil {
 		return err
 	}
+	c.handshakeLog.ServerHello = hs.hello.MakeLog()
 
 	if err := c.processCertsFromClient(Certificate{
 		Certificate: hs.sessionState.certificates,
@@ -473,14 +479,18 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 	}
 	hs.finishedHash.Write(hs.clientHello.marshal())
 	hs.finishedHash.Write(hs.hello.marshal())
-	if _, err := c.writeRecord(recordTypeHandshake, hs.hello.marshal()); err != nil {
+	_, err := c.writeRecord(recordTypeHandshake, hs.hello.marshal())
+	c.handshakeLog.ServerHello = hs.hello.MakeLog()
+	if err != nil {
 		return err
 	}
 
 	certMsg := new(certificateMsg)
 	certMsg.certificates = hs.cert.Certificate
 	hs.finishedHash.Write(certMsg.marshal())
-	if _, err := c.writeRecord(recordTypeHandshake, certMsg.marshal()); err != nil {
+	_, err = c.writeRecord(recordTypeHandshake, certMsg.marshal())
+	c.handshakeLog.ServerCertificates = certMsg.MakeLog()
+	if err != nil {
 		return err
 	}
 
@@ -501,7 +511,10 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 	}
 	if skx != nil {
 		hs.finishedHash.Write(skx.marshal())
-		if _, err := c.writeRecord(recordTypeHandshake, skx.marshal()); err != nil {
+		_, err := c.writeRecord(recordTypeHandshake, skx.marshal())
+		// TODO:
+		// c.handshakeLog.ServerKeyExchange = skx.MakeLog(keyAgreement)
+		if err != nil {
 			return err
 		}
 	}
@@ -594,6 +607,8 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 		c.sendAlert(alertHandshakeFailure)
 		return err
 	}
+	c.handshakeLog.ClientKeyExchange = ckx.MakeLog(keyAgreement)
+
 	hs.masterSecret = masterFromPreMasterSecret(c.vers, hs.suite, preMasterSecret, hs.clientHello.random, hs.hello.random)
 	if err := c.config.writeKeyLog(keyLogLabelTLS12, hs.clientHello.random, hs.masterSecret); err != nil {
 		c.sendAlert(alertInternalError)
@@ -691,6 +706,7 @@ func (hs *serverHandshakeState) readFinished(out []byte) error {
 		c.sendAlert(alertUnexpectedMessage)
 		return unexpectedMessageError(clientFinished, msg)
 	}
+	c.handshakeLog.ClientFinished = clientFinished.MakeLog()
 
 	verify := hs.finishedHash.clientSum(hs.masterSecret)
 	if len(verify) != len(clientFinished.verifyData) ||
@@ -757,7 +773,10 @@ func (hs *serverHandshakeState) sendFinished(out []byte) error {
 	finished := new(finishedMsg)
 	finished.verifyData = hs.finishedHash.serverSum(hs.masterSecret)
 	hs.finishedHash.Write(finished.marshal())
-	if _, err := c.writeRecord(recordTypeHandshake, finished.marshal()); err != nil {
+	_, err := c.writeRecord(recordTypeHandshake, finished.marshal())
+	c.handshakeLog.ServerFinished = finished.MakeLog()
+
+	if err != nil {
 		return err
 	}
 
