@@ -1392,6 +1392,9 @@ func (c *Conn) Handshake() error {
 	c.in.Lock()
 	defer c.in.Unlock()
 
+	// TODO: c.handshakeFn() gives a race condition in ZGrab2
+	// using explicit calls here instead
+
 	//c.handshakeErr = c.handshakeFn()
 	if c.isClient {
 		c.handshakeErr = c.clientHandshake()
