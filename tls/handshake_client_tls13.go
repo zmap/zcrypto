@@ -456,6 +456,7 @@ func (hs *clientHandshakeStateTLS13) readServerCertificate() error {
 	c.scts = certMsg.certificate.SignedCertificateTimestamps
 	c.ocspResponse = certMsg.certificate.OCSPStaple
 
+	c.handshakeLog.ServerCertificates = certMsg.MakeLog()
 	if err := c.verifyServerCertificate(certMsg.certificate.Certificate); err != nil {
 		return err
 	}

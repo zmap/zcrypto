@@ -510,6 +510,8 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 	}
 
+	c.handshakeLog.ServerCertificates = certMsg.MakeLog()
+
 	if c.handshakes == 0 {
 		// If this is the first handshake on a connection, process and
 		// (optionally) verify the server's certificates.
@@ -856,18 +858,20 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 		certs[i] = cert
 	}
 
+	opts := x509.VerifyOptions{
+		Roots:         c.config.RootCAs,
+		CurrentTime:   c.config.time(),
+		DNSName:       c.config.ServerName,
+		Intermediates: x509.NewCertPool(),
+	}
+	for _, cert := range certs[1:] {
+		opts.Intermediates.AddCert(cert)
+	}
+	var err error
+	var validation *x509.Validation
+	c.verifiedChains, validation, err = certs[0].ValidateWithStupidDetail(opts)
+	c.handshakeLog.ServerCertificates.addParsed(certs, validation)
 	if !c.config.InsecureSkipVerify {
-		opts := x509.VerifyOptions{
-			Roots:         c.config.RootCAs,
-			CurrentTime:   c.config.time(),
-			DNSName:       c.config.ServerName,
-			Intermediates: x509.NewCertPool(),
-		}
-		for _, cert := range certs[1:] {
-			opts.Intermediates.AddCert(cert)
-		}
-		var err error
-		c.verifiedChains, _, _, err = certs[0].Verify(opts)
 		if err != nil {
 			c.sendAlert(alertBadCertificate)
 			return err

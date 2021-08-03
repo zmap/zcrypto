@@ -285,16 +285,8 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 
 	ch.OcspStapling = m.ocspStapling
 	ch.TicketSupported = m.ticketSupported
-	// TODO: ZGrab2
-	//ch.SecureRenegotiation = m.secureRenegotiation
-	// ch.HeartbeatSupported = m.heartbeatEnabled
+	ch.SecureRenegotiation = m.secureRenegotiationSupported && len(m.secureRenegotiation) > 0
 
-	/* TODO:
-	if len(m.extendedRandom) > 0 {
-		ch.ExtendedRandom = make([]byte, len(m.extendedRandom))
-		copy(ch.ExtendedRandom, m.extendedRandom)
-	}
-	*/
 	ch.NextProtoNeg = m.nextProtoNeg
 	ch.ServerName = m.serverName
 	ch.Scts = m.scts
@@ -321,20 +313,17 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 			ch.SignatureAndHashes[i] = SignatureAndHash(aGroup)
 		}
 	*/
-	//ch.SctEnabled = m.sctEnabled
 
 	ch.AlpnProtocols = make([]string, len(m.alpnProtocols))
 	copy(ch.AlpnProtocols, m.alpnProtocols)
 
-	// TODO: ZGrab2
-	/*
-		ch.UnknownExtensions = make([][]byte, len(m.unknownExtensions))
-		for i, extBytes := range m.unknownExtensions {
-			tempBytes := make([]byte, len(extBytes))
-			copy(tempBytes, extBytes)
-			ch.UnknownExtensions[i] = tempBytes
-		}
-	*/
+	ch.UnknownExtensions = make([][]byte, len(m.unknownExtensions))
+	for i, extBytes := range m.unknownExtensions {
+		tempBytes := make([]byte, len(extBytes))
+		copy(tempBytes, extBytes)
+		ch.UnknownExtensions[i] = tempBytes
+	}
+
 	return ch
 }
 
@@ -349,16 +338,8 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	sh.CompressionMethod = m.compressionMethod
 	sh.OcspStapling = m.ocspStapling
 	sh.TicketSupported = m.ticketSupported
+	sh.SecureRenegotiation = m.secureRenegotiationSupported && len(m.secureRenegotiation) > 0
 
-	// TODO: ZGrab2
-	/*
-		sh.SecureRenegotiation = m.secureRenegotiation
-		sh.HeartbeatSupported = m.heartbeatEnabled
-		if len(m.extendedRandom) > 0 {
-			sh.ExtendedRandom = make([]byte, len(m.extendedRandom))
-			copy(sh.ExtendedRandom, m.extendedRandom)
-		}
-	*/
 	if len(m.scts) > 0 {
 		for _, rawSCT := range m.scts {
 			var out ParsedAndRawSCT
@@ -371,8 +352,6 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 			sh.SignedCertificateTimestamps = append(sh.SignedCertificateTimestamps, out)
 		}
 	}
-	// TODO: ZGrab2
-	//sh.ExtendedMasterSecret = m.extendedMasterSecret
 	return sh
 }
 
@@ -385,6 +364,24 @@ func (m *certificateMsg) MakeLog() *Certificates {
 	}
 	if len(m.certificates) >= 2 {
 		chain := m.certificates[1:]
+		sc.Chain = make([]SimpleCertificate, len(chain))
+		for idx, cert := range chain {
+			sc.Chain[idx].Raw = make([]byte, len(cert))
+			copy(sc.Chain[idx].Raw, cert)
+		}
+	}
+	return sc
+}
+
+func (m *certificateMsgTLS13) MakeLog() *Certificates {
+	sc := new(Certificates)
+	if len(m.certificate.Certificate) >= 1 {
+		cert := m.certificate.Certificate[0]
+		sc.Certificate.Raw = make([]byte, len(cert))
+		copy(sc.Certificate.Raw, cert)
+	}
+	if len(m.certificate.Certificate) >= 2 {
+		chain := m.certificate.Certificate[1:]
 		sc.Chain = make([]SimpleCertificate, len(chain))
 		for idx, cert := range chain {
 			sc.Chain[idx].Raw = make([]byte, len(cert))
@@ -466,8 +463,7 @@ func (m *ClientSessionState) MakeLog() *SessionTicket {
 	st.Length = len(m.sessionTicket)
 	st.Value = make([]uint8, st.Length)
 	copy(st.Value, m.sessionTicket)
-	// TODO: ZGrab2
-	//st.LifetimeHint = m.lifetimeHint
+	// st.LifetimeHint = m.lifetimeHint
 	return st
 }
 
@@ -480,12 +476,6 @@ func (m *clientHandshakeState) MakeLog() *KeyMaterial {
 	copy(keymat.MasterSecret.Value, m.masterSecret)
 
 	keymat.PreMasterSecret = new(PreMasterSecret)
-	// TODO: ZGrab2
-	/*
-		keymat.PreMasterSecret.Length = len(m.preMasterSecret)
-		keymat.PreMasterSecret.Value = make([]byte, len(m.preMasterSecret))
-		copy(keymat.PreMasterSecret.Value, m.preMasterSecret)
-	*/
 	return keymat
 }
 
@@ -498,12 +488,6 @@ func (m *serverHandshakeState) MakeLog() *KeyMaterial {
 	copy(keymat.MasterSecret.Value, m.masterSecret)
 
 	keymat.PreMasterSecret = new(PreMasterSecret)
-	// TODO: ZGrab2
-	/*
-		keymat.PreMasterSecret.Length = len(m.preMasterSecret)
-		keymat.PreMasterSecret.Value = make([]byte, len(m.preMasterSecret))
-		copy(keymat.PreMasterSecret.Value, m.preMasterSecret)
-	*/
 	return keymat
 }
 

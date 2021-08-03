@@ -93,6 +93,8 @@ type clientHelloMsg struct {
 	pskModes                         []uint8
 	pskIdentities                    []pskIdentity
 	pskBinders                       [][]byte
+	// TODO: ZGrab2 : populate
+	unknownExtensions [][]byte
 }
 
 func (m *clientHelloMsg) marshal() []byte {
@@ -1425,8 +1427,9 @@ func unmarshalCertificate(s *cryptobyte.String, certificate *Certificate) bool {
 }
 
 type serverKeyExchangeMsg struct {
-	raw []byte
-	key []byte
+	raw    []byte
+	key    []byte
+	digest []byte
 }
 
 func (m *serverKeyExchangeMsg) marshal() []byte {
