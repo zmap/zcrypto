@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"regexp"
 	"strconv"
+
+	jsonKeys "github.com/zmap/zcrypto/json"
 )
 
 // SignatureAndHash is a SigAndHash that implements json.Marshaler and
@@ -69,4 +71,57 @@ func signatureTypeToName(sigType uint8) string {
 		break
 	}
 	return "unknown." + strconv.Itoa(int(sigType))
+}
+
+func (ka *rsaKeyAgreement) RSAParams() *jsonKeys.RSAPublicKey {
+	out := new(jsonKeys.RSAPublicKey)
+	//out.PublicKey = ka.publicKey
+	return out
+}
+
+func (ka *ecdheKeyAgreement) ECDHParams() *jsonKeys.ECDHParams {
+	out := new(jsonKeys.ECDHParams)
+	out.TLSCurveID = jsonKeys.TLSCurveID(ka.params.CurveID())
+	out.ServerPublic = &jsonKeys.ECPoint{}
+	/*
+		if ka.x != nil {
+			out.ServerPublic.X = new(big.Int)
+			out.ServerPublic.X.Set(ka.x)
+		}
+		if ka.y != nil {
+			out.ServerPublic.Y = new(big.Int)
+			out.ServerPublic.Y.Set(ka.y)
+		}
+		if len(ka.serverPrivKey) > 0 {
+			out.ServerPrivate = new(jsonKeys.ECDHPrivateParams)
+			out.ServerPrivate.Length = len(ka.serverPrivKey)
+			out.ServerPrivate.Value = make([]byte, len(ka.serverPrivKey))
+			copy(out.ServerPrivate.Value, ka.serverPrivKey)
+		}
+	*/
+	return out
+}
+
+func (ka *ecdheKeyAgreement) ClientECDHParams() *jsonKeys.ECDHParams {
+	out := new(jsonKeys.ECDHParams)
+	out.TLSCurveID = jsonKeys.TLSCurveID(ka.params.CurveID())
+	out.ClientPublic = &jsonKeys.ECPoint{}
+	/*
+		if ka.clientX != nil {
+			out.ClientPublic.X = new(big.Int)
+			out.ClientPublic.X.Set(ka.clientX)
+		}
+		if ka.clientY != nil {
+			out.ClientPublic.Y = new(big.Int)
+			out.ClientPublic.Y.Set(ka.clientY)
+		}
+
+		if len(ka.clientPrivKey) > 0 {
+			out.ClientPrivate = new(jsonKeys.ECDHPrivateParams)
+			out.ClientPrivate.Length = len(ka.clientPrivKey)
+			out.ClientPrivate.Value = make([]byte, len(ka.clientPrivKey))
+			copy(out.ClientPrivate.Value, ka.clientPrivKey)
+		}
+	*/
+	return out
 }

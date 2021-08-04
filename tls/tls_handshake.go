@@ -40,7 +40,7 @@ type ClientHello struct {
 	SupportedCurves      []CurveID           `json:"supported_curves,omitempty"`
 	SupportedPoints      []PointFormat       `json:"supported_point_formats,omitempty"`
 	SessionTicket        *SessionTicket      `json:"session_ticket,omitempty"`
-	SignatureAndHashes   []SignatureAndHash  `json:"signature_and_hashes,omitempty"`
+	SignatureSchemes     []SignatureScheme   `json:"signature_schemes,omitempty"`
 	SctEnabled           bool                `json:"sct_enabled"`
 	AlpnProtocols        []string            `json:"alpn_protocols,omitempty"`
 	UnknownExtensions    [][]byte            `json:"unknown_extensions,omitempty"`
@@ -306,13 +306,10 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 		ch.SessionTicket.LifetimeHint = 0 // Clients don't send
 	}
 
-	// TODO: ZGrab2
-	/*
-		ch.SignatureAndHashes = make([]SignatureAndHash, len(m.signatureAndHashes))
-		for i, aGroup := range m.signatureAndHashes {
-			ch.SignatureAndHashes[i] = SignatureAndHash(aGroup)
-		}
-	*/
+	ch.SignatureSchemes = make([]SignatureScheme, len(m.supportedSignatureAlgorithms))
+	for i, aGroup := range m.supportedSignatureAlgorithms {
+		ch.SignatureSchemes[i] = aGroup
+	}
 
 	ch.AlpnProtocols = make([]string, len(m.alpnProtocols))
 	copy(ch.AlpnProtocols, m.alpnProtocols)
@@ -407,11 +404,10 @@ func (c *Certificates) addParsed(certs []*x509.Certificate, validation *x509.Val
 }
 
 // TODO: ZGrab2
-/*
 func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 	skx := new(ServerKeyExchange)
 	skx.Raw = make([]byte, len(m.key))
-	var auth keyAgreementAuthentication
+	//var auth keyAgreementAuthentication
 	var errAuth error
 	copy(skx.Raw, m.key)
 	skx.Digest = append(make([]byte, 0), m.digest...)
@@ -420,27 +416,31 @@ func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 	switch ka := ka.(type) {
 	case *rsaKeyAgreement:
 		skx.RSAParams = ka.RSAParams()
-		auth = ka.auth
+		//auth = ka.auth
 		errAuth = ka.verifyError
-	case *dheKeyAgreement:
-		skx.DHParams = ka.DHParams()
-		auth = ka.auth
-		errAuth = ka.verifyError
+	/*
+		case *dheKeyAgreement:
+			skx.DHParams = ka.DHParams()
+			auth = ka.auth
+			errAuth = ka.verifyError
+	*/
 	case *ecdheKeyAgreement:
 		skx.ECDHParams = ka.ECDHParams()
-		auth = ka.auth
+		//auth = ka.auth
 		errAuth = ka.verifyError
 	default:
 		break
 	}
 
-	// Write out signature
-	switch auth := auth.(type) {
-	case *signedKeyAgreement:
-		skx.Signature = auth.Signature()
-	default:
-		break
-	}
+	/*
+		// Write out signature
+		switch auth := auth.(type) {
+		case *signedKeyAgreement:
+			skx.Signature = auth.Signature()
+		default:
+			break
+		}
+	*/
 
 	// Write the signature validation error
 	if errAuth != nil {
@@ -449,7 +449,6 @@ func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 
 	return skx
 }
-*/
 
 func (m *finishedMsg) MakeLog() *Finished {
 	sf := new(Finished)
@@ -496,8 +495,7 @@ func (m *clientKeyExchangeMsg) MakeLog(ka keyAgreement) *ClientKeyExchange {
 	ckx.Raw = make([]byte, len(m.raw))
 	copy(ckx.Raw, m.raw)
 
-	// TODO: ZGrab2
-	switch /*ka := */ ka.(type) {
+	switch ka := ka.(type) {
 	case *rsaKeyAgreement:
 		ckx.RSAParams = new(jsonKeys.RSAClientParams)
 		ckx.RSAParams.Length = uint16(len(m.ciphertext) - 2) // First 2 bytes are length
@@ -508,7 +506,7 @@ func (m *clientKeyExchangeMsg) MakeLog(ka keyAgreement) *ClientKeyExchange {
 	//case *dheKeyAgreement:
 	//	ckx.DHParams = ka.ClientDHParams()
 	case *ecdheKeyAgreement:
-		//ckx.ECDHParams = ka.ClientECDHParams()
+		ckx.ECDHParams = ka.ClientECDHParams()
 	default:
 		break
 	}

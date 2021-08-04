@@ -21,7 +21,9 @@ var errServerKeyExchange = errors.New("tls: invalid ServerKeyExchange message")
 
 // rsaKeyAgreement implements the standard TLS key agreement where the client
 // encrypts the pre-master secret to the server's public key.
-type rsaKeyAgreement struct{}
+type rsaKeyAgreement struct {
+	verifyError error
+}
 
 func (ka rsaKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {
 	return nil, nil
@@ -141,6 +143,8 @@ type ecdheKeyAgreement struct {
 	// and returned in generateClientKeyExchange.
 	ckx             *clientKeyExchangeMsg
 	preMasterSecret []byte
+
+	verifyError error
 }
 
 func (ka *ecdheKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {
@@ -320,7 +324,7 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	sig = sig[2:]
 
 	signed := hashForServerKeyExchange(sigType, sigHash, ka.version, clientHello.random, serverHello.random, serverECDHEParams)
-	if err := verifyHandshakeSignature(sigType, cert.PublicKey, sigHash, signed, sig); err != nil {
+	if ka.verifyError = verifyHandshakeSignature(sigType, cert.PublicKey, sigHash, signed, sig); ka.verifyError != nil {
 		return errors.New("tls: invalid signature by the server certificate: " + err.Error())
 	}
 	return nil
