@@ -40,7 +40,7 @@ type ClientHello struct {
 	SupportedCurves      []CurveID           `json:"supported_curves,omitempty"`
 	SupportedPoints      []PointFormat       `json:"supported_point_formats,omitempty"`
 	SessionTicket        *SessionTicket      `json:"session_ticket,omitempty"`
-	SignatureSchemes     []SignatureScheme   `json:"signature_schemes,omitempty"`
+	SignatureAndHashes   []SignatureAndHash  `json:"signature_and_hashes,omitempty"`
 	SctEnabled           bool                `json:"sct_enabled"`
 	AlpnProtocols        []string            `json:"alpn_protocols,omitempty"`
 	UnknownExtensions    [][]byte            `json:"unknown_extensions,omitempty"`
@@ -306,9 +306,11 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 		ch.SessionTicket.LifetimeHint = 0 // Clients don't send
 	}
 
-	ch.SignatureSchemes = make([]SignatureScheme, len(m.supportedSignatureAlgorithms))
-	for i, aGroup := range m.supportedSignatureAlgorithms {
-		ch.SignatureSchemes[i] = aGroup
+	ch.SignatureAndHashes = []SignatureAndHash{}
+	for _, sigAndAlg := range m.supportedSignatureAlgorithms {
+		if sa, ok := signatureAlgorithms[SignatureScheme(sigAndAlg)]; ok {
+			ch.SignatureAndHashes = append(ch.SignatureAndHashes, SignatureAndHash(sa))
+		}
 	}
 
 	ch.AlpnProtocols = make([]string, len(m.alpnProtocols))

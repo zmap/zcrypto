@@ -340,6 +340,21 @@ var supportedSignatureAlgorithms = []SignatureScheme{
 	ECDSAWithSHA1,
 }
 
+var signatureAlgorithms = map[SignatureScheme]SigAndHash{
+	PSSWithSHA256:          {signatureRSA, hashSHA256},
+	ECDSAWithP256AndSHA256: {signatureECDSA, hashSHA256},
+	Ed25519:                {signatureEd25519, hashSHA256}, // TODO: is it correct
+	PSSWithSHA384:          {signatureRSA, hashSHA384},
+	PSSWithSHA512:          {signatureRSA, hashSHA512},
+	PKCS1WithSHA256:        {signatureRSA, hashSHA256},
+	PKCS1WithSHA384:        {signatureRSA, hashSHA384},
+	PKCS1WithSHA512:        {signatureRSA, hashSHA512},
+	ECDSAWithP384AndSHA384: {signatureECDSA, hashSHA384},
+	ECDSAWithP521AndSHA512: {signatureECDSA, hashSHA512},
+	PKCS1WithSHA1:          {signatureRSA, hashSHA1},
+	ECDSAWithSHA1:          {signatureECDSA, hashSHA1},
+}
+
 // helloRetryRequestRandom is set as the Random value of a ServerHello
 // to signal that the message is actually a HelloRetryRequest.
 var helloRetryRequestRandom = []byte{ // See RFC 8446, Section 4.1.3.
