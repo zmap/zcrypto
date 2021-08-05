@@ -537,8 +537,8 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 	if ok {
 		hs.finishedHash.Write(skx.marshal())
 		err = keyAgreement.processServerKeyExchange(c.config, hs.hello, hs.serverHello, c.peerCertificates[0], skx)
-		// TODO: ZGrab2
-		// c.handshakeLog.ServerKeyExchange = skx.MakeLog(keyAgreement)
+
+		c.handshakeLog.ServerKeyExchange = skx.MakeLog(keyAgreement)
 		if err != nil {
 			c.sendAlert(alertUnexpectedMessage)
 			return err

@@ -512,8 +512,8 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 	if skx != nil {
 		hs.finishedHash.Write(skx.marshal())
 		_, err := c.writeRecord(recordTypeHandshake, skx.marshal())
-		// TODO: ZGrab2
-		// c.handshakeLog.ServerKeyExchange = skx.MakeLog(keyAgreement)
+
+		c.handshakeLog.ServerKeyExchange = skx.MakeLog(keyAgreement)
 		if err != nil {
 			return err
 		}
