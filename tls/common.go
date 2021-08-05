@@ -535,7 +535,7 @@ type ClientSessionCache interface {
 	Put(sessionKey string, cs *ClientSessionState)
 }
 
-//go:generate stringer -type=SignatureScheme,CurveID,ClientAuthType -output=common_string.go
+//go:generate stringer -type=SignatureScheme,ClientAuthType -output=common_string.go
 
 // SignatureScheme identifies a signature algorithm supported by TLS. See
 // RFC 8446, Section 4.2.3.
