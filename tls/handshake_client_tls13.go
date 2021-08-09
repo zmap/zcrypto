@@ -37,18 +37,16 @@ type clientHandshakeStateTLS13 struct {
 // handshake requires hs.c, hs.hello, hs.serverHello, hs.ecdheParams, and,
 // optionally, hs.session, hs.earlySecret and hs.binderKey to be set.
 func (hs *clientHandshakeStateTLS13) handshake() error {
-	c := hs.c
-
 	// The server must not select TLS 1.3 in a renegotiation. See RFC 8446,
 	// sections 4.1.2 and 4.1.3.
-	if c.handshakes > 0 {
-		c.sendAlert(alertProtocolVersion)
+	if hs.c.handshakes > 0 {
+		hs.c.sendAlert(alertProtocolVersion)
 		return errors.New("tls: server selected TLS 1.3 in a renegotiation")
 	}
 
 	// Consistency check on the presence of a keyShare and its parameters.
 	if hs.ecdheParams == nil || len(hs.hello.keyShares) != 1 {
-		return c.sendAlert(alertInternalError)
+		return hs.c.sendAlert(alertInternalError)
 	}
 
 	if err := hs.checkServerHelloOrHRR(); err != nil {
@@ -69,7 +67,7 @@ func (hs *clientHandshakeStateTLS13) handshake() error {
 
 	hs.transcript.Write(hs.serverHello.marshal())
 
-	c.buffering = true
+	hs.c.buffering = true
 	if err := hs.processServerHello(); err != nil {
 		return err
 	}
@@ -94,11 +92,11 @@ func (hs *clientHandshakeStateTLS13) handshake() error {
 	if err := hs.sendClientFinished(); err != nil {
 		return err
 	}
-	if _, err := c.flush(); err != nil {
+	if _, err := hs.c.flush(); err != nil {
 		return err
 	}
 
-	atomic.StoreUint32(&c.handshakeStatus, 1)
+	atomic.StoreUint32(&hs.c.handshakeStatus, 1)
 
 	return nil
 }
@@ -458,6 +456,7 @@ func (hs *clientHandshakeStateTLS13) readServerCertificate() error {
 	c.scts = certMsg.certificate.SignedCertificateTimestamps
 	c.ocspResponse = certMsg.certificate.OCSPStaple
 
+	c.handshakeLog.ServerCertificates = certMsg.MakeLog()
 	if err := c.verifyServerCertificate(certMsg.certificate.Certificate); err != nil {
 		return err
 	}

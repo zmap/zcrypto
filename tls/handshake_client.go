@@ -165,6 +165,8 @@ func (c *Conn) clientHandshake() (err error) {
 		}()
 	}
 
+	c.handshakeLog = new(ServerHandshake)
+
 	if _, err := c.writeRecord(recordTypeHandshake, hello.marshal()); err != nil {
 		return err
 	}
@@ -173,12 +175,14 @@ func (c *Conn) clientHandshake() (err error) {
 	if err != nil {
 		return err
 	}
+	c.handshakeLog.ClientHello = hello.MakeLog()
 
 	serverHello, ok := msg.(*serverHelloMsg)
 	if !ok {
 		c.sendAlert(alertUnexpectedMessage)
 		return unexpectedMessageError(serverHello, msg)
 	}
+	c.handshakeLog.ServerHello = serverHello.MakeLog()
 
 	if err := c.pickTLSVersion(serverHello); err != nil {
 		return err
@@ -221,6 +225,14 @@ func (c *Conn) clientHandshake() (err error) {
 	if err := hs.handshake(); err != nil {
 		return err
 	}
+
+	if hs.session == nil {
+		c.handshakeLog.SessionTicket = nil
+	} else {
+		c.handshakeLog.SessionTicket = hs.session.MakeLog()
+	}
+
+	c.handshakeLog.KeyMaterial = hs.MakeLog()
 
 	// If we had a successful handshake and hs.session is different from
 	// the one already cached - cache a new one.
@@ -498,6 +510,8 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 	}
 
+	c.handshakeLog.ServerCertificates = certMsg.MakeLog()
+
 	if c.handshakes == 0 {
 		// If this is the first handshake on a connection, process and
 		// (optionally) verify the server's certificates.
@@ -523,6 +537,8 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 	if ok {
 		hs.finishedHash.Write(skx.marshal())
 		err = keyAgreement.processServerKeyExchange(c.config, hs.hello, hs.serverHello, c.peerCertificates[0], skx)
+
+		c.handshakeLog.ServerKeyExchange = skx.MakeLog(keyAgreement)
 		if err != nil {
 			c.sendAlert(alertUnexpectedMessage)
 			return err
@@ -570,6 +586,8 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		if _, err := c.writeRecord(recordTypeHandshake, certMsg.marshal()); err != nil {
 			return err
 		}
+
+		c.handshakeLog.ServerCertificates = certMsg.MakeLog()
 	}
 
 	preMasterSecret, ckx, err := keyAgreement.generateClientKeyExchange(c.config, hs.hello, c.peerCertificates[0])
@@ -577,6 +595,9 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		c.sendAlert(alertInternalError)
 		return err
 	}
+
+	c.handshakeLog.ClientKeyExchange = ckx.MakeLog(keyAgreement)
+
 	if ckx != nil {
 		hs.finishedHash.Write(ckx.marshal())
 		if _, err := c.writeRecord(recordTypeHandshake, ckx.marshal()); err != nil {
@@ -760,6 +781,7 @@ func (hs *clientHandshakeState) readFinished(out []byte) error {
 		c.sendAlert(alertUnexpectedMessage)
 		return unexpectedMessageError(serverFinished, msg)
 	}
+	c.handshakeLog.ServerFinished = serverFinished.MakeLog()
 
 	verify := hs.finishedHash.serverSum(hs.masterSecret)
 	if len(verify) != len(serverFinished.verifyData) ||
@@ -814,6 +836,8 @@ func (hs *clientHandshakeState) sendFinished(out []byte) error {
 	finished := new(finishedMsg)
 	finished.verifyData = hs.finishedHash.clientSum(hs.masterSecret)
 	hs.finishedHash.Write(finished.marshal())
+	c.handshakeLog.ClientFinished = finished.MakeLog()
+
 	if _, err := c.writeRecord(recordTypeHandshake, finished.marshal()); err != nil {
 		return err
 	}
@@ -834,18 +858,20 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 		certs[i] = cert
 	}
 
+	opts := x509.VerifyOptions{
+		Roots:         c.config.RootCAs,
+		CurrentTime:   c.config.time(),
+		DNSName:       c.config.ServerName,
+		Intermediates: x509.NewCertPool(),
+	}
+	for _, cert := range certs[1:] {
+		opts.Intermediates.AddCert(cert)
+	}
+	var err error
+	var validation *x509.Validation
+	c.verifiedChains, validation, err = certs[0].ValidateWithStupidDetail(opts)
+	c.handshakeLog.ServerCertificates.addParsed(certs, validation)
 	if !c.config.InsecureSkipVerify {
-		opts := x509.VerifyOptions{
-			Roots:         c.config.RootCAs,
-			CurrentTime:   c.config.time(),
-			DNSName:       c.config.ServerName,
-			Intermediates: x509.NewCertPool(),
-		}
-		for _, cert := range certs[1:] {
-			opts.Intermediates.AddCert(cert)
-		}
-		var err error
-		c.verifiedChains, _, _, err = certs[0].Verify(opts)
 		if err != nil {
 			c.sendAlert(alertBadCertificate)
 			return err

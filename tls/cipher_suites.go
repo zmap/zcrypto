@@ -147,6 +147,30 @@ const (
 	// suiteDefaultOff indicates that this cipher suite is not included by
 	// default.
 	suiteDefaultOff
+
+	// suiteECDSA indicates that the cipher suite involves an ECDSA
+	// signature and therefore may only be selected when the server's
+	// certificate is ECDSA. If this is not set then the cipher suite is
+	// RSA based.
+	suiteECDSA
+
+	// suiteNoDTLS indicates that the cipher suite cannot be used
+	// in DTLS.
+	suiteNoDTLS
+
+	// suitePSK indicates that the cipher suite authenticates with
+	// a pre-shared key rather than a server private key.
+	suitePSK
+
+	// suiteExport indicates that the cipher suite is an export suite
+	suiteExport
+
+	// suiteAnon indicates the cipher suite is anonymous
+	suiteAnon
+
+	// suiteDSS indicates the cipher suite uses DSS signatures and requires a
+	// DSA server key
+	suiteDSS
 )
 
 // A cipherSuite is a specific combination of key agreement, cipher and MAC function.
@@ -191,6 +215,102 @@ var cipherSuites = []*cipherSuite{
 	{TLS_RSA_WITH_RC4_128_SHA, 16, 20, 0, rsaKA, suiteDefaultOff, cipherRC4, macSHA1, nil},
 	{TLS_ECDHE_RSA_WITH_RC4_128_SHA, 16, 20, 0, ecdheRSAKA, suiteECDHE | suiteDefaultOff, cipherRC4, macSHA1, nil},
 	{TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, 16, 20, 0, ecdheECDSAKA, suiteECDHE | suiteECSign | suiteDefaultOff, cipherRC4, macSHA1, nil},
+}
+
+var implementedCipherSuites = []*cipherSuite{
+	// Ciphersuite order is chosen so that ECDHE comes before plain RSA and
+	// AEADs are the top preference.
+	{TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305, 32, 0, 12, ecdheRSAKA, suiteECDHE | suiteTLS12, nil, nil, aeadChaCha20Poly1305},
+	{TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305, 32, 0, 12, ecdheECDSAKA, suiteECDHE | suiteECSign | suiteTLS12, nil, nil, aeadChaCha20Poly1305},
+	{TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, 16, 0, 4, ecdheRSAKA, suiteECDHE | suiteTLS12, nil, nil, aeadAESGCM},
+	{TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, 16, 0, 4, ecdheECDSAKA, suiteECDHE | suiteECSign | suiteTLS12, nil, nil, aeadAESGCM},
+	{TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, 32, 0, 4, ecdheRSAKA, suiteECDHE | suiteTLS12 | suiteSHA384, nil, nil, aeadAESGCM},
+	{TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, 32, 0, 4, ecdheECDSAKA, suiteECDHE | suiteECSign | suiteTLS12 | suiteSHA384, nil, nil, aeadAESGCM},
+	{TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, 16, 32, 16, ecdheRSAKA, suiteECDHE | suiteTLS12 | suiteDefaultOff, cipherAES, macSHA256, nil},
+	{TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, 16, 20, 16, ecdheRSAKA, suiteECDHE, cipherAES, macSHA1, nil},
+	{TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, 16, 32, 16, ecdheECDSAKA, suiteECDHE | suiteECSign | suiteTLS12 | suiteDefaultOff, cipherAES, macSHA256, nil},
+	{TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, 16, 20, 16, ecdheECDSAKA, suiteECDHE | suiteECSign, cipherAES, macSHA1, nil},
+	{TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, 32, 20, 16, ecdheRSAKA, suiteECDHE, cipherAES, macSHA1, nil},
+	{TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, 32, 20, 16, ecdheECDSAKA, suiteECDHE | suiteECSign, cipherAES, macSHA1, nil},
+	{TLS_RSA_WITH_AES_128_GCM_SHA256, 16, 0, 4, rsaKA, suiteTLS12, nil, nil, aeadAESGCM},
+	{TLS_RSA_WITH_AES_256_GCM_SHA384, 32, 0, 4, rsaKA, suiteTLS12 | suiteSHA384, nil, nil, aeadAESGCM},
+	{TLS_RSA_WITH_AES_128_CBC_SHA256, 16, 32, 16, rsaKA, suiteTLS12 | suiteDefaultOff, cipherAES, macSHA256, nil},
+	{TLS_RSA_WITH_AES_128_CBC_SHA, 16, 20, 16, rsaKA, 0, cipherAES, macSHA1, nil},
+	{TLS_RSA_WITH_AES_256_CBC_SHA, 32, 20, 16, rsaKA, 0, cipherAES, macSHA1, nil},
+	{TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, 24, 20, 8, ecdheRSAKA, suiteECDHE, cipher3DES, macSHA1, nil},
+	{TLS_RSA_WITH_3DES_EDE_CBC_SHA, 24, 20, 8, rsaKA, 0, cipher3DES, macSHA1, nil},
+
+	// RC4-based cipher suites are disabled by default.
+	{TLS_RSA_WITH_RC4_128_SHA, 16, 20, 0, rsaKA, suiteDefaultOff, cipherRC4, macSHA1, nil},
+	{TLS_ECDHE_RSA_WITH_RC4_128_SHA, 16, 20, 0, ecdheRSAKA, suiteECDHE | suiteDefaultOff, cipherRC4, macSHA1, nil},
+	{TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, 16, 20, 0, ecdheECDSAKA, suiteECDHE | suiteECSign | suiteDefaultOff, cipherRC4, macSHA1, nil},
+
+	{TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, 32, 0, 12, ecdheECDSAKA, suiteECDHE | suiteECDSA | suiteTLS12, nil, nil, aeadCHACHA20POLY1305},
+	{TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256, 32, 0, 12, ecdheRSAKA, suiteECDHE | suiteTLS12, nil, nil, aeadCHACHA20POLY1305},
+	{TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, 16, 0, 4, ecdheRSAKA, suiteECDHE | suiteTLS12, nil, nil, aeadAESGCM},
+	{TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, 16, 0, 4, ecdheECDSAKA, suiteECDHE | suiteECDSA | suiteTLS12, nil, nil, aeadAESGCM},
+	{TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, 32, 0, 4, ecdheRSAKA, suiteECDHE | suiteTLS12 | suiteSHA384, nil, nil, aeadAESGCM},
+	{TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, 32, 0, 4, ecdheECDSAKA, suiteECDHE | suiteECDSA | suiteTLS12 | suiteSHA384, nil, nil, aeadAESGCM},
+	{TLS_ECDHE_RSA_WITH_RC4_128_SHA, 16, 20, 0, ecdheRSAKA, suiteECDHE | suiteNoDTLS, cipherRC4, macSHA1, nil},
+	{TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, 16, 20, 0, ecdheECDSAKA, suiteECDHE | suiteECDSA | suiteNoDTLS, cipherRC4, macSHA1, nil},
+	{TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, 16, 32, 16, ecdheRSAKA, suiteECDHE | suiteTLS12, cipherAES, macSHA256, nil},
+	{TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, 16, 32, 16, ecdheECDSAKA, suiteECDHE | suiteECDSA | suiteTLS12, cipherAES, macSHA256, nil},
+	{TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, 16, 20, 16, ecdheRSAKA, suiteECDHE, cipherAES, macSHA1, nil},
+	{TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, 16, 20, 16, ecdheECDSAKA, suiteECDHE | suiteECDSA, cipherAES, macSHA1, nil},
+	//{TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, 32, 48, 16, ecdheRSAKA, suiteECDHE | suiteTLS12 | suiteSHA384, cipherAES, macSHA384, nil},
+	//{TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384, 32, 48, 16, ecdheECDSAKA, suiteECDHE | suiteECDSA | suiteTLS12 | suiteSHA384, cipherAES, macSHA384, nil},
+	{TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, 32, 20, 16, ecdheRSAKA, suiteECDHE, cipherAES, macSHA1, nil},
+	{TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, 32, 20, 16, ecdheECDSAKA, suiteECDHE | suiteECDSA, cipherAES, macSHA1, nil},
+	{TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256, 32, 0, 12, dheRSAKA, suiteTLS12, nil, nil, aeadCHACHA20POLY1305},
+	{TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, 16, 0, 4, dheRSAKA, suiteTLS12, nil, nil, aeadAESGCM},
+	{TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, 32, 0, 4, dheRSAKA, suiteTLS12 | suiteSHA384, nil, nil, aeadAESGCM},
+	{TLS_DHE_RSA_WITH_AES_128_CBC_SHA256, 16, 32, 16, dheRSAKA, suiteTLS12, cipherAES, macSHA256, nil},
+	{TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, 32, 32, 16, dheRSAKA, suiteTLS12, cipherAES, macSHA256, nil},
+	{TLS_DHE_RSA_WITH_AES_128_CBC_SHA, 16, 20, 16, dheRSAKA, 0, cipherAES, macSHA1, nil},
+	{TLS_DHE_RSA_WITH_AES_256_CBC_SHA, 32, 20, 16, dheRSAKA, 0, cipherAES, macSHA1, nil},
+	{TLS_RSA_WITH_AES_128_GCM_SHA256, 16, 0, 4, rsaKA, suiteTLS12, nil, nil, aeadAESGCM},
+	{TLS_RSA_WITH_AES_256_GCM_SHA384, 32, 0, 4, rsaKA, suiteTLS12 | suiteSHA384, nil, nil, aeadAESGCM},
+	{TLS_RSA_WITH_RC4_128_SHA, 16, 20, 0, rsaKA, suiteNoDTLS, cipherRC4, macSHA1, nil},
+	//{TLS_RSA_WITH_RC4_128_MD5, 16, 16, 0, rsaKA, suiteNoDTLS, cipherRC4, macMD5, nil},
+	{TLS_RSA_WITH_AES_128_CBC_SHA256, 16, 32, 16, rsaKA, suiteTLS12, cipherAES, macSHA256, nil},
+	{TLS_RSA_WITH_AES_256_CBC_SHA256, 32, 32, 16, rsaKA, suiteTLS12, cipherAES, macSHA256, nil},
+	{TLS_RSA_WITH_AES_128_CBC_SHA, 16, 20, 16, rsaKA, 0, cipherAES, macSHA1, nil},
+	{TLS_RSA_WITH_AES_256_CBC_SHA, 32, 20, 16, rsaKA, 0, cipherAES, macSHA1, nil},
+	{TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, 24, 20, 8, ecdheRSAKA, suiteECDHE, cipher3DES, macSHA1, nil},
+	{TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, 24, 20, 8, dheRSAKA, 0, cipher3DES, macSHA1, nil},
+	{TLS_RSA_WITH_3DES_EDE_CBC_SHA, 24, 20, 8, rsaKA, 0, cipher3DES, macSHA1, nil},
+	// WARN: PSK: Not supported/implemented
+	//{TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256, 16, 0, 4, ecdhePSKKA, suiteECDHE | suiteTLS12 | suitePSK, nil, nil, aeadAESGCM},
+	//{TLS_PSK_WITH_RC4_128_SHA, 16, 20, 0, pskKA, suiteNoDTLS | suitePSK, cipherRC4, macSHA1, nil},
+	//{TLS_PSK_WITH_AES_128_CBC_SHA, 16, 20, 16, pskKA, suitePSK, cipherAES, macSHA1, nil},
+	//{TLS_PSK_WITH_AES_256_CBC_SHA, 32, 20, 16, pskKA, suitePSK, cipherAES, macSHA1, nil},
+	//{TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA, 16, 20, 16, ecdhePSKKA, suiteECDHE | suitePSK, cipherAES, macSHA1, nil},
+	//{TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA, 32, 20, 16, ecdhePSKKA, suiteECDHE | suitePSK, cipherAES, macSHA1, nil},
+
+	//{TLS_RSA_EXPORT_WITH_RC4_40_MD5, 5, 16, 0, rsaEphemeralKA, suiteExport, cipherRC4, macMD5, nil},
+	//{TLS_RSA_EXPORT_WITH_DES40_CBC_SHA, 5, 20, 8, rsaEphemeralKA, suiteExport, cipherDES, macSHA1, nil},
+	//{TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5, 5, 16, 8, rsaEphemeralKA, suiteExport, cipherRC2, macMD5, nil},
+	//{TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA, 5, 20, 8, dheRSAKA, suiteExport, cipherDES, macSHA1, nil},
+
+	// WARN: DSS: Certificate not supported/implemented
+	//{TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA, 5, 20, 8, dheDSSKA, suiteExport | suiteDSS, cipherDES, macSHA1, nil},
+	// WARN: Non-ephemeral, Anonymous DH: Not supported/implemented
+	//{TLS_DH_ANON_EXPORT_WITH_DES40_CBC_SHA, 5, 20, 8, dhAnonKA, suiteExport | suiteAnon, cipherDES, macSHA1, nil},
+	//{TLS_DH_ANON_EXPORT_WITH_RC4_40_MD5, 5, 16, 0, dhAnonKA, suiteExport | suiteAnon, cipherRC4, macMD5, nil},
+	// WARN DSS: Certificate not supported/implemented
+	{TLS_DHE_DSS_WITH_AES_128_CBC_SHA, 16, 20, 16, dheDSSKA, suiteDSS, cipherAES, macSHA1, nil},
+	{TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, 24, 20, 8, ecdheECDSAKA, suiteECDHE | suiteECDSA, cipher3DES, macSHA1, nil},
+	// WARN: DSS: Certificate not supported/implemented
+	//{TLS_DHE_DSS_WITH_DES_CBC_SHA, 8, 20, 8, dheDSSKA, suiteDSS, cipherDES, macSHA1, nil},
+	{TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, 24, 20, 8, dheDSSKA, suiteDSS, cipher3DES, macSHA1, nil},
+	//{TLS_DHE_RSA_WITH_DES_CBC_SHA, 8, 20, 8, dheRSAKA, 0, cipherDES, macSHA1, nil},
+	// WARN: DSS: Certificate not supported/implemented
+	{TLS_DHE_DSS_WITH_AES_256_CBC_SHA, 32, 20, 16, dheDSSKA, suiteDSS, cipherAES, macSHA1, nil},
+	{TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, 16, 32, 16, dheDSSKA, suiteDSS | suiteTLS12, cipherAES, macSHA256, nil},
+	{TLS_DHE_DSS_WITH_RC4_128_SHA, 16, 20, 0, dheDSSKA, suiteDSS, cipherRC4, macSHA1, nil},
+	{TLS_DHE_DSS_WITH_AES_256_CBC_SHA256, 32, 32, 16, dheDSSKA, suiteDSS | suiteTLS12, cipherAES, macSHA256, nil},
+	{TLS_DHE_DSS_WITH_AES_128_GCM_SHA256, 16, 0, 4, dheDSSKA, suiteDSS | suiteTLS12, nil, nil, aeadAESGCM},
+	{TLS_DHE_DSS_WITH_AES_256_GCM_SHA384, 32, 0, 4, dheDSSKA, suiteDSS | suiteTLS12 | suiteSHA384, nil, nil, aeadAESGCM},
 }
 
 // selectCipherSuite returns the first cipher suite from ids which is also in
@@ -329,6 +449,20 @@ func (f *xorNonceAEAD) Open(out, nonce, ciphertext, additionalData []byte) ([]by
 	return result, err
 }
 
+func aeadCHACHA20POLY1305(key, fixedNonce []byte) aead {
+	if len(fixedNonce) != aeadNonceLength {
+		panic("tls: internal error: wrong nonce length")
+	}
+	aead, err := chacha20poly1305.New(key)
+	if err != nil {
+		panic(err)
+	}
+
+	ret := &xorNonceAEAD{aead: aead}
+	copy(ret.nonceMask[:], fixedNonce)
+	return ret
+}
+
 func aeadAESGCM(key, noncePrefix []byte) aead {
 	if len(noncePrefix) != noncePrefixLength {
 		panic("tls: internal error: wrong nonce length")
@@ -419,6 +553,19 @@ func rsaKA(version uint16) keyAgreement {
 	return rsaKeyAgreement{}
 }
 
+/* TODO
+func rsaEphemeralKA(version uint16) keyAgreement {
+	return &rsaKeyAgreement{
+		version:   version,
+		ephemeral: true,
+		auth: &signedKeyAgreement{
+			sigType: signatureRSA,
+			version: version,
+		},
+	}
+}
+*/
+
 func ecdheECDSAKA(version uint16) keyAgreement {
 	return &ecdheKeyAgreement{
 		isRSA:   false,
@@ -430,6 +577,24 @@ func ecdheRSAKA(version uint16) keyAgreement {
 	return &ecdheKeyAgreement{
 		isRSA:   true,
 		version: version,
+	}
+}
+
+func dheRSAKA(version uint16) keyAgreement {
+	return &dheKeyAgreement{
+		auth: &signedKeyAgreement{
+			sigType: signatureRSA,
+			version: version,
+		},
+	}
+}
+
+func dheDSSKA(version uint16) keyAgreement {
+	return &dheKeyAgreement{
+		auth: &signedKeyAgreement{
+			sigType: signatureDSA,
+			version: version,
+		},
 	}
 }
 
@@ -445,7 +610,7 @@ func mutualCipherSuite(have []uint16, want uint16) *cipherSuite {
 }
 
 func cipherSuiteByID(id uint16) *cipherSuite {
-	for _, cipherSuite := range cipherSuites {
+	for _, cipherSuite := range implementedCipherSuites {
 		if cipherSuite.id == id {
 			return cipherSuite
 		}

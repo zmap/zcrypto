@@ -115,6 +115,9 @@ type Conn struct {
 	activeCall int32
 
 	tmp [16]byte
+
+	// tls
+	handshakeLog *ServerHandshake
 }
 
 // Access to net.Conn methods.
@@ -1389,7 +1392,16 @@ func (c *Conn) Handshake() error {
 	c.in.Lock()
 	defer c.in.Unlock()
 
-	c.handshakeErr = c.handshakeFn()
+	// TODO: c.handshakeFn() gives a race condition in ZGrab2
+	// using explicit calls here instead
+
+	//c.handshakeErr = c.handshakeFn()
+	if c.isClient {
+		c.handshakeErr = c.clientHandshake()
+	} else {
+		c.handshakeErr = c.serverHandshake()
+	}
+
 	if c.handshakeErr == nil {
 		c.handshakes++
 	} else {

@@ -199,6 +199,11 @@ func init() {
 	cipherSuiteNames[0x00C4] = "TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256"
 	cipherSuiteNames[0x00C5] = "TLS_DH_ANON_WITH_CAMELLIA_256_CBC_SHA256"
 	cipherSuiteNames[0x00FF] = "TLS_RENEGO_PROTECTION_REQUEST"
+
+	cipherSuiteNames[0x1301] = "TLS_AES_128_GCM_SHA256"
+	cipherSuiteNames[0x1302] = "TLS_AES_256_GCM_SHA384"
+	cipherSuiteNames[0x1303] = "TLS_CHACHA20_POLY1305_SHA256"
+
 	cipherSuiteNames[0x5600] = "TLS_FALLBACK_SCSV"
 	cipherSuiteNames[0xC001] = "TLS_ECDH_ECDSA_WITH_NULL_SHA"
 	cipherSuiteNames[0xC002] = "TLS_ECDH_ECDSA_WITH_RC4_128_SHA"
@@ -595,4 +600,11 @@ func (sigScheme *SignatureScheme) String() string {
 
 func (sigScheme *SignatureScheme) Bytes() []byte {
 	return []byte{byte(*sigScheme >> 8), byte(*sigScheme)}
+}
+
+func (curveID CurveID) String() string {
+	if name, ok := curveNames[uint16(curveID)]; ok {
+		return name
+	}
+	return "unknown"
 }

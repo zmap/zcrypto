@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"net"
 	"runtime"
 	"sort"
@@ -258,6 +259,15 @@ const (
 	hashSHA512 uint8 = 6
 )
 
+var supportedHashFunc = map[uint8]crypto.Hash{
+	hashMD5:    crypto.MD5,
+	hashSHA1:   crypto.SHA1,
+	hashSHA224: crypto.SHA224,
+	hashSHA256: crypto.SHA256,
+	hashSHA384: crypto.SHA384,
+	hashSHA512: crypto.SHA512,
+}
+
 // Signature algorithms (for internal signaling use). Starting at 225 to avoid overlap with
 // TLS 1.2 codepoints (RFC 5246, Appendix A.4.1), with which these have nothing to do.
 const (
@@ -338,6 +348,21 @@ var supportedSignatureAlgorithms = []SignatureScheme{
 	ECDSAWithP521AndSHA512,
 	PKCS1WithSHA1,
 	ECDSAWithSHA1,
+}
+
+var signatureAlgorithms = map[SignatureScheme]SigAndHash{
+	PSSWithSHA256:          {signatureRSA, hashSHA256},
+	ECDSAWithP256AndSHA256: {signatureECDSA, hashSHA256},
+	Ed25519:                {signatureEd25519, hashSHA256}, // TODO: is it correct
+	PSSWithSHA384:          {signatureRSA, hashSHA384},
+	PSSWithSHA512:          {signatureRSA, hashSHA512},
+	PKCS1WithSHA256:        {signatureRSA, hashSHA256},
+	PKCS1WithSHA384:        {signatureRSA, hashSHA384},
+	PKCS1WithSHA512:        {signatureRSA, hashSHA512},
+	ECDSAWithP384AndSHA384: {signatureECDSA, hashSHA384},
+	ECDSAWithP521AndSHA512: {signatureECDSA, hashSHA512},
+	PKCS1WithSHA1:          {signatureRSA, hashSHA1},
+	ECDSAWithSHA1:          {signatureECDSA, hashSHA1},
 }
 
 // helloRetryRequestRandom is set as the Random value of a ServerHello
@@ -520,7 +545,7 @@ type ClientSessionCache interface {
 	Put(sessionKey string, cs *ClientSessionState)
 }
 
-//go:generate stringer -type=SignatureScheme,CurveID,ClientAuthType -output=common_string.go
+//go:generate stringer -type=SignatureScheme,ClientAuthType -output=common_string.go
 
 // SignatureScheme identifies a signature algorithm supported by TLS. See
 // RFC 8446, Section 4.2.3.
@@ -1468,6 +1493,23 @@ func (cri *CertificateRequestInfo) SupportsCertificate(c *Certificate) error {
 	return errors.New("chain is not signed by an acceptable CA")
 }
 
+func (c *Config) signatureAndHashesForServer() []SigAndHash {
+	if c != nil && c.SignatureAndHashes != nil {
+		return c.SignatureAndHashes
+	}
+	return supportedClientCertSignatureAlgorithms
+}
+
+func (c *Config) signatureAndHashesForClient() []SigAndHash {
+	if c != nil && c.SignatureAndHashes != nil {
+		return c.SignatureAndHashes
+	}
+	if c.ClientDSAEnabled {
+		return supportedSKXSignatureAlgorithms
+	}
+	return defaultSKXSignatureAlgorithms
+}
+
 // BuildNameToCertificate parses c.Certificates and builds c.NameToCertificate
 // from the CommonName and SubjectAlternateName fields of each of the leaf
 // certificates.
@@ -1634,6 +1676,13 @@ func (c *lruSessionCache) Get(sessionKey string) (*ClientSessionState, bool) {
 	return nil, false
 }
 
+// TODO(jsing): Make these available to both crypto/x509 and crypto/tls.
+type dsaSignature struct {
+	R, S *big.Int
+}
+
+type ecdsaSignature dsaSignature
+
 var emptyConfig Config
 
 func defaultConfig() *Config {
@@ -1734,6 +1783,15 @@ func isSupportedSignatureAlgorithm(sigAlg SignatureScheme, supportedSignatureAlg
 	return false
 }
 
+func isSupportedSignatureAndHash(sigHash SigAndHash, sigHashes []SigAndHash) bool {
+	for _, s := range sigHashes {
+		if s == sigHash {
+			return true
+		}
+	}
+	return false
+}
+
 var aesgcmCiphers = map[uint16]bool{
 	// 1.2
 	TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:   true,
@@ -1780,4 +1838,14 @@ func deprioritizeAES(ciphers []uint16) []uint16 {
 		return nonAESGCMAEADCiphers[reordered[i]] && aesgcmCiphers[reordered[j]]
 	})
 	return reordered
+}
+
+func sigAndHashes(algos []SignatureScheme) []SigAndHash {
+	list := []SigAndHash{}
+	for _, sigAndAlg := range algos {
+		if sa, ok := signatureAlgorithms[SignatureScheme(sigAndAlg)]; ok {
+			list = append(list, sa)
+		}
+	}
+	return list
 }
