@@ -420,12 +420,12 @@ func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 		skx.RSAParams = ka.RSAParams()
 		//auth = ka.auth
 		errAuth = ka.verifyError
-	/*
-		case *dheKeyAgreement:
-			skx.DHParams = ka.DHParams()
-			auth = ka.auth
-			errAuth = ka.verifyError
-	*/
+
+	case *dheKeyAgreement:
+		skx.DHParams = ka.DHParams()
+		//auth = ka.auth
+		errAuth = ka.verifyError
+
 	case *ecdheKeyAgreement:
 		skx.ECDHParams = ka.ECDHParams()
 		//auth = ka.auth

@@ -6,6 +6,7 @@ package tls
 
 import (
 	"encoding/json"
+	"math/big"
 	"regexp"
 	"strconv"
 
@@ -123,5 +124,22 @@ func (ka *ecdheKeyAgreement) ClientECDHParams() *jsonKeys.ECDHParams {
 			copy(out.ClientPrivate.Value, ka.clientPrivKey)
 		}
 	*/
+	return out
+}
+
+func (ka *dheKeyAgreement) DHParams() *jsonKeys.DHParams {
+	out := new(jsonKeys.DHParams)
+	if ka.p != nil {
+		out.Prime = new(big.Int).Set(ka.p)
+	}
+	if ka.g != nil {
+		out.Generator = new(big.Int).Set(ka.g)
+	}
+	if ka.yServer != nil {
+		out.ServerPublic = new(big.Int).Set(ka.yServer)
+		if ka.yOurs != nil && ka.xOurs != nil && ka.yServer.Cmp(ka.yOurs) == 0 {
+			out.ServerPrivate = new(big.Int).Set(ka.xOurs)
+		}
+	}
 	return out
 }
