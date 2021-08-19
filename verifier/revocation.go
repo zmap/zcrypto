@@ -59,13 +59,13 @@ func CheckOCSP(ctx context.Context, c *x509.Certificate, issuer *x509.Certificat
 		return false, nil, errors.New("Failed to parse OCSP Response: " + err.Error())
 	}
 
-	if ocspResp.IsRevoked {
-		isRevoked = true
-		info = &RevocationInfo{
-			RevocationTime: ocspResp.RevokedAt,
-			NextUpdate:     ocspResp.NextUpdate,
-			Reason:         ocspResp.RevocationReason,
-		}
+	isRevoked = ocspResp.IsRevoked
+	info = &RevocationInfo{
+		NextUpdate: ocspResp.NextUpdate,
+	}
+	if isRevoked {
+		info.RevocationTime = &ocspResp.RevokedAt
+		info.Reason = ocspResp.RevocationReason
 	}
 
 	return
@@ -89,16 +89,15 @@ func CheckCRL(ctx context.Context, c *x509.Certificate, certList *pkix.Certifica
 		return false, nil, err
 	}
 
-	if crlData.IsRevoked {
-		isRevoked = true
-		info = &RevocationInfo{
-			RevocationTime: crlData.RevocationTime,
-			NextUpdate:     crlData.NextUpdate,
-		}
+	isRevoked = crlData.IsRevoked
 
-		if crlData.CertificateEntryExtensions.Reason != nil {
-			info.Reason = *crlData.CertificateEntryExtensions.Reason
-		}
+	info = &RevocationInfo{
+		NextUpdate: crlData.NextUpdate,
+	}
+
+	if isRevoked && crlData.CertificateEntryExtensions.Reason != nil {
+		info.Reason = *crlData.CertificateEntryExtensions.Reason
+		info.RevocationTime = &crlData.RevocationTime
 	}
 
 	return
