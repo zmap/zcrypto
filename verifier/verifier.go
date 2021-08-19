@@ -145,8 +145,8 @@ type VerifyProcedure interface {
 
 // RevocationInfo provides basic revocation information
 type RevocationInfo struct {
-	RevocationTime time.Time
 	NextUpdate     time.Time
+	RevocationTime *time.Time
 	Reason         crl.RevocationReasonCode
 }
 
