@@ -236,6 +236,10 @@ func TestPublicKeyAlgorithmJSON(t *testing.T) {
 }
 
 func TestValidityJSON(t *testing.T) {
+	preEpoch, err := time.Parse("20060102150405", "19040824000000")
+	if err != nil {
+		t.Error(err)
+	}
 	tests := []validity{
 		{
 			NotBefore: time.Unix(1400000000, 0),
@@ -244,6 +248,18 @@ func TestValidityJSON(t *testing.T) {
 		{
 			NotBefore: time.Unix(1000000000, 0),
 			NotAfter:  time.Unix(1700000000, 0),
+		},
+		{
+			NotBefore: preEpoch,
+			NotAfter:  preEpoch,
+		},
+		{
+			NotBefore: kMinTime,
+			NotAfter:  kMaxTime,
+		},
+		{
+			NotBefore: kMaxTime,
+			NotAfter:  kMinTime,
 		},
 	}
 	for i, v := range tests {
