@@ -564,7 +564,7 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 
 	signed := hashForServerKeyExchange(sigType, sigHash, ka.version, clientHello.random, serverHello.random, serverECDHEParams)
 	if ka.verifyError = verifyHandshakeSignature(sigType, cert.PublicKey, sigHash, signed, sig); ka.verifyError != nil {
-		return errors.New("tls: invalid signature by the server certificate: " + err.Error())
+		return errors.New("tls: invalid signature by the server certificate: " + ka.verifyError.Error())
 	}
 	return nil
 }
