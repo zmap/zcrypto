@@ -212,6 +212,7 @@ type auxValidity struct {
 	Start          string `json:"start"`
 	End            string `json:"end"`
 	ValidityPeriod int    `json:"length"`
+	Expired        bool   `json:"expired"`
 }
 
 func (v *validity) MarshalJSON() ([]byte, error) {
@@ -219,6 +220,7 @@ func (v *validity) MarshalJSON() ([]byte, error) {
 		Start:          clampTime(v.NotBefore.UTC()).Format(time.RFC3339),
 		End:            clampTime(v.NotAfter.UTC()).Format(time.RFC3339),
 		ValidityPeriod: int(v.NotAfter.Unix() - v.NotBefore.Unix()),
+		Expired: (v.NotBefore.Unix() - time.Now().Unix()) > 0 || (time.Now().Unix() - v.NotAfter.Unix()) > 0,
 	}
 	return json.Marshal(&aux)
 }
