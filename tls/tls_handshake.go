@@ -467,7 +467,7 @@ func (m *ClientSessionState) MakeLog() *SessionTicket {
 	st.Length = len(m.sessionTicket)
 	st.Value = make([]uint8, st.Length)
 	copy(st.Value, m.sessionTicket)
-	// st.LifetimeHint = m.lifetimeHint
+	st.LifetimeHint = m.lifetimeHint
 	return st
 }
 

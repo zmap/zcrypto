@@ -512,6 +512,7 @@ func requiresClientCert(c ClientAuthType) bool {
 // sessions.
 type ClientSessionState struct {
 	sessionTicket      []uint8                 // Encrypted ticket used for session resumption with server
+	lifetimeHint       uint32                  // Hint from server about how long the session ticket should be stored
 	vers               uint16                  // TLS version negotiated for the session
 	cipherSuite        uint16                  // Ciphersuite negotiated for the session
 	masterSecret       []byte                  // Full handshake MasterSecret, or TLS 1.3 resumption_master_secret

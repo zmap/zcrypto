@@ -817,6 +817,7 @@ func (hs *clientHandshakeState) readSessionTicket() error {
 		cipherSuite:        hs.suite.id,
 		masterSecret:       hs.masterSecret,
 		serverCertificates: c.peerCertificates,
+		lifetimeHint:       sessionTicketMsg.lifetimeHint,
 		verifiedChains:     c.verifiedChains,
 		receivedAt:         c.config.time(),
 		ocspResponse:       c.ocspResponse,
