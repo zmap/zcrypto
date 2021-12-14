@@ -167,6 +167,10 @@ func (c *Conn) clientHandshake() (err error) {
 
 	c.handshakeLog = new(ServerHandshake)
 
+	if c.config.ForceSessionTicketExt {
+		hello.ticketSupported = true
+	}
+
 	if _, err := c.writeRecord(recordTypeHandshake, hello.marshal()); err != nil {
 		return err
 	}
