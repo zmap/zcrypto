@@ -1753,8 +1753,9 @@ func (m *certificateVerifyMsg) unmarshal(data []byte) bool {
 }
 
 type newSessionTicketMsg struct {
-	raw    []byte
-	ticket []byte
+	raw          []byte
+	ticket       []byte
+	lifetimeHint uint32
 }
 
 func (m *newSessionTicketMsg) marshal() (x []byte) {
@@ -1790,6 +1791,8 @@ func (m *newSessionTicketMsg) unmarshal(data []byte) bool {
 	if uint32(len(data))-4 != length {
 		return false
 	}
+
+	m.lifetimeHint = uint32(data[4])<<24 | uint32(data[5])<<16 | uint32(data[6])<<8 | uint32(data[7])
 
 	ticketLen := int(data[8])<<8 + int(data[9])
 	if len(data)-10 != ticketLen {

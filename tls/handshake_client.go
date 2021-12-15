@@ -167,6 +167,10 @@ func (c *Conn) clientHandshake() (err error) {
 
 	c.handshakeLog = new(ServerHandshake)
 
+	if c.config.ForceSessionTicketExt {
+		hello.ticketSupported = true
+	}
+
 	if _, err := c.writeRecord(recordTypeHandshake, hello.marshal()); err != nil {
 		return err
 	}
@@ -817,6 +821,7 @@ func (hs *clientHandshakeState) readSessionTicket() error {
 		cipherSuite:        hs.suite.id,
 		masterSecret:       hs.masterSecret,
 		serverCertificates: c.peerCertificates,
+		lifetimeHint:       sessionTicketMsg.lifetimeHint,
 		verifiedChains:     c.verifiedChains,
 		receivedAt:         c.config.time(),
 		ocspResponse:       c.ocspResponse,
