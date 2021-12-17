@@ -579,6 +579,8 @@ func (v TLSVersion) String() string {
 		return "TLSv1.1"
 	case 0x0303:
 		return "TLSv1.2"
+	case 0x0304:
+		return "TLSv1.3"
 	default:
 		return "unknown"
 	}
