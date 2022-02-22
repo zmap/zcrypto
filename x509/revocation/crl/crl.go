@@ -1,12 +1,12 @@
 package crl
 
 import (
-	"encoding/asn1"
 	"encoding/json"
 	"time"
 
-	"github.com/teamnsrg/zcrypto/x509"
-	"github.com/teamnsrg/zcrypto/x509/pkix"
+	"github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/pkix"
 )
 
 // RevocationReasonCode - status codes that explain revocation reason see RFC 5280, Section 5.3.1

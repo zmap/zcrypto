@@ -219,15 +219,15 @@ const (
 	signatureECDSA uint8 = 3
 )
 
-// signatureAndHash mirrors the TLS 1.2, SignatureAndHashAlgorithm struct. See
+// SigAndHash mirrors the TLS 1.2, SignatureAndHashAlgorithm struct. See
 // RFC 5246, section A.4.1.
-type signatureAndHash struct {
-	signature, hash uint8
+type SigAndHash struct {
+	Signature, Hash uint8
 }
 
 // supportedSKXSignatureAlgorithms contains the signature and hash algorithms
 // that the code advertises as supported in a TLS 1.2 ClientHello.
-var supportedSKXSignatureAlgorithms = []signatureAndHash{
+var supportedSKXSignatureAlgorithms = []SigAndHash{
 	{signatureRSA, hashSHA512},
 	{signatureECDSA, hashSHA512},
 	{signatureDSA, hashSHA512},
@@ -248,17 +248,20 @@ var supportedSKXSignatureAlgorithms = []signatureAndHash{
 	{signatureDSA, hashMD5},
 }
 
-var defaultSKXSignatureAlgorithms = []signatureAndHash{
+var defaultSKXSignatureAlgorithms = []SigAndHash{
 	{signatureRSA, hashSHA256},
 	{signatureECDSA, hashSHA256},
 	{signatureRSA, hashSHA1},
 	{signatureECDSA, hashSHA1},
+	{signatureRSA, hashSHA256},
+	{signatureRSA, hashSHA384},
+	{signatureRSA, hashSHA512},
 }
 
 // supportedClientCertSignatureAlgorithms contains the signature and hash
 // algorithms that the code advertises as supported in a TLS 1.2
 // CertificateRequest.
-var supportedClientCertSignatureAlgorithms = []signatureAndHash{
+var supportedClientCertSignatureAlgorithms = []SigAndHash{
 	{signatureRSA, hashSHA256},
 	{signatureECDSA, hashSHA256},
 }
@@ -437,7 +440,7 @@ type Config struct {
 
 	// If enabled, specifies the signature and hash algorithms to be accepted by
 	// a server, or sent by a client
-	SignatureAndHashes []signatureAndHash
+	SignatureAndHashes []SigAndHash
 
 	serverInitOnce sync.Once // guards calling (*Config).serverInit
 
@@ -749,14 +752,14 @@ func (c *Config) getCertificateForName(name string) *Certificate {
 	return &c.Certificates[0]
 }
 
-func (c *Config) signatureAndHashesForServer() []signatureAndHash {
+func (c *Config) signatureAndHashesForServer() []SigAndHash {
 	if c != nil && c.SignatureAndHashes != nil {
 		return c.SignatureAndHashes
 	}
 	return supportedClientCertSignatureAlgorithms
 }
 
-func (c *Config) signatureAndHashesForClient() []signatureAndHash {
+func (c *Config) signatureAndHashesForClient() []SigAndHash {
 	if c != nil && c.SignatureAndHashes != nil {
 		return c.SignatureAndHashes
 	}
@@ -922,7 +925,7 @@ func unexpectedMessageError(wanted, got interface{}) error {
 	return fmt.Errorf("tls: received unexpected handshake message of type %T when waiting for %T", got, wanted)
 }
 
-func isSupportedSignatureAndHash(sigHash signatureAndHash, sigHashes []signatureAndHash) bool {
+func isSupportedSignatureAndHash(sigHash SigAndHash, sigHashes []SigAndHash) bool {
 	for _, s := range sigHashes {
 		if s == sigHash {
 			return true

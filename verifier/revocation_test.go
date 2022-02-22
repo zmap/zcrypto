@@ -1,6 +1,7 @@
 package verifier
 
 import (
+	"context"
 	"encoding/hex"
 	"net/http"
 	"sync"
@@ -236,7 +237,7 @@ func parseCertPEM() (cert *x509.Certificate, revoked *x509.Certificate, issuer *
 func TestOCSPGood(t *testing.T) {
 	cert, _, issuer, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/goodcertrequest"
-	isRevoked, err := CheckOCSP(cert, issuer)
+	isRevoked, _, err := CheckOCSP(context.Background(), cert, issuer)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -248,7 +249,7 @@ func TestOCSPGood(t *testing.T) {
 func TestOCSPBad(t *testing.T) {
 	_, revoked, issuer, _ := parseCertPEM()
 	revoked.OCSPServer[0] = "http://localhost:8080/badcertrequest"
-	isRevoked, err := CheckOCSP(revoked, issuer)
+	isRevoked, _, err := CheckOCSP(context.Background(), revoked, issuer)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -261,7 +262,7 @@ func TestOCSPGoodWithoutIssuer(t *testing.T) {
 	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/goodcertrequest"
 	cert.IssuingCertificateURL[0] = "http://localhost:8080/issuer"
-	isRevoked, err := CheckOCSP(cert, nil)
+	isRevoked, _, err := CheckOCSP(context.Background(), cert, nil)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -274,7 +275,7 @@ func TestOCSPMalformedResponse(t *testing.T) {
 	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/malformedresponse"
 	cert.IssuingCertificateURL[0] = "http://localhost:8080/issuer"
-	_, err := CheckOCSP(cert, nil)
+	_, _, err := CheckOCSP(context.Background(), cert, nil)
 	if err == nil {
 		t.Fail()
 	}
@@ -285,7 +286,7 @@ func TestOCSPBadProtocol(t *testing.T) {
 	cert.SerialNumber = nil
 	cert.OCSPServer[0] = "http://localhost:8080/goodcertrequest"
 	cert.IssuingCertificateURL[0] = "http://localhost:8080/issuer"
-	_, err := CheckOCSP(cert, nil)
+	_, _, err := CheckOCSP(context.Background(), cert, nil)
 	if err == nil {
 		t.Fail()
 	}
@@ -295,7 +296,7 @@ func TestOCSPCannotConstruct(t *testing.T) {
 	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "ftp://localhost:8080/"
 	cert.IssuingCertificateURL[0] = "http://localhost:8080/issuer"
-	_, err := CheckOCSP(cert, nil)
+	_, _, err := CheckOCSP(context.Background(), cert, nil)
 	if err == nil {
 		t.Fail()
 	}
@@ -305,7 +306,7 @@ func TestOCSPCannotConstruct2(t *testing.T) {
 	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/"
 	cert.IssuingCertificateURL[0] = "ftp://localhost:8080/issuer"
-	_, err := CheckOCSP(cert, nil)
+	_, _, err := CheckOCSP(context.Background(), cert, nil)
 	if err == nil {
 		t.Fail()
 	}
@@ -315,7 +316,7 @@ func TestOCSPBadCertResponse(t *testing.T) {
 	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/"
 	cert.IssuingCertificateURL[0] = "http://localhost:8080/issuermalformed"
-	_, err := CheckOCSP(cert, nil)
+	_, _, err := CheckOCSP(context.Background(), cert, nil)
 	if err == nil {
 		t.Fail()
 	}
@@ -325,7 +326,7 @@ func TestOCSPGoodWithoutIssuerNoIssuingParty(t *testing.T) {
 	cert, _, _, _ := parseCertPEM()
 	cert.OCSPServer[0] = "http://localhost:8080/goodcertrequest"
 	cert.IssuingCertificateURL = nil
-	_, err := CheckOCSP(cert, nil)
+	_, _, err := CheckOCSP(context.Background(), cert, nil)
 	if err == nil {
 		t.Fail()
 	}
@@ -334,7 +335,7 @@ func TestOCSPGoodWithoutIssuerNoIssuingParty(t *testing.T) {
 func TestCRLRevoked(t *testing.T) {
 	_, _, _, crlRevoked := parseCertPEM()
 	crlRevoked.CRLDistributionPoints[0] = "http://localhost:8080/revlist"
-	isRevoked, err := CheckCRL(crlRevoked, nil)
+	isRevoked, _, err := CheckCRL(context.Background(), crlRevoked, nil)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -344,21 +345,21 @@ func TestCRLRevoked(t *testing.T) {
 }
 
 func TestCRLMalformed(t *testing.T) {
-	_, err := GetCRL("http://localhost:8080/revlistmalformed")
+	_, err := GetCRL(context.Background(), "http://localhost:8080/revlistmalformed")
 	if err == nil {
 		t.Fail()
 	}
 }
 
 func TestCRLFailLDAP(t *testing.T) {
-	_, err := GetCRL("ldap://localhost:8080/revlist")
+	_, err := GetCRL(context.Background(), "ldap://localhost:8080/revlist")
 	if err == nil {
 		t.Fail()
 	}
 }
 
 func TestCRLFailFTP(t *testing.T) {
-	_, err := GetCRL("ftp://localhost:8080/revlist")
+	_, err := GetCRL(context.Background(), "ftp://localhost:8080/revlist")
 	if err == nil {
 		t.Fail()
 	}

@@ -1,0 +1,53 @@
+name: psl-update
+on:
+  schedule:
+    # Run every hour, at the 15 minute mark. E.g.
+    # 2020-11-29 00:15:00 UTC, 2020-11-29 01:15:00 UTC, 2020-11-29 02:15:00 UTC
+    - cron:  '15 * * * *'
+jobs:
+  zcrypto-psl-update:
+    name: Check for publicsuffix-go data updates
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.16
+
+      - name: Set current date
+        id: get-date
+        run: echo "::set-output name=now::$(date +'%Y-%m-%dT%H:%M:%S %Z')"
+
+      - name: Update publicsuffix-go
+        run: go get -u github.com/weppos/publicsuffix-go@master
+
+      - name: Run go mod tidy
+        run: go mod tidy
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Create pull-request
+        id: cpr
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: "deps: update publicsuffix-go for ${{ steps.get-date.outputs.now }}"
+          title: "deps: update weppos/publicsuffix-go for ${{ steps.get-date.outputs.now }}"
+          body: "ZCrypto dependency update from `go get -u github.com/weppos/publicsuffix-go@master` on ${{ steps.get-date.outputs.now }}."
+          committer: "GitHub <noreply@github.com>"
+          author: "GitHub <noreply@github.com>"
+          labels: psl-update
+          branch: zcrypto-psl-update
+          delete-branch: true
+
+      - name: Check outputs
+        run: |
+          echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"

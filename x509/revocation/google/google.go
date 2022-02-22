@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"io"
 	"io/ioutil"
 	"math/big"
 	"net/http"
@@ -16,6 +15,11 @@ import (
 
 	"github.com/teamnsrg/zcrypto/x509"
 )
+
+// Provider specifies CRLSet provider interface
+type Provider interface {
+	FetchAndParse() (*CRLSet, error)
+}
 
 // CRLSet - data structure for storing CRLSet data, used by methods below
 type CRLSet struct {
@@ -37,9 +41,26 @@ type Entry struct {
 	SerialNumber *big.Int
 }
 
+// defaultProvider provides default Provider
+type defaultProvider struct {
+	requestURL string
+}
+
+// NewProvider returns default Provider
+func NewProvider(requestURL string) Provider {
+	return &defaultProvider{
+		requestURL: requestURL,
+	}
+}
+
 // FetchAndParse - fetch from distribution point, parse to CRLSet struct as defined above
 func FetchAndParse() (*CRLSet, error) {
-	crlSetReader, version, err := fetch()
+	return NewProvider(VersionRequestURL()).FetchAndParse()
+}
+
+// FetchAndParse - fetch from distribution point, parse to CRLSet struct as defined above
+func (p *defaultProvider) FetchAndParse() (*CRLSet, error) {
+	crlSetReader, version, err := Fetch(p.requestURL)
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +69,15 @@ func FetchAndParse() (*CRLSet, error) {
 
 // Check - Given a parsed CRLSet, check if a given cert is present
 func (crlSet *CRLSet) Check(cert *x509.Certificate, issuerSPKIHash string) *Entry {
+	// check for BlockedSPKIs first
+	for _, spki := range crlSet.BlockedSPKIs {
+		if issuerSPKIHash == spki {
+			return &Entry{
+				SerialNumber: cert.SerialNumber,
+			}
+		}
+	}
+
 	issuersRevokedCerts := crlSet.IssuerLists[issuerSPKIHash]
 	if issuersRevokedCerts == nil { // no entries for this issuer
 		return nil
@@ -84,9 +114,9 @@ type updateCheck struct {
 // the CRL sets.
 const crlSetAppID = "hfnkpimlhhgieaddgfemjhofmfblmnib"
 
-// buildVersionRequestURL returns a URL from which the current CRLSet version
+// VersionRequestURL returns a URL from which the current CRLSet version
 // information can be fetched.
-func buildVersionRequestURL() string {
+func VersionRequestURL() string {
 	args := url.Values(make(map[string][]string))
 	args.Add("x", "id="+crlSetAppID+"&v=&uc"+"&acceptformat=crx3")
 
@@ -116,9 +146,9 @@ func (z ZipReader) ReadAt(p []byte, pos int64) (int, error) {
 	return copy(p, []byte(z)[int(pos):]), nil
 }
 
-// internal method to fetch (Ohama-wrapped) CRLSet
-func fetch() (io.ReadCloser, string, error) {
-	resp, err := http.Get(buildVersionRequestURL())
+// Fetch returns reader to be passed to Parse
+func Fetch(url string) ([]byte, string, error) {
+	resp, err := http.Get(url)
 	if err != nil {
 		err = errors.New("Failed to get current version: " + err.Error())
 		return nil, "", err
@@ -210,7 +240,12 @@ func fetch() (io.ReadCloser, string, error) {
 		return nil, version, err
 	}
 
-	return crlSetReader, version, nil
+	raw, err := ioutil.ReadAll(crlSetReader)
+	if err != nil {
+		return nil, version, err
+	}
+
+	return raw, version, nil
 }
 
 // CRLSetHeader is used to parse the JSON header found in CRLSet files.
@@ -237,8 +272,8 @@ type RawCRLSetSerial struct {
 // parse the file into a usable CRLSet struct instance.
 // DUE TO THE DIFFICULTY OF RETRIEVING A CRLSET, IT IS HIGHLY RECOMMENDED
 // TO JUST USE THE FetchAndParseCRLSet FUNCTION PROVIDED ABOVE
-func Parse(crlSetReader io.ReadCloser, version string) (*CRLSet, error) {
-	header, remainingBytes, err := getHeader(crlSetReader)
+func Parse(in []byte, version string) (*CRLSet, error) {
+	header, remainingBytes, err := getHeader(in)
 	if err != nil {
 		return nil, err
 	}
@@ -301,12 +336,7 @@ func Parse(crlSetReader io.ReadCloser, version string) (*CRLSet, error) {
 }
 
 // internal method for parsing header when parsing a CRLSet
-func getHeader(crlSetReader io.ReadCloser) (header CRLSetHeader, rest []byte, err error) {
-	c, err := ioutil.ReadAll(crlSetReader)
-	if err != nil {
-		return
-	}
-
+func getHeader(c []byte) (header CRLSetHeader, rest []byte, err error) {
 	if len(c) < 2 {
 		err = errors.New("CRLSet truncated at header length")
 		return

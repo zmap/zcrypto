@@ -1,17 +1,22 @@
 package google_test
 
 import (
-	"bytes"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
-	"github.com/teamnsrg/zcrypto/x509"
-	"github.com/teamnsrg/zcrypto/x509/revocation/google"
+	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/revocation/google"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // obtained from https://firefox.settings.services.mozilla.com/v1/buckets/blocklists/collections/certificates/records
-const crlset_location = `./test_crlset`
+const crlset_location = `./testdata/test_crlset`
 const VERSION = "4619"
 
 const revoked_intermediate = `
@@ -76,14 +81,14 @@ func loadRevokedList(t *testing.T) (crlset *google.CRLSet) {
 	if err != nil {
 		t.Error(err.Error())
 	}
+	defer crlSetFile.Close()
 
 	crlSetBytes, err := ioutil.ReadAll(crlSetFile)
 	if err != nil {
 		t.Error(err.Error())
 	}
-	crlSetFile.Close()
-	crlSetReadCloser := ioutil.NopCloser(bytes.NewReader(crlSetBytes))
-	crlset, err = google.Parse(crlSetReadCloser, VERSION)
+
+	crlset, err = google.Parse(crlSetBytes, VERSION)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -97,10 +102,25 @@ func TestParse(t *testing.T) {
 	loadRevokedList(t)
 }
 
+func TestParse6375(t *testing.T) {
+	raw, err := ioutil.ReadFile("testdata/crl-set-6375")
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	set, err := google.Parse(raw, "6375")
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if "6375" != set.Version {
+		t.Fail()
+	}
+}
+
 // just tests that there are no major complaints when live fetching,
 // don't actually use this in case google removes our testing intermediate
 // cert from the revocation list
-func TestFetch(t *testing.T) {
+func TestFetchRemote(t *testing.T) {
 	list, err := google.FetchAndParse()
 	if list == nil || err != nil {
 		t.Fail()
@@ -118,4 +138,39 @@ func TestCheck(t *testing.T) {
 	if entry.SerialNumber.Cmp(revoked.SerialNumber) != 0 {
 		t.Fail()
 	}
+}
+
+func TestFetch(t *testing.T) {
+	bytes, err := ioutil.ReadFile("testdata/APm1SaUzZaPllaSDuZS5yng")
+	require.NoError(t, err)
+
+	versionResponse := `xml version="1.0" encoding="UTF-8"?>
+	<gupdate xmlns="http://www.google.com/update2/response" protocol="2.0" server="prod">
+	<daystart elapsed_days="5134" elapsed_seconds="36004"/>
+	<app appid="hfnkpimlhhgieaddgfemjhofmfblmnib" cohort="1:jcl:" cohortname="Auto" status="ok">
+	<updatecheck codebase="http://dl.google.com/APm1SaUzZaPllaSDuZS5yng" 
+	fp="1.dfee9fe7c749d1d15c6e8118bfe5281a0263474de2037516a525c3a885afe763" hash="LSXbDXGMp13JH5whBObmE4X7qCE=" hash_sha256="dfee9fe7c749d1d15c6e8118bfe5281a0263474de2037516a525c3a885afe763" size="24898" status="ok" version="6376"/>
+	</app>
+	</gupdate>`
+
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+
+		if r.RequestURI == "/APm1SaUzZaPllaSDuZS5yng" {
+			w.Write(bytes)
+		} else {
+			w.Write([]byte(versionResponse))
+		}
+	})
+	server := httptest.NewServer(h)
+	defer server.Close()
+
+	versionResponse = strings.Replace(versionResponse,
+		"http://dl.google.com/APm1SaUzZaPllaSDuZS5yng",
+		server.URL+"/APm1SaUzZaPllaSDuZS5yng", 1)
+
+	p := google.NewProvider(server.URL)
+	set, err := p.FetchAndParse()
+	require.NoError(t, err)
+	assert.Equal(t, 6376, set.Sequence)
 }

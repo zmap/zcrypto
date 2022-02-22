@@ -2,7 +2,10 @@ package verifier
 
 import (
 	"bytes"
+	"context"
+	"crypto"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -13,57 +16,59 @@ import (
 	"github.com/teamnsrg/zcrypto/x509/revocation/ocsp"
 )
 
+const (
+	ocspReqContentType = "application/ocsp-request"
+	ocspResContentType = "application/ocsp-response"
+)
+
 // CheckOCSP - check the ocsp status of a provided certificate
 // if issuer is not provided, function will attempt to fetch it
 // through the AIA issuing field (which will then fail if this field is empty)
-func CheckOCSP(c *x509.Certificate, issuer *x509.Certificate) (isRevoked bool, e error) {
+func CheckOCSP(ctx context.Context, c *x509.Certificate, issuer *x509.Certificate) (isRevoked bool, info *RevocationInfo, e error) {
 	if issuer == nil {
 		// get issuer certificate from OCSP info
 		if c.IssuingCertificateURL == nil {
-			return false, errors.New("This certificate does not list an issuing party")
+			return false, nil, errors.New("This certificate does not list an issuing party")
 		}
 
-		issuerResp, err := http.Get(c.IssuingCertificateURL[0])
+		res, err := httpGet(ctx, c.IssuingCertificateURL[0])
 		if err != nil {
-			return false, errors.New("failed to send HTTP Request for issuing certificate: " + err.Error())
+			return false, nil, errors.New("failed to send HTTP Request for issuing certificate: " + err.Error())
 		}
 
-		issuerBody, err := ioutil.ReadAll(issuerResp.Body)
+		issuer, err = x509.ParseCertificate(res)
 		if err != nil {
-			return false, errors.New("Failed to read HTTP Response for issuing certificate" + err.Error())
-		}
-		issuerResp.Body.Close()
-
-		issuer, err = x509.ParseCertificate(issuerBody)
-		if err != nil {
-			return false, errors.New("failed to parse issuer certificate PEM: " + err.Error())
+			return false, nil, errors.New("failed to parse issuer certificate PEM: " + err.Error())
 		}
 	}
 	// create and send OCSP request
-	keyHash, err := ocsp.GetKeyHashSHA1(issuer)
-	nameHash := ocsp.GetNameHashSHA1(issuer)
-	ocspRequestBytes, err := ocsp.CreateRequest(c, keyHash, nameHash)
+	opts := &ocsp.RequestOptions{Hash: crypto.SHA1}
+	ocspRequestBytes, err := ocsp.CreateRequest(c, issuer, opts)
 	if err != nil {
-		return false, errors.New("failed to construct OCSP request" + err.Error())
+		return false, nil, errors.New("failed to construct OCSP request" + err.Error())
 	}
 
 	requestReader := bytes.NewReader(ocspRequestBytes)
-	ocspHTTPResp, err := http.Post(c.OCSPServer[0], "application/ocsp-request", requestReader)
+	ocspRespBytes, err := httpPost(ctx, c.OCSPServer[0], ocspReqContentType, ocspResContentType, requestReader)
 	if err != nil {
-		return false, errors.New("Failed sending OCSP HTTP Request: " + err.Error())
+		return false, nil, errors.New("Failed sending OCSP HTTP Request: " + err.Error())
 	}
-
-	ocspRespBytes, err := ioutil.ReadAll(ocspHTTPResp.Body)
-	if err != nil {
-		return false, errors.New("Failed reading OCSP HTTP Response" + err.Error())
-	}
-	ocspHTTPResp.Body.Close()
 
 	ocspResp, err := ocsp.ParseResponseForCert(ocspRespBytes, c, issuer)
 	if err != nil {
-		return false, errors.New("Failed to parse OCSP Response: " + err.Error())
+		return false, nil, errors.New("Failed to parse OCSP Response: " + err.Error())
 	}
-	return ocspResp.IsRevoked, nil
+
+	isRevoked = ocspResp.IsRevoked
+	info = &RevocationInfo{
+		NextUpdate: ocspResp.NextUpdate,
+	}
+	if isRevoked {
+		info.RevocationTime = &ocspResp.RevokedAt
+		info.Reason = ocspResp.RevocationReason
+	}
+
+	return
 }
 
 // CheckCRL - check whether the provided certificate has been revoked through
@@ -72,40 +77,87 @@ func CheckOCSP(c *x509.Certificate, issuer *x509.Certificate) (isRevoked bool, e
 // independently calling GetCRL and caching the list between calls to
 // CheckCRL is highly recommended (otherwise the CRL will be fetched on every
 // single call to CheckCRL!).
-func CheckCRL(c *x509.Certificate, certList *pkix.CertificateList) (isRevoked bool, err error) {
+func CheckCRL(ctx context.Context, c *x509.Certificate, certList *pkix.CertificateList) (isRevoked bool, info *RevocationInfo, err error) {
 	if certList == nil {
-		certList, err = GetCRL(c.CRLDistributionPoints[0])
+		certList, err = GetCRL(ctx, c.CRLDistributionPoints[0])
 	}
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 	crlData, err := crl.CheckCRLForCert(certList, c, nil)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
-	return crlData.IsRevoked, nil
+
+	isRevoked = crlData.IsRevoked
+
+	info = &RevocationInfo{
+		NextUpdate: crlData.NextUpdate,
+	}
+
+	if isRevoked && crlData.CertificateEntryExtensions.Reason != nil {
+		info.Reason = *crlData.CertificateEntryExtensions.Reason
+		info.RevocationTime = &crlData.RevocationTime
+	}
+
+	return
 }
 
 // GetCRL - fetch and parse the CRL from the provided distrution point
-func GetCRL(distributionPoint string) (*pkix.CertificateList, error) {
+func GetCRL(ctx context.Context, distributionPoint string) (*pkix.CertificateList, error) {
 	if strings.HasPrefix(distributionPoint, "ldap") {
 		return nil, errors.New("This CRL distributionPointribution point operates over LDAP - could not access")
 	}
 
-	crlResp, err := http.Get(distributionPoint)
+	crlRespBody, err := httpGet(ctx, distributionPoint)
 	if err != nil {
 		return nil, errors.New("failed to send HTTP Request for CRL: " + err.Error())
 	}
 
-	crlRespBody, err := ioutil.ReadAll(crlResp.Body)
-	if err != nil {
-		return nil, errors.New("Failed to read HTTP Response for CRL")
-	}
-	crlResp.Body.Close()
-
 	certList, err := x509.ParseCRL(crlRespBody)
 	if err != nil {
-		return nil, errors.New("Failed to parse CRL" + err.Error())
+		return nil, errors.New("failed to parse CRL" + err.Error())
 	}
 	return certList, nil
+}
+
+func httpGet(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}
+
+func httpPost(ctx context.Context, url string, contentType, accept string, reqBody io.Reader) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Accept", accept)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
 }

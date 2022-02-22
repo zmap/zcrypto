@@ -14,17 +14,21 @@ package x509
 import (
 	"bytes"
 	"crypto"
-	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rsa"
 	"crypto/sha1"
+
+	"github.com/zmap/zcrypto/dsa"
+
 	// START CT CHANGES
-	"github.com/teamnsrg/zcrypto/ct/asn1"
-	"github.com/teamnsrg/zcrypto/ct/x509/pkix"
+	"github.com/zmap/zcrypto/ct/asn1"
+	"github.com/zmap/zcrypto/ct/x509/pkix"
+
 	// END CT CHANGES
 	"encoding/pem"
 	"errors"
+
 	// START CT CHANGES
 	"fmt"
 	// END CT CHANGES
@@ -896,6 +900,7 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 
 	out.PublicKeyAlgorithm =
 		getPublicKeyAlgorithmFromOID(in.TBSCertificate.PublicKey.Algorithm.Algorithm)
+	var err error
 	out.PublicKey, err = parsePublicKey(out.PublicKeyAlgorithm, &in.TBSCertificate.PublicKey)
 	if err != nil {
 		return nil, err

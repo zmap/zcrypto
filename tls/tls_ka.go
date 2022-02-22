@@ -13,9 +13,9 @@ import (
 	jsonKeys "github.com/teamnsrg/zcrypto/json"
 )
 
-// SignatureAndHash is a signatureAndHash that implements json.Marshaler and
+// SignatureAndHash is a SigAndHash that implements json.Marshaler and
 // json.Unmarshaler
-type SignatureAndHash signatureAndHash
+type SignatureAndHash SigAndHash
 
 type auxSignatureAndHash struct {
 	SignatureAlgorithm string `json:"signature_algorithm"`
@@ -25,8 +25,8 @@ type auxSignatureAndHash struct {
 // MarshalJSON implements the json.Marshaler interface
 func (sh *SignatureAndHash) MarshalJSON() ([]byte, error) {
 	aux := auxSignatureAndHash{
-		SignatureAlgorithm: nameForSignature(sh.signature),
-		HashAlgorithm:      nameForHash(sh.hash),
+		SignatureAlgorithm: nameForSignature(sh.Signature),
+		HashAlgorithm:      nameForHash(sh.Hash),
 	}
 	return json.Marshal(&aux)
 }
@@ -39,8 +39,8 @@ func (sh *SignatureAndHash) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, aux); err != nil {
 		return err
 	}
-	sh.signature = signatureToName(aux.SignatureAlgorithm)
-	sh.hash = hashToName(aux.HashAlgorithm)
+	sh.Signature = signatureToName(aux.SignatureAlgorithm)
+	sh.Hash = hashToName(aux.HashAlgorithm)
 	return nil
 }
 

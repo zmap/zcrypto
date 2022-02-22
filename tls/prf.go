@@ -411,27 +411,27 @@ func (h finishedHash) serverSum(masterSecret []byte) []byte {
 	return out
 }
 
-// selectClientCertSignatureAlgorithm returns a signatureAndHash to sign a
+// selectClientCertSignatureAlgorithm returns a SigAndHash to sign a
 // client's CertificateVerify with, or an error if none can be found.
-func (h finishedHash) selectClientCertSignatureAlgorithm(serverList, clientList []signatureAndHash, sigType uint8) (signatureAndHash, error) {
+func (h finishedHash) selectClientCertSignatureAlgorithm(serverList, clientList []SigAndHash, sigType uint8) (SigAndHash, error) {
 	if h.version < VersionTLS12 {
 		// Nothing to negotiate before TLS 1.2.
-		return signatureAndHash{signature: sigType}, nil
+		return SigAndHash{Signature: sigType}, nil
 	}
 
 	for _, v := range serverList {
-		if v.signature == sigType && isSupportedSignatureAndHash(v, clientList) {
+		if v.Signature == sigType && isSupportedSignatureAndHash(v, clientList) {
 			return v, nil
 		}
 	}
-	return signatureAndHash{}, errors.New("tls: no supported signature algorithm found for signing client certificate")
+	return SigAndHash{}, errors.New("tls: no supported signature algorithm found for signing client certificate")
 }
 
 // hashForClientCertificate returns a digest, hash function, and TLS 1.2 hash
 // id suitable for signing by a TLS client certificate.
-func (h finishedHash) hashForClientCertificate(signatureAndHash signatureAndHash, masterSecret []byte) ([]byte, crypto.Hash, error) {
+func (h finishedHash) hashForClientCertificate(signatureAndHash SigAndHash, masterSecret []byte) ([]byte, crypto.Hash, error) {
 	if h.version == VersionSSL30 {
-		if signatureAndHash.signature != signatureRSA {
+		if signatureAndHash.Signature != signatureRSA {
 			return nil, 0, errors.New("tls: unsupported signature type for client certificate")
 		}
 
@@ -442,7 +442,7 @@ func (h finishedHash) hashForClientCertificate(signatureAndHash signatureAndHash
 		return finishedSum30(md5Hash, sha1Hash, masterSecret, nil), crypto.MD5SHA1, nil
 	}
 	if h.version >= VersionTLS12 {
-		hashAlg, err := lookupTLSHash(signatureAndHash.hash)
+		hashAlg, err := lookupTLSHash(signatureAndHash.Hash)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -450,7 +450,7 @@ func (h finishedHash) hashForClientCertificate(signatureAndHash signatureAndHash
 		hash.Write(h.buffer)
 		return hash.Sum(nil), hashAlg, nil
 	}
-	if signatureAndHash.signature == signatureECDSA {
+	if signatureAndHash.Signature == signatureECDSA {
 		return h.server.Sum(nil), crypto.SHA1, nil
 	}
 

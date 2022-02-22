@@ -2,15 +2,19 @@ package mozilla_test
 
 import (
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
-	"github.com/teamnsrg/zcrypto/x509"
-	"github.com/teamnsrg/zcrypto/x509/revocation/mozilla"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/revocation/mozilla"
 )
 
 // obtained from https://firefox.settings.services.mozilla.com/v1/buckets/blocklists/collections/certificates/records
-const onecrl_location = `./test_onecrl.json`
+const onecrl_location = `./testdata/test_onecrl.json`
 
 const revoked_intermediate = `
 -----BEGIN CERTIFICATE-----
@@ -57,11 +61,12 @@ func loadRevokedList(t *testing.T) (onecrl *mozilla.OneCRL) {
 	if err != nil {
 		t.Error(err.Error())
 	}
+	defer oneCRLFile.Close()
 	oneCRLBytes, err := ioutil.ReadAll(oneCRLFile)
 	if err != nil {
 		t.Error(err.Error())
 	}
-	oneCRLFile.Close()
+
 	onecrl, err = mozilla.Parse(oneCRLBytes)
 	if err != nil {
 		t.Error(err.Error())
@@ -83,4 +88,37 @@ func TestCheck(t *testing.T) {
 	if entry.SerialNumber.Cmp(revoked.SerialNumber) != 0 {
 		t.Fail()
 	}
+}
+
+func TestFetchLocal(t *testing.T) {
+	//bytes, err := ioutil.ReadFile("testdata/records")
+	bytes, err := ioutil.ReadFile(onecrl_location)
+	require.NoError(t, err)
+
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write(bytes)
+	})
+	server := httptest.NewServer(h)
+	defer server.Close()
+
+	p := mozilla.NewProvider(server.URL)
+
+	set, err := p.FetchAndParse()
+	require.NoError(t, err)
+	assert.NotNil(t, set.IssuerLists)
+	//assert.Len(t, set.IssuerLists, 251)
+}
+
+func TestFetchRemote(t *testing.T) {
+	p := mozilla.NewProvider(mozilla.OneCRLDistPoint)
+
+	set, err := p.FetchAndParse()
+	require.NoError(t, err)
+	assert.NotNil(t, set.IssuerLists)
+
+	// test default
+	set2, err := mozilla.FetchAndParse()
+	require.NoError(t, err)
+	assert.NotNil(t, set2.IssuerLists)
 }

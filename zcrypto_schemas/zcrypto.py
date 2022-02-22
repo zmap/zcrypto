@@ -39,6 +39,7 @@ DistinguishedName = SubRecordType({
     "jurisdiction_country":ListOf(WhitespaceAnalyzedString(), doc="jurisdictionCountry elements of the distinguished name (OBJECT IDENTIFIER 1.3.6.1.4.1.311.60.2.1.3)"),
     "jurisdiction_locality":ListOf(WhitespaceAnalyzedString(), doc="jurisdictionLocality elements of the distinguished name (OBJECT IDENTIFIER 1.3.6.1.4.1.311.60.2.1.1)"),
     "jurisdiction_province":ListOf(WhitespaceAnalyzedString(), doc="jurisdictionStateOrProvice elements of the distinguished name (OBJECT IDENTIFIER 1.3.6.1.4.1.311.60.2.1.2)"),
+    "organization_id": ListOf(WhitespaceAnalyzedString(), doc="organizationId elements of the distinguished name (OBJECT IDENTIFIER 2.5.4.97)"),
 })
 
 # x509/pkix/pkix.go: Extension (via auxExtension in x509/json.go)
@@ -59,6 +60,50 @@ EDIPartyName = SubRecordType({
 OtherName = SubRecordType({
     "id": OID(doc="The OBJECT IDENTIFIER identifying the syntax of the otherName value."),
     "value": IndexedBinary(doc="The raw otherName value."),
+})
+
+CABFOrganizationID = SubRecordType({
+    "scheme": WhitespaceAnalyzedString(),
+    "country": WhitespaceAnalyzedString(),
+    "state": WhitespaceAnalyzedString(),
+    "reference": WhitespaceAnalyzedString(),
+})
+
+QCTypes = SubRecordType({
+    "ids": ListOf(OID(doc="Included QC type OIDs")),
+})
+
+MonetaryLimit = SubRecordType({
+    "currency": String(doc="Currency, if provided as a string"),
+    "currency_number": Signed64BitInteger(doc="Currency, if provided as an integer"),
+    "amount": Signed64BitInteger(doc="Value in currency"),
+    "exponent": Signed64BitInteger(doc="Total is amount times 10 raised to the exponent"),
+}, doc="Value limit for a financial transaction")
+
+PDSLocation = SubRecordType({
+    "url": URL(doc="Location of the PDS"),
+    "language": String(doc="Locale code"),
+}, doc="PDS Location entry")
+
+PDSLocations = SubRecordType({
+    "locations": ListOf(PDSLocation(), doc="Included PDS locations"),
+})
+
+QCLegislation = SubRecordType({
+    "country_codes": ListOf(String(doc="Country codes for the set of countries where this certificate issued as a qualified certificate"))
+}, doc="List of countries where this certificate is qualified")
+
+QCStatementsExtensions = SubRecordType({
+    "ids": ListOf(OID(doc="All included statement OIDs")),
+    "parsed": SubRecord({
+        "etsi_compliance": ListOf(Boolean(doc="True if present (Statement ID 0.4.0.1862.1.1)")),
+        "sscd": ListOf(Boolean(doc="True if present (Statement ID 0.4.0.1862.1.4")),
+        "types": ListOf(QCTypes(), doc="Statement ID 0.4.0.1862.1.6"),
+        "limit": ListOf(MonetaryLimit(), doc="Statement ID 0.4.0.1862.1.2"),
+        "pds_locations": ListOf(PDSLocations(), doc="Statement ID 0.4.0.1862.1.5"),
+        "retention_period": ListOf(Signed64BitInteger(), doc="Statement ID 0.4.0.1862.1.3"),
+        "legislation": ListOf(QCLegislation(), doc="Statement ID 0.4.0.1862.1.7"),
+    }, doc="Contains known QCStatements. Each field is repeated to handle the case where a single statement appears more than once."),
 })
 
 # x509/extensions.go: GeneralNames/jsonGeneralNames [RFC 5280 section 4.2.1.6]
@@ -321,7 +366,7 @@ ParsedCertificate = SubRecordType({
         "end": Timestamp(doc="Timestamp of when certificate expires. Timezone is UTC."),
         "length": Signed64BitInteger(doc="The length of time, in seconds, that the certificate is valid."),
     }, category="Validity Period"),
-    "signature_algorithm": SignatureAlgorithm(doc="Identifies the algorithm used by the CA to sign the certificate."),
+    "signature_algorithm": SignatureAlgorithm(doc="Identifies the algorithm used by the CA to sign the certificate.", category="Signature"),
     "subject_key_info": SubRecord({
         "fingerprint_sha256": HexString(doc="The SHA2-256 digest calculated over the certificate's DER-encoded SubjectPublicKeyInfo field."),
         "key_algorithm": PublicKeyAlgorithm(doc="Identifies the type of key and any relevant parameters."),
@@ -345,15 +390,15 @@ ParsedCertificate = SubRecordType({
         "basic_constraints": SubRecord({
             "is_ca": Boolean(doc="Indicates that the certificate is permitted to sign other certificates."),
             "max_path_len": Signed32BitInteger(doc="When present, gives the  maximum number of non-self-issued intermediate certificates that may follow this certificate in a valid certification path."),
-        }, category="Basic Constaints", doc="The parsed id-ce-basicConstraints extension (2.5.29.19); see RFC 5280."),
+        }, category="Basic Constraints", doc="The parsed id-ce-basicConstraints extension (2.5.29.19); see RFC 5280."),
         "subject_alt_name": GeneralNames(category="Subject Alternate Names (SANs)", doc="The parsed Subject Alternative Name extension (id-ce-subjectAltName, 2.5.29.17).", required=False),
-        "issuer_alt_name": GeneralNames(doc="The parsed Issuer Alternative Name extension (id-ce-issuerAltName, 2.5.29.18).", required=False),
+        "issuer_alt_name": GeneralNames(category="Issuer Alternate Names (IANs)", doc="The parsed Issuer Alternative Name extension (id-ce-issuerAltName, 2.5.29.18).", required=False),
         "crl_distribution_points": ListOf(URL(), category="CRL Distribution Points", doc="The parsed id-ce-cRLDistributionPoints extension (2.5.29.31). Contents are a list of distributionPoint URLs (other distributionPoint types are omitted)."),
         # NOTE: inherit the SubjAuthKeyId docs
         "authority_key_id": SubjAuthKeyId(category="Authority Key ID (AKID)"),
         "subject_key_id": SubjAuthKeyId(category="Subject Key ID (SKID)", validation_policy="warn"),
-        "extended_key_usage": ExtendedKeyUsage(exclude=["bigquery"], doc="The parsed id-ce-extKeyUsage (2.5.29.37) extension."),
-        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies", validation_policy="warn", exclude=["bigquery"], doc="The parsed id-ce-certificatePolicies extension (2.5.29.32)."),
+        "extended_key_usage": ExtendedKeyUsage(doc="The parsed id-ce-extKeyUsage (2.5.29.37) extension."),
+        "certificate_policies": ListOf(CertificatePoliciesData(), category="Certificate Policies", validation_policy="warn", doc="The parsed id-ce-certificatePolicies extension (2.5.29.32)."),
         "authority_info_access": SubRecord({
             "ocsp_urls": ListOf(URL(), doc="URLs of accessLocations with accessMethod of id-ad-ocsp, pointing to OCSP servers that can be used to check this certificate's revocation status. Only uniformResourceIdentifier accessLocations are supported; others are omitted."),
             "issuer_urls": ListOf(URL(), doc="URLs of accessLocations with accessMethod of id-ad-caIssuers, pointing to locations where this certificate's issuers can be downloaded. Only uniformResourceIdentifier accessLocations are supported; others are omitted."),
@@ -389,7 +434,9 @@ ParsedCertificate = SubRecordType({
             "excluded_edi_party_names": ListOf(EDIPartyName(), doc="Excluded names of type ediPartyName."),
         }, category="Name Constraints", doc="The parsed id-ce-nameConstraints extension (2.5.29.30). Specifies a name space within which all child certificates' subject names MUST be located."),
         "signed_certificate_timestamps": ListOf(SCTRecord(), category="Embedded SCTS / CT Poison", doc="The parsed Certificate Transparency SignedCertificateTimestampsList extension (1.3.6.1.4.1.11129.2.4.2); see RFC 6962."),
-        "ct_poison": Boolean(category="Embedded SCTS / CT Poison", doc="This is true if the certificate possesses the Certificate Transparency Precertificate Poison extension (1.3.6.1.4.1.11129.2.4.3).")
+        "ct_poison": Boolean(category="Embedded SCTS / CT Poison", doc="This is true if the certificate possesses the Certificate Transparency Precertificate Poison extension (1.3.6.1.4.1.11129.2.4.3)."),
+        "cabf_organization_id": CABFOrganizationID(category="CABF Organization ID Extension", doc="The CA/BF organization ID extensions (2.23.140.3.1)"),
+        "qc_statements": QCStatementsExtensions(category="QC Statements Extension", doc="IDs and parsed statements for qualified certificates (1.3.6.1.5.5.7.1.3)"),
     }),
     "unknown_extensions": ListOf(UnknownExtension(), category="Unknown Extensions", doc="List of raw extensions that were not recognized by the application."),
     "signature": SubRecord({

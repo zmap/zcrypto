@@ -67,6 +67,7 @@ type ServerHello struct {
 	ExtendedRandom              []byte            `json:"extended_random,omitempty"`
 	ExtendedMasterSecret        bool              `json:"extended_master_secret"`
 	SignedCertificateTimestamps []ParsedAndRawSCT `json:"scts,omitempty"`
+	AlpnProtocol                string            `json:"alpn_protocol,omitempty"`
 }
 
 // SimpleCertificate holds a *x509.Certificate and a []byte for the certificate
@@ -363,6 +364,7 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 		}
 	}
 	sh.ExtendedMasterSecret = m.extendedMasterSecret
+	sh.AlpnProtocol = m.alpnProtocol
 	return sh
 }
 

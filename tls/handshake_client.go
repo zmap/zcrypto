@@ -6,7 +6,6 @@ package tls
 
 import (
 	"bytes"
-	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/subtle"
@@ -20,7 +19,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/teamnsrg/zcrypto/x509"
+	"github.com/zmap/zcrypto/dsa"
+
+	"github.com/zmap/zcrypto/x509"
 )
 
 type clientHandshakeState struct {
