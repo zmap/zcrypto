@@ -36,10 +36,10 @@ import (
 	"time"
 
 	"github.com/weppos/publicsuffix-go/publicsuffix"
-	"github.com/zmap/zcrypto/dsa"
-	"github.com/zmap/zcrypto/encoding/asn1"
-	"github.com/zmap/zcrypto/x509/ct"
-	"github.com/zmap/zcrypto/x509/pkix"
+	"github.com/teamnsrg/zcrypto/dsa"
+	"github.com/teamnsrg/zcrypto/encoding/asn1"
+	"github.com/teamnsrg/zcrypto/x509/ct"
+	"github.com/teamnsrg/zcrypto/x509/pkix"
 	"golang.org/x/crypto/ed25519"
 )
 

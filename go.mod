@@ -7,8 +7,8 @@ require (
 	github.com/sirupsen/logrus v1.3.0
 	github.com/stretchr/testify v1.4.0
 	github.com/weppos/publicsuffix-go v0.15.1-0.20210928183822-5ee35905bd95
-	github.com/zmap/rc2 v0.0.0-20131011165748-24b9757f5521
-	github.com/zmap/zcertificate v0.0.0-20180516150559-0e3d58b1bac4
+	github.com/teamnsrg/rc2 v0.0.0-20131011165748-24b9757f5521
+	github.com/teamnsrg/zcertificate v0.0.0-20180516150559-0e3d58b1bac4
 	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127

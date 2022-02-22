@@ -9,7 +9,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/teamnsrg/zcrypto/encoding/asn1"
 )
 
 // pkcs1PrivateKey is a structure which mirrors the PKCS#1 ASN.1 for an RSA private key.

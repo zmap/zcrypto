@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zcrypto/x509/revocation/google"
+	"github.com/teamnsrg/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509/revocation/google"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

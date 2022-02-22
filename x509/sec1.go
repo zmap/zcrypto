@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/teamnsrg/zcrypto/encoding/asn1"
 )
 
 const ecPrivKeyVersion = 1

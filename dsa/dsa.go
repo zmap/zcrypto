@@ -18,7 +18,7 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/zmap/zcrypto/internal/randutil"
+	"github.com/teamnsrg/zcrypto/internal/randutil"
 )
 
 // Parameters represents the domain parameters for a key. These parameters can

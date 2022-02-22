@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/zmap/zcrypto/encoding/asn1"
-	"github.com/zmap/zcrypto/x509/pkix"
+	"github.com/teamnsrg/zcrypto/encoding/asn1"
+	"github.com/teamnsrg/zcrypto/x509/pkix"
 )
 
 // TestParseTorServiceDescriptorSyntax tests that parsing certificates with the

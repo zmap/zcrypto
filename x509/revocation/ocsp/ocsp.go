@@ -22,10 +22,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/zmap/zcrypto/encoding/asn1"
-	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zcrypto/x509/pkix"
-	"github.com/zmap/zcrypto/x509/revocation/crl"
+	"github.com/teamnsrg/zcrypto/encoding/asn1"
+	"github.com/teamnsrg/zcrypto/x509"
+	"github.com/teamnsrg/zcrypto/x509/pkix"
+	"github.com/teamnsrg/zcrypto/x509/revocation/crl"
 )
 
 var idPKIXOCSPBasic = asn1.ObjectIdentifier([]int{1, 3, 6, 1, 5, 5, 7, 48, 1, 1})

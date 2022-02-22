@@ -1,8 +1,8 @@
 ZCrypto
 =======
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/zmap/zcrypto)](https://goreportcard.com/report/github.com/zmap/zcrypto)
-[![GoDoc](https://godoc.org/github.com/zmap/zcrypto?status.svg)](https://godoc.org/github.com/zmap/zcrypto)
+[![Go Report Card](https://goreportcard.com/badge/github.com/teamnsrg/zcrypto)](https://goreportcard.com/report/github.com/teamnsrg/zcrypto)
+[![GoDoc](https://godoc.org/github.com/teamnsrg/zcrypto?status.svg)](https://godoc.org/github.com/teamnsrg/zcrypto)
 
 ZCrypto contains specialized versions of tls and x509. It is written in Golang and is primarily based on [Golang's TLS library](https://github.com/golang/go/blob/master/src/crypto/tls).
 
@@ -15,7 +15,7 @@ ZCrypto is a research library, designed to be used for data collection and analy
 
 
 ### zcrypto/tls (formerly known as ZTLS)
-A _research_ TLS library based on Golang standard library `crypto/tls` that contains that speaks old TLS versions, export ciphers, logs handshake messages, and is highly configurable. Many scary parts are exposed as public variables. It is primarily used for data collection, and is used by [ZGrab](https://github.com/zmap/zgrab2). Uses `zcrypto/x509`.
+A _research_ TLS library based on Golang standard library `crypto/tls` that contains that speaks old TLS versions, export ciphers, logs handshake messages, and is highly configurable. Many scary parts are exposed as public variables. It is primarily used for data collection, and is used by [ZGrab](https://github.com/teamnsrg/zgrab2). Uses `zcrypto/x509`.
 
 ### zcrypto/x509
 
@@ -27,4 +27,4 @@ A fork of the Google Certificate Transparency Golang library, designed to play n
 
 ## Documentation
 
-Documentation uses Godoc. See https://godoc.org/github.com/zmap/zcrypto.
+Documentation uses Godoc. See https://godoc.org/github.com/teamnsrg/zcrypto.

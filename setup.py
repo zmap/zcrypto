@@ -13,7 +13,7 @@ setup(
   ],
   author="ZMap Team",
   author_email="team@zmap.io",
-  url="https://github.com/zmap/zcrypto",
+  url="https://github.com/teamnsrg/zcrypto",
   keywords="zmap censys zcrypto internet-wide scanning",
   packages=find_packages(),
   zip_safe=False
