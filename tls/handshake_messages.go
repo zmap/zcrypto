@@ -610,6 +610,7 @@ type serverHelloMsg struct {
 	selectedIdentityPresent      bool
 	selectedIdentity             uint16
 	supportedPoints              []uint8
+	extensionIdentifiers         []uint16
 
 	// HelloRetryRequest extensions
 	cookie        []byte
@@ -761,6 +762,8 @@ func (m *serverHelloMsg) unmarshal(data []byte) bool {
 			!extensions.ReadUint16LengthPrefixed(&extData) {
 			return false
 		}
+
+		m.extensionIdentifiers = append(m.extensionIdentifiers, extension)
 
 		switch extension {
 		case extensionStatusRequest:
