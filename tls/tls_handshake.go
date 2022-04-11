@@ -345,7 +345,10 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	sh.OcspStapling = m.ocspStapling
 	sh.TicketSupported = m.ticketSupported
 	sh.SecureRenegotiation = m.secureRenegotiationSupported && len(m.secureRenegotiation) > 0
-	sh.ExtensionIdentifiers = m.extensionIdentifiers
+	extensionIdentifiers, success := m.extractExtensions()
+	if success {
+		sh.ExtensionIdentifiers = extensionIdentifiers
+	}
 
 	if len(m.scts) > 0 {
 		for _, rawSCT := range m.scts {

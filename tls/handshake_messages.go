@@ -610,7 +610,6 @@ type serverHelloMsg struct {
 	selectedIdentityPresent      bool
 	selectedIdentity             uint16
 	supportedPoints              []uint8
-	extensionIdentifiers         []uint16
 
 	// HelloRetryRequest extensions
 	cookie        []byte
@@ -637,22 +636,17 @@ func (m *serverHelloMsg) marshal() []byte {
 		var extensionsPresent bool
 		bWithoutExtensions := *b
 
-		var addedExtensions map[uint16]bool
-
 		b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 			if m.ocspStapling {
 				b.AddUint16(extensionStatusRequest)
-				addedExtensions[extensionStatusRequest] = true
 				b.AddUint16(0) // empty extension_data
 			}
 			if m.ticketSupported {
 				b.AddUint16(extensionSessionTicket)
-				addedExtensions[extensionSessionTicket] = true
 				b.AddUint16(0) // empty extension_data
 			}
 			if m.secureRenegotiationSupported {
 				b.AddUint16(extensionRenegotiationInfo)
-				addedExtensions[extensionRenegotiationInfo] = true
 				b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 					b.AddUint8LengthPrefixed(func(b *cryptobyte.Builder) {
 						b.AddBytes(m.secureRenegotiation)
@@ -661,7 +655,6 @@ func (m *serverHelloMsg) marshal() []byte {
 			}
 			if len(m.alpnProtocol) > 0 {
 				b.AddUint16(extensionALPN)
-				addedExtensions[extensionALPN] = true
 				b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 					b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 						b.AddUint8LengthPrefixed(func(b *cryptobyte.Builder) {
@@ -672,7 +665,6 @@ func (m *serverHelloMsg) marshal() []byte {
 			}
 			if len(m.scts) > 0 {
 				b.AddUint16(extensionSCT)
-				addedExtensions[extensionSCT] = true
 				b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 					b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 						for _, sct := range m.scts {
@@ -685,14 +677,12 @@ func (m *serverHelloMsg) marshal() []byte {
 			}
 			if m.supportedVersion != 0 {
 				b.AddUint16(extensionSupportedVersions)
-				addedExtensions[extensionSupportedVersions] = true
 				b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 					b.AddUint16(m.supportedVersion)
 				})
 			}
 			if m.serverShare.group != 0 {
 				b.AddUint16(extensionKeyShare)
-				addedExtensions[extensionKeyShare] = true
 				b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 					b.AddUint16(uint16(m.serverShare.group))
 					b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
@@ -702,7 +692,6 @@ func (m *serverHelloMsg) marshal() []byte {
 			}
 			if m.selectedIdentityPresent {
 				b.AddUint16(extensionPreSharedKey)
-				addedExtensions[extensionPreSharedKey] = true
 				b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 					b.AddUint16(m.selectedIdentity)
 				})
@@ -710,7 +699,6 @@ func (m *serverHelloMsg) marshal() []byte {
 
 			if len(m.cookie) > 0 {
 				b.AddUint16(extensionCookie)
-				addedExtensions[extensionCookie] = true
 				b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 					b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 						b.AddBytes(m.cookie)
@@ -719,27 +707,17 @@ func (m *serverHelloMsg) marshal() []byte {
 			}
 			if m.selectedGroup != 0 {
 				b.AddUint16(extensionKeyShare)
-				addedExtensions[extensionKeyShare] = true
 				b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 					b.AddUint16(uint16(m.selectedGroup))
 				})
 			}
 			if len(m.supportedPoints) > 0 {
 				b.AddUint16(extensionSupportedPoints)
-				addedExtensions[extensionSupportedPoints] = true
 				b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
 					b.AddUint8LengthPrefixed(func(b *cryptobyte.Builder) {
 						b.AddBytes(m.supportedPoints)
 					})
 				})
-			}
-
-			// Include any additional extensions with empty data
-			for _, extensionID := range m.extensionIdentifiers {
-				if _, exists := addedExtensions[extensionID]; !exists {
-					b.AddUint16(extensionID)
-					b.AddUint16(0)
-				}
 			}
 
 			extensionsPresent = len(b.BytesOrPanic()) > 2
@@ -783,8 +761,6 @@ func (m *serverHelloMsg) unmarshal(data []byte) bool {
 			!extensions.ReadUint16LengthPrefixed(&extData) {
 			return false
 		}
-
-		m.extensionIdentifiers = append(m.extensionIdentifiers, extension)
 
 		switch extension {
 		case extensionStatusRequest:
@@ -857,13 +833,47 @@ func (m *serverHelloMsg) unmarshal(data []byte) bool {
 			// Ignore unknown extensions.
 			continue
 		}
-
 		if !extData.Empty() {
 			return false
 		}
 	}
 
 	return true
+}
+
+func (m *serverHelloMsg) extractExtensions() ([]uint16, bool) {
+
+	extensionIdentifiers := make([]uint16, 0)
+	s := cryptobyte.String(m.raw)
+
+	var sessionId []byte
+	if !s.Skip(38) || // message type and uint24 length field
+		!readUint8LengthPrefixed(&s, &sessionId) ||
+		!s.Skip(3) {
+		return nil, false
+	}
+
+	if s.Empty() {
+		return nil, false
+	}
+
+	var extensions cryptobyte.String
+	if !s.ReadUint16LengthPrefixed(&extensions) || !s.Empty() {
+		return nil, false
+	}
+
+	for !extensions.Empty() {
+		var extension uint16
+		var extData cryptobyte.String
+		if !extensions.ReadUint16(&extension) ||
+			!extensions.ReadUint16LengthPrefixed(&extData) {
+			return nil, false
+		}
+
+		extensionIdentifiers = append(extensionIdentifiers, extension)
+	}
+
+	return extensionIdentifiers, true
 }
 
 type encryptedExtensionsMsg struct {
