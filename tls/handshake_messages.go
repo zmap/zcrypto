@@ -833,6 +833,7 @@ func (m *serverHelloMsg) unmarshal(data []byte) bool {
 			// Ignore unknown extensions.
 			continue
 		}
+
 		if !extData.Empty() {
 			return false
 		}
