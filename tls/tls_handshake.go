@@ -67,6 +67,7 @@ type ServerHello struct {
 	SignedCertificateTimestamps []ParsedAndRawSCT     `json:"scts,omitempty"`
 	AlpnProtocol                string                `json:"alpn_protocol,omitempty"`
 	SupportedVersions           *SupportedVersionsExt `json:"supported_versions,omitempty"`
+	ExtensionIdentifiers        []uint16              `json:"extension_identifiers,omitempty"`
 }
 
 type SupportedVersionsExt struct {
@@ -344,6 +345,10 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	sh.OcspStapling = m.ocspStapling
 	sh.TicketSupported = m.ticketSupported
 	sh.SecureRenegotiation = m.secureRenegotiationSupported && len(m.secureRenegotiation) > 0
+	extensionIdentifiers, success := m.extractExtensions()
+	if success {
+		sh.ExtensionIdentifiers = extensionIdentifiers
+	}
 
 	if len(m.scts) > 0 {
 		for _, rawSCT := range m.scts {

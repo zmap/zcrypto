@@ -842,6 +842,41 @@ func (m *serverHelloMsg) unmarshal(data []byte) bool {
 	return true
 }
 
+func (m *serverHelloMsg) extractExtensions() ([]uint16, bool) {
+
+	extensionIdentifiers := make([]uint16, 0)
+	s := cryptobyte.String(m.raw)
+
+	var sessionId []byte
+	if !s.Skip(38) || // message type and uint24 length field
+		!readUint8LengthPrefixed(&s, &sessionId) ||
+		!s.Skip(3) {
+		return nil, false
+	}
+
+	if s.Empty() {
+		return nil, false
+	}
+
+	var extensions cryptobyte.String
+	if !s.ReadUint16LengthPrefixed(&extensions) || !s.Empty() {
+		return nil, false
+	}
+
+	for !extensions.Empty() {
+		var extension uint16
+		var extData cryptobyte.String
+		if !extensions.ReadUint16(&extension) ||
+			!extensions.ReadUint16LengthPrefixed(&extData) {
+			return nil, false
+		}
+
+		extensionIdentifiers = append(extensionIdentifiers, extension)
+	}
+
+	return extensionIdentifiers, true
+}
+
 type encryptedExtensionsMsg struct {
 	raw          []byte
 	alpnProtocol string
