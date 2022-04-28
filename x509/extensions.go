@@ -724,7 +724,7 @@ type CABFOrganizationIdentifier struct {
 	Reference string `json:"reference,omitempty"`
 }
 
-func (c *Certificate) jsonifyExtensions() (*CertificateExtensions, UnknownCertificateExtensions) {
+func (c *Certificate) JsonifyExtensions() (*CertificateExtensions, UnknownCertificateExtensions) {
 	exts := new(CertificateExtensions)
 	unk := make([]pkix.Extension, 0, 2)
 	for _, e := range c.Extensions {
