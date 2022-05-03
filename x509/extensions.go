@@ -89,6 +89,7 @@ type CertificatePoliciesData struct {
 	ExplicitTexts         [][]string
 	NoticeRefOrganization [][]string
 	NoticeRefNumbers      [][]NoticeNumber
+	UserNotices           [][]UserNotice
 }
 
 func (cp *CertificatePoliciesData) MarshalJSON() ([]byte, error) {
@@ -792,6 +793,7 @@ func (c *Certificate) JsonifyExtensions() (*CertificateExtensions, UnknownCertif
 			exts.CertificatePolicies.ExplicitTexts = c.ParsedExplicitTexts
 			exts.CertificatePolicies.QualifierId = c.QualifierId
 			exts.CertificatePolicies.CPSUri = c.CPSuri
+			exts.CertificatePolicies.UserNotices = c.UserNotices
 
 		} else if e.Id.Equal(oidExtAuthorityInfoAccess) {
 			exts.AuthorityInfoAccess = new(AuthorityInfoAccess)
