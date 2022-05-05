@@ -820,6 +820,8 @@ type Certificate struct {
 	ParsedExplicitTexts         [][]string
 	ParsedNoticeRefOrganization [][]string
 
+	UserNotices [][]UserNotice
+
 	// Name constraints
 	NameConstraintsCritical bool // if true then the name constraints are marked critical.
 	PermittedDNSNames       []GeneralSubtreeString
@@ -1171,6 +1173,11 @@ type policyQualifierInfo struct {
 type userNotice struct {
 	NoticeRef    noticeReference `asn1:"optional"`
 	ExplicitText asn1.RawValue   `asn1:"optional"`
+}
+
+type UserNotice struct {
+	ExplicitText    *string
+	NoticeReference *NoticeReference
 }
 
 type noticeReference struct {
@@ -1941,6 +1948,7 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				out.ParsedExplicitTexts = make([][]string, len(policies))
 				out.ParsedNoticeRefOrganization = make([][]string, len(policies))
 				out.CPSuri = make([][]string, len(policies))
+				out.UserNotices = make([][]UserNotice, len(policies))
 
 				for i, policy := range policies {
 					out.PolicyIdentifiers[i] = policy.Policy
@@ -1949,6 +1957,7 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 						out.QualifierId[i] = append(out.QualifierId[i], qualifier.PolicyQualifierId)
 						userNoticeOID := asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 2, 2}
 						cpsURIOID := asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 2, 1}
+
 						if qualifier.PolicyQualifierId.Equal(userNoticeOID) {
 							var un userNotice
 							_, err := asn1.Unmarshal(qualifier.Qualifier.FullBytes, &un)
@@ -1956,15 +1965,27 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 								return nil, err
 							}
 							if err == nil {
+								groupUserNotice := UserNotice{}
 								if len(un.ExplicitText.Bytes) != 0 {
 									out.ExplicitTexts[i] = append(out.ExplicitTexts[i], un.ExplicitText)
-									out.ParsedExplicitTexts[i] = append(out.ParsedExplicitTexts[i], string(un.ExplicitText.Bytes))
+									parsed := string(un.ExplicitText.Bytes)
+									out.ParsedExplicitTexts[i] = append(out.ParsedExplicitTexts[i], parsed)
+
+									groupUserNotice.ExplicitText = &parsed
 								}
+
 								if un.NoticeRef.Organization.Bytes != nil || un.NoticeRef.NoticeNumbers != nil {
 									out.NoticeRefOrgnization[i] = append(out.NoticeRefOrgnization[i], un.NoticeRef.Organization)
 									out.NoticeRefNumbers[i] = append(out.NoticeRefNumbers[i], un.NoticeRef.NoticeNumbers)
 									out.ParsedNoticeRefOrganization[i] = append(out.ParsedNoticeRefOrganization[i], string(un.NoticeRef.Organization.Bytes))
+
+									groupUserNotice.NoticeReference = &NoticeReference{
+										Organization:  string(un.NoticeRef.Organization.Bytes),
+										NoticeNumbers: un.NoticeRef.NoticeNumbers,
+									}
 								}
+
+								out.UserNotices[i] = append(out.UserNotices[i], groupUserNotice)
 							}
 						}
 						if qualifier.PolicyQualifierId.Equal(cpsURIOID) {
