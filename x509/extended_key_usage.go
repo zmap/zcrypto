@@ -7,10 +7,11 @@
 package x509
 
 import (
-	"github.com/zmap/zcrypto/encoding/asn1"
+	"encoding/asn1"
 )
 
 const (
+	OID_EKU_ADOBE_AUTHENTIC_DOCUMENT_TRUST     = "1.2.840.113583.1.1.5"
 	OID_EKU_APPLE_CODE_SIGNING                 = "1.2.840.113635.100.4.1"
 	OID_EKU_APPLE_CODE_SIGNING_DEVELOPMENT     = "1.2.840.113635.100.4.1.1"
 	OID_EKU_APPLE_SOFTWARE_UPDATE_SIGNING      = "1.2.840.113635.100.4.1.2"
@@ -77,6 +78,7 @@ const (
 )
 
 var (
+	oidExtKeyUsageAdobeAuthenticDocumentTrust    = asn1.ObjectIdentifier{1, 2, 840, 113583, 1, 1, 5}
 	oidExtKeyUsageAppleCodeSigning               = asn1.ObjectIdentifier{1, 2, 840, 113635, 100, 4, 1}
 	oidExtKeyUsageAppleCodeSigningDevelopment    = asn1.ObjectIdentifier{1, 2, 840, 113635, 100, 4, 1, 1}
 	oidExtKeyUsageAppleSoftwareUpdateSigning     = asn1.ObjectIdentifier{1, 2, 840, 113635, 100, 4, 1, 2}
@@ -143,7 +145,8 @@ var (
 )
 
 const (
-	ExtKeyUsageAppleCodeSigning ExtKeyUsage = iota
+	ExtKeyUsageAdobeAuthenticDocumentTrust ExtKeyUsage = iota
+	ExtKeyUsageAppleCodeSigning
 	ExtKeyUsageAppleCodeSigningDevelopment
 	ExtKeyUsageAppleSoftwareUpdateSigning
 	ExtKeyUsageAppleCodeSigningThirdParty
@@ -209,6 +212,7 @@ const (
 )
 
 type auxExtendedKeyUsage struct {
+	AdobeAuthenticDocumentTrust    bool     `json:"adobe_authentic_document_trust,omitempty" oid:"1.2.840.113583.1.1.5"`
 	AppleCodeSigning               bool     `json:"apple_code_signing,omitempty" oid:"1.2.840.113635.100.4.1"`
 	AppleCodeSigningDevelopment    bool     `json:"apple_code_signing_development,omitempty" oid:"1.2.840.113635.100.4.1.1"`
 	AppleSoftwareUpdateSigning     bool     `json:"apple_software_update_signing,omitempty" oid:"1.2.840.113635.100.4.1.2"`
@@ -278,6 +282,8 @@ type auxExtendedKeyUsage struct {
 func (aux *auxExtendedKeyUsage) populateFromASN1(oid asn1.ObjectIdentifier) {
 	s := oid.String()
 	switch s {
+	case OID_EKU_ADOBE_AUTHENTIC_DOCUMENT_TRUST:
+		aux.AdobeAuthenticDocumentTrust = true
 	case OID_EKU_APPLE_CODE_SIGNING:
 		aux.AppleCodeSigning = true
 	case OID_EKU_APPLE_CODE_SIGNING_DEVELOPMENT:
@@ -411,6 +417,8 @@ func (aux *auxExtendedKeyUsage) populateFromASN1(oid asn1.ObjectIdentifier) {
 
 func (aux *auxExtendedKeyUsage) populateFromExtKeyUsage(eku ExtKeyUsage) {
 	switch eku {
+	case ExtKeyUsageAdobeAuthenticDocumentTrust:
+		aux.AdobeAuthenticDocumentTrust = true
 	case ExtKeyUsageAppleCodeSigning:
 		aux.AppleCodeSigning = true
 	case ExtKeyUsageAppleCodeSigningDevelopment:
@@ -548,6 +556,7 @@ var ekuConstants map[string]ExtKeyUsage
 
 func init() {
 	ekuOIDs = make(map[string]asn1.ObjectIdentifier)
+	ekuOIDs[OID_EKU_ADOBE_AUTHENTIC_DOCUMENT_TRUST] = oidExtKeyUsageAdobeAuthenticDocumentTrust
 	ekuOIDs[OID_EKU_APPLE_CODE_SIGNING] = oidExtKeyUsageAppleCodeSigning
 	ekuOIDs[OID_EKU_APPLE_CODE_SIGNING_DEVELOPMENT] = oidExtKeyUsageAppleCodeSigningDevelopment
 	ekuOIDs[OID_EKU_APPLE_SOFTWARE_UPDATE_SIGNING] = oidExtKeyUsageAppleSoftwareUpdateSigning
@@ -613,6 +622,7 @@ func init() {
 	ekuOIDs[OID_EKU_ANY] = oidExtKeyUsageAny
 
 	ekuConstants = make(map[string]ExtKeyUsage)
+	ekuConstants[OID_EKU_ADOBE_AUTHENTIC_DOCUMENT_TRUST] = ExtKeyUsageAdobeAuthenticDocumentTrust
 	ekuConstants[OID_EKU_APPLE_CODE_SIGNING] = ExtKeyUsageAppleCodeSigning
 	ekuConstants[OID_EKU_APPLE_CODE_SIGNING_DEVELOPMENT] = ExtKeyUsageAppleCodeSigningDevelopment
 	ekuConstants[OID_EKU_APPLE_SOFTWARE_UPDATE_SIGNING] = ExtKeyUsageAppleSoftwareUpdateSigning
