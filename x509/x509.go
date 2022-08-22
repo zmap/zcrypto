@@ -88,9 +88,10 @@ func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorith
 		publicKeyAlgorithm.Parameters = asn1.NullRawValue
 	case *ecdsa.PublicKey:
 		publicKeyBytes = elliptic.Marshal(pub.Curve, pub.X, pub.Y)
-		oid, ok := oidFromNamedCurve(pub.Curve)
-		if !ok {
-			return nil, pkix.AlgorithmIdentifier{}, errors.New("x509: unsupported elliptic curve")
+		var oid asn1.ObjectIdentifier
+		oid, err = oidFromNamedCurve(pub.Curve)
+		if err != nil {
+			return nil, pkix.AlgorithmIdentifier{}, err
 		}
 		publicKeyAlgorithm.Algorithm = oidPublicKeyECDSA
 		var paramBytes []byte
@@ -558,33 +559,33 @@ var (
 	oidKeyEd25519 = asn1.ObjectIdentifier{1, 3, 101, 112}
 )
 
-func namedCurveFromOID(oid asn1.ObjectIdentifier) elliptic.Curve {
+func namedCurveFromOID(oid asn1.ObjectIdentifier) (elliptic.Curve, error) {
 	switch {
 	case oid.Equal(oidNamedCurveP224):
-		return elliptic.P224()
+		return elliptic.P224(), nil
 	case oid.Equal(oidNamedCurveP256):
-		return elliptic.P256()
+		return elliptic.P256(), nil
 	case oid.Equal(oidNamedCurveP384):
-		return elliptic.P384()
+		return elliptic.P384(), nil
 	case oid.Equal(oidNamedCurveP521):
-		return elliptic.P521()
+		return elliptic.P521(), nil
 	}
-	return nil
+	return nil, ErrUnsupportedEllipticCurve
 }
 
-func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
+func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, error) {
 	switch curve {
 	case elliptic.P224():
-		return oidNamedCurveP224, true
+		return oidNamedCurveP224, nil
 	case elliptic.P256():
-		return oidNamedCurveP256, true
+		return oidNamedCurveP256, nil
 	case elliptic.P384():
-		return oidNamedCurveP384, true
+		return oidNamedCurveP384, nil
 	case elliptic.P521():
-		return oidNamedCurveP521, true
+		return oidNamedCurveP521, nil
 	}
 
-	return nil, false
+	return nil, ErrUnsupportedEllipticCurve
 }
 
 // KeyUsage represents the set of actions that are valid for a given key. It's
@@ -940,6 +941,10 @@ func (c *Certificate) GetParsedSubjectCommonName(invalidateCache bool) ParsedDom
 // ErrUnsupportedAlgorithm results from attempting to perform an operation that
 // involves algorithms that are not currently implemented.
 var ErrUnsupportedAlgorithm = errors.New("x509: cannot verify signature: algorithm unimplemented")
+
+// ErrUnsupportedEllipticCurve results from attempting to perform an operation that
+// involves elliptic curves that are not currently implemented.
+var ErrUnsupportedEllipticCurve = errors.New("x509: unsupported elliptic curve")
 
 // An InsecureAlgorithmError
 type InsecureAlgorithmError SignatureAlgorithm
@@ -1366,9 +1371,9 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 		if len(rest) != 0 {
 			return nil, errors.New("x509: trailing data after ECDSA parameters")
 		}
-		namedCurve := namedCurveFromOID(*namedCurveOID)
-		if namedCurve == nil {
-			return nil, errors.New("x509: unsupported elliptic curve")
+		namedCurve, err := namedCurveFromOID(*namedCurveOID)
+		if err != nil {
+			return nil, err
 		}
 		x, y := elliptic.Unmarshal(namedCurve, asn1Data)
 		if x == nil {
