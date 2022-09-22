@@ -250,7 +250,11 @@ func (ka rsaKeyAgreement) generateClientKeyExchange(config *Config, clientHello 
 		return nil, nil, err
 	}
 
-	encrypted, err := rsa.EncryptPKCS1v15(config.rand(), cert.PublicKey.(*rsa.PublicKey), preMasterSecret)
+	publicKey, ok := cert.PublicKey.(*rsa.PublicKey)
+	if !ok {
+		return nil, nil, errClientKeyExchange
+	}
+	encrypted, err := rsa.EncryptPKCS1v15(config.rand(), publicKey, preMasterSecret)
 	if err != nil {
 		return nil, nil, err
 	}
