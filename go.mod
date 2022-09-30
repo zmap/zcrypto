@@ -1,6 +1,6 @@
 module github.com/smallstep/zcrypto
 
-go 1.19
+go 1.18
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
