@@ -1,6 +1,7 @@
 *.swp
 *.idea
 *.iml
+*.out
 .project
 .pydevproject
 
