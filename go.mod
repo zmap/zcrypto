@@ -1,6 +1,6 @@
 module github.com/smallstep/zcrypto
 
-go 1.13
+go 1.18
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
@@ -14,4 +14,14 @@ require (
 	golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
 	golang.org/x/net v0.0.0-20190301231341-16b79f2e4e95
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
+	github.com/kr/pretty v0.1.0 // indirect
+	github.com/kr/text v0.1.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	golang.org/x/sys v0.0.0-20190422165155-953cdadca894 // indirect
+	golang.org/x/text v0.3.0 // indirect
 )
