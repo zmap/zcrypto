@@ -4,6 +4,9 @@
 
 // Use non-cgo on Darwin to prevent duplicate symbols on cgo
 
+//go:build !arm && !arm64 && !ios
+// +build !arm,!arm64,!ios
+
 package x509
 
 func loadSystemRoots() (*CertPool, error) {
