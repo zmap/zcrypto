@@ -1115,13 +1115,15 @@ func TestMaxPathLen(t *testing.T) {
 }
 
 // This CSR was generated with OpenSSL:
-//  openssl req -out CSR.csr -new -newkey rsa:2048 -nodes -keyout privateKey.key -config openssl.cnf
+//
+//	openssl req -out CSR.csr -new -newkey rsa:2048 -nodes -keyout privateKey.key -config openssl.cnf
 //
 // The openssl.cnf needs to include this section:
-//   [ v3_req ]
-//   basicConstraints = CA:FALSE
-//   keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-//   subjectAltName = email:gopher@golang.org,DNS:test.example.com
+//
+//	[ v3_req ]
+//	basicConstraints = CA:FALSE
+//	keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+//	subjectAltName = email:gopher@golang.org,DNS:test.example.com
 const csrBase64 = "MIIC4zCCAcsCAQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOY+MVedRg2JEnyeLcSzcsMv2VcsTfkB5+Etd6hihAh6MrGezNyASMMKuQN6YhCX1icQDiQtGsDLTtheNnSXK06tAhHjAP/hGlszRJp+5+rP2M58fDBAkUBEhskbCUWwpY14jFtVuGNJ8vF8h8IeczdolvQhX9lVai9G0EUXJMliMKdjA899H0mRs9PzHyidyrXFNiZlQXfD8Kg7gETn2Ny965iyI6ujAIYSCvam6TnxRHYH2MBKyVGvsYGbPYUQJCsgdgyajEg6ekihvQY3SzO1HSAlZAd7d1QYO4VeWJ2mY6Wu3Jpmh+AmG19S9CcHqGjd0bhuAX9cpPOKgnEmqn0CAwEAAaBZMFcGCSqGSIb3DQEJDjFKMEgwCQYDVR0TBAIwADALBgNVHQ8EBAMCBeAwLgYDVR0RBCcwJYERZ29waGVyQGdvbGFuZy5vcmeCEHRlc3QuZXhhbXBsZS5jb20wDQYJKoZIhvcNAQEFBQADggEBAC9+QpKfdabxwCWwf4IEe1cKjdXLS1ScSuw27a3kZzQiPV78WJMa6dB8dqhdH5BRwGZ/qsgLrO6ZHlNeIv2Ib41Ccq71ecHW/nXc94A1BzJ/bVdI9LZcmTUvR1/m1jCpN7UqQ0ml1u9VihK7Pe762hEYxuWDQzYEU0l15S/bXmqeq3eF1A59XT/2jwe5+NV0Wwf4UQlkTXsAQMsJ+KzrQafd8Qv2A49o048uRvmjeJDrXLawGVianZ7D5A6Fpd1rZh6XcjqBpmgLw41DRQWENOdzhy+HyphKRv1MlY8OLkNqpGMhu8DdgJVGoT16DGiickoEa7Z3UCPVNgdTkT9jq7U="
 
 const sanManyOtherName = "MEmgEAYIKwYBBAHZWy6gBAICAc2CCHRlc3QuZ292oA8GCCsGAQQB2VsuoAMCASqCB2dvdi5nb3agEQYIKwYBBAHZWy6gBQIDAXUA"
