@@ -1915,7 +1915,7 @@ zaehYm7UZ14x
 
 // HexHashFederalBridgeCA2013SignedByCommonPolicyCASerial11424 is the hex
 // SHA256 fingerprint of
-//FederalBridgeCA2013SignedByCommonPolicyCASerial11424.
+// FederalBridgeCA2013SignedByCommonPolicyCASerial11424.
 const HexHashFederalBridgeCA2013SignedByCommonPolicyCASerial11424 = "8ed99089806b1005d6a6417c50f182325b670b9d87b17f3fd7aefc360a300e91"
 
 // PEMFederalBridgeCA2013SignedByIdenTrust is the certificate for the Federal
@@ -2540,7 +2540,7 @@ A2EC/0rskqTcLe4qNJMHtyznGI8=
 `
 
 // HexHashFederalCommonPolicyCASignedBySelf is the hex SHA256 fingerprint of
-//FederalCommonPolicyCASignedBySelf.
+// FederalCommonPolicyCASignedBySelf.
 const HexHashFederalCommonPolicyCASignedBySelf = "894ebc0b23da2a50c0186b7f8f25ef1f6b2935af32a94584ef80aaf877a3a06e"
 
 // PEMFederalCommonPolicyCASignedByFederalBridgeCA is the certificate for the

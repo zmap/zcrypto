@@ -21,7 +21,8 @@ const (
 ///////////////////////////////////////////////////////////////////////////////
 
 // LogEntryType represents the LogEntryType enum from section 3.1 of the RFC:
-//   enum { x509_entry(0), precert_entry(1), (65535) } LogEntryType;
+//
+//	enum { x509_entry(0), precert_entry(1), (65535) } LogEntryType;
 type LogEntryType uint16
 
 func (e LogEntryType) String() string {

@@ -58,7 +58,7 @@ func Check(disallowed *DisallowedCerts, cert *x509.Certificate) *Entry {
 // Implementation details below - includes home-baked parsing Microsoft sst format
 
 // VBASigSerializedCertStore - The serialized digital certificate store specifies
-//structures for storing a digital certificate store containing a single digital
+// structures for storing a digital certificate store containing a single digital
 // certificate and, optionally, a list of properties associated with the certificate.
 type VBASigSerializedCertStore struct {
 	Version          uint32  // must be 0x00000000

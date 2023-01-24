@@ -30,8 +30,8 @@
 // chains through it, but will output it as valid.
 //
 // Examples:
-// 	$ zintermediate --roots roots.pem candidates.csv > intermediates.pem
 //
+//	$ zintermediate --roots roots.pem candidates.csv > intermediates.pem
 package main
 
 import (
