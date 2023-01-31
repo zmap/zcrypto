@@ -865,8 +865,9 @@ type Certificate struct {
 
 	IsPrecert bool
 
-	// Internal
-	validSignature bool
+	// ValidSignature is true if the certificate was signed by any roots or
+	// intermediates given in a call to (*Certificate).Verify().
+	ValidSignature bool
 
 	// CT
 	SignedCertificateTimestampList []*ct.SignedCertificateTimestamp
