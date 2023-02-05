@@ -26,7 +26,6 @@ import (
 	"crypto/rsa"
 	_ "crypto/sha1"
 	_ "crypto/sha256"
-	_ "crypto/sha512"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -2268,7 +2267,7 @@ func buildExtensions(template *Certificate, _ []byte) (ret []pkix.Extension, err
 		a[0] = reverseBitsInAByte(byte(template.KeyUsage))
 		a[1] = reverseBitsInAByte(byte(template.KeyUsage >> 8))
 
-		l := 1z
+		l := 1
 		if a[1] != 0 {
 			l = 2
 		}
