@@ -46,6 +46,7 @@ func (g *Graph) WalkChainsAsync(c *x509.Certificate, opt WalkOptions) chan x509.
 				continue
 			}
 			start.issuer = candidate
+			c.ValidSignature = true
 			break
 		}
 	}
