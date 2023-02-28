@@ -27,6 +27,8 @@ var (
 	oidExtSubjectKeyId       = asn1.ObjectIdentifier{2, 5, 29, 14}
 	oidExtExtendedKeyUsage   = asn1.ObjectIdentifier{2, 5, 29, 37}
 	oidExtCertificatePolicy  = asn1.ObjectIdentifier{2, 5, 29, 32}
+	oidExtensionCRLNumber    = asn1.ObjectIdentifier{2, 5, 29, 20}
+	oidExtensionReasonCode   = asn1.ObjectIdentifier{2, 5, 29, 21}
 
 	oidExtAuthorityInfoAccess            = oidExtensionAuthorityInfoAccess
 	oidExtensionCTPrecertificatePoison   = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11129, 2, 4, 3}
