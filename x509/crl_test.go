@@ -23,10 +23,11 @@ import (
 )
 
 const (
-	// NOTE: This constant does not exist in upstream.
+	// STARTBLOCK: This constant does not exist in upstream.
 	derGenTimeZ0000Base64 = "MIIBSzCB0wIBATAKBggqhkjOPQQDAzBJMQswCQYDVQQGEwJYWDEVMBMGA1UEChMMQm91bGRlciBUZXN0MSMwIQYDVQQDExooVEVTVCkgRWxlZ2FudCBFbGVwaGFudCBFMRgTMjA1MDA3MDYxNjQzMzhaMDAwMBcNMjIwNzE1MTY0MzM4WjAbMBkCCAOuUdtRFVo8Fw0yMjA3MDYxNTQzMzhaoDYwNDAfBgNVHSMEGDAWgBQB2rt6yyUgjl551vmWQi8CQSkHvjARBgNVHRQECgIIFv9LJt+yGA8wCgYIKoZIzj0EAwMDZwAwZAIwVrITRYutGjFpfNht08CLsAQSvnc4i6UM0Pi8+U3T8DRHImIiuB9cQ+qxULB6pKhBAjBbuGCwTop7vCfGO7Fz6N0ruITInFtt6BDR5izWUMfXXa7mXhSQ6ig9hOHOWRxR00I="
-	// NOTE: This constant does not exist in upstream.
+	//This constant does not exist in upstream.
 	derUTCTimeYYMMDDHHMMZTTBase64 = "MIIBRTCBzQIBATAKBggqhkjOPQQDAzBJMQswCQYDVQQGEwJYWDEVMBMGA1UEChMMQm91bGRlciBUZXN0MSMwIQYDVQQDExooVEVTVCkgRWxlZ2FudCBFbGVwaGFudCBFMRcNMjIwNzA2MTY0M1owOBcNMjIwNzE1MTY0MzM4WjAbMBkCCAOuUdtRFVo8Fw0yMjA3MDYxNTQzMzhaoDYwNDAfBgNVHSMEGDAWgBQB2rt6yyUgjl551vmWQi8CQSkHvjARBgNVHRQECgIIFv9LJt+yGA8wCgYIKoZIzj0EAwMDZwAwZAIwVrITRYutGjFpfNht08CLsAQSvnc4i6UM0Pi8+U3T8DRHImIiuB9cQ+qxULB6pKhBAjBbuGCwTop7vCfGO7Fz6N0ruITInFtt6BDR5izWUMfXXa7mXhSQ6ig9hOHOWRxR00I="
+	// ENDBLOCK
 )
 
 func TestCreateRevocationList(t *testing.T) {
@@ -448,7 +449,7 @@ func TestParseRevocationList(t *testing.T) {
 		t.Errorf("bad number of revoked certificates. got: %d want: %d", numCerts, expected)
 	}
 
-	// NOTE: This block does not exist in upstream.
+	// STARTBLOCK: This block does not exist in upstream.
 	// Check that 'thisUpdate' of 'GENERALIZEDTIME 20500706164338Z0000' (time
 	// zone is UTC but also explicitly specified) is considered invalid.
 	derBytes = fromBase64(derGenTimeZ0000Base64)
@@ -456,12 +457,12 @@ func TestParseRevocationList(t *testing.T) {
 	assertError(t, err, "expected error parsing CRL")
 	assertContains(t, err.Error(), "x509: malformed GeneralizedTime")
 
-	// NOTE: This block does not exist in upstream.
 	// Check that 'thisUpdate' of 'UTCTIME 2207061643Z08' (YYMMDDHHMMZTT) is
 	// considered invalid.
 	derBytes = fromBase64(derUTCTimeYYMMDDHHMMZTTBase64)
 	_, err = ParseRevocationList(derBytes)
 	assertContains(t, err.Error(), "x509: malformed UTCTime")
+	// ENDBLOCK
 }
 
 func TestRevocationListCheckSignatureFrom(t *testing.T) {

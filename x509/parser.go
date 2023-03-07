@@ -19,7 +19,7 @@ const x509v2Version = 1
 
 // RevokedCertificate represents an entry in the revokedCertificates sequence of
 // a CRL.
-// NOTE: This type does not exist in upstream.
+// STARTBLOCK: This type does not exist in upstream.
 type RevokedCertificate struct {
 	// Raw contains the raw bytes of the revokedCertificates entry. It is set when
 	// parsing a CRL; it is ignored when generating a CRL.
@@ -51,6 +51,7 @@ type RevokedCertificate struct {
 	// not populated when parsing a CRL, see Extensions.
 	ExtraExtensions []pkix.Extension
 }
+// ENDBLOCK
 
 // ParseRevocationList parses a X509 v2 Certificate Revocation List from the given
 // ASN.1 DER data.
@@ -140,14 +141,18 @@ func ParseRevocationList(der []byte) (*RevocationList, error) {
 	}
 
 	if tbs.PeekASN1Tag(cryptobyte_asn1.SEQUENCE) {
+		// NOTE: The block does not exist in upstream.
 		rcs := make([]RevokedCertificate, 0)
+		// ENDBLOCK
 		var revokedSeq cryptobyte.String
 		if !tbs.ReadASN1(&revokedSeq, cryptobyte_asn1.SEQUENCE) {
 			return nil, errors.New("x509: malformed crl")
 		}
 		for !revokedSeq.Empty() {
 			var certSeq cryptobyte.String
+			// NOTE: The block is different from upstream. Upstream: ReadASN1
 			if !revokedSeq.ReadASN1Element(&certSeq, cryptobyte_asn1.SEQUENCE) {
+				// ENDBLOCK
 				return nil, errors.New("x509: malformed crl")
 			}
 			rc := RevokedCertificate{Raw: certSeq}
@@ -177,7 +182,7 @@ func ParseRevocationList(der []byte) (*RevocationList, error) {
 					if err != nil {
 						return nil, err
 					}
-					// NOTE: This block does not exist in upstream.
+					// STARTBLOCK: This block does not exist in upstream.
 					if ext.Id.Equal(oidExtensionReasonCode) {
 						val := cryptobyte.String(ext.Value)
 						rc.ReasonCode = new(int)
@@ -185,11 +190,13 @@ func ParseRevocationList(der []byte) (*RevocationList, error) {
 							return nil, fmt.Errorf("x509: malformed reasonCode extension")
 						}
 					}
+					// ENDBLOCK
 					rc.Extensions = append(rc.Extensions, ext)
 				}
 			}
-
+			// STARTBLOCK: The block does not exist in upstream.
 			rcs = append(rcs, rc)
+			// ENDBLOCK
 		}
 		rl.RevokedCertificates = rcs
 	}
@@ -212,7 +219,6 @@ func ParseRevocationList(der []byte) (*RevocationList, error) {
 			if err != nil {
 				return nil, err
 			}
-			// NOTE: The block does not exist in upstream.
 			if ext.Id.Equal(oidExtensionAuthorityKeyId) {
 				rl.AuthorityKeyId = ext.Value
 			} else if ext.Id.Equal(oidExtensionCRLNumber) {

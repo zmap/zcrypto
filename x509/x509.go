@@ -3280,7 +3280,7 @@ func CreateRevocationList(rand io.Reader, template *RevocationList, issuer *Cert
 
 	// Convert the ReasonCode field to a proper extension, and force revocation
 	// times to UTC per RFC 5280.
-	// NOTE: This block differs from upstream.
+	// STARTBLOCK: This block differs from upstream. Upstream: 	revokedCertsUTC := make([]pkix.RevokedCertificate, len(template.RevokedCertificates))
 	revokedCerts := make([]pkix.RevokedCertificate, len(template.RevokedCertificates))
 	for i, rc := range template.RevokedCertificates {
 		prc := pkix.RevokedCertificate{
@@ -3317,6 +3317,7 @@ func CreateRevocationList(rand io.Reader, template *RevocationList, issuer *Cert
 		}
 		revokedCerts[i] = prc
 	}
+	// ENDBLOCK
 
 	aki, err := asn1.Marshal(authKeyId{Id: issuer.SubjectKeyId})
 	if err != nil {
