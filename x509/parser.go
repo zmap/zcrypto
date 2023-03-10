@@ -51,6 +51,7 @@ type RevokedCertificate struct {
 	// not populated when parsing a CRL, see Extensions.
 	ExtraExtensions []pkix.Extension
 }
+
 // ENDBLOCK
 
 // ParseRevocationList parses a X509 v2 Certificate Revocation List from the given
@@ -311,8 +312,6 @@ func parseASN1String(tag cryptobyte_asn1.Tag, value []byte) (string, error) {
 	}
 	return "", fmt.Errorf("unsupported string type: %v", tag)
 }
-
-
 
 // parseName parses a DER encoded Name as defined in RFC 5280. We may
 // want to export this function in the future for use in crypto/tls.

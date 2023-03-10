@@ -3171,7 +3171,6 @@ type tbsCertificateList struct {
 	Extensions          []pkix.Extension          `asn1:"tag:0,optional,explicit"`
 }
 
-
 func isIA5String(s string) error {
 	for _, r := range s {
 		// Per RFC5280 "IA5String is limited to the set of ASCII characters"
@@ -3238,8 +3237,6 @@ func getSignatureAlgorithmFromAI(ai pkix.AlgorithmIdentifier) SignatureAlgorithm
 
 	return UnknownSignatureAlgorithm
 }
-
-
 
 // CreateRevocationList creates a new X.509 v2 Certificate Revocation List,
 // according to RFC 5280, based on template.
