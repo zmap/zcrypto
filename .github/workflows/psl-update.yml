@@ -23,7 +23,7 @@ jobs:
         run: echo "::set-output name=now::$(date +'%Y-%m-%dT%H:%M:%S %Z')"
 
       - name: Update publicsuffix-go
-        run: go get -u github.com/weppos/publicsuffix-go@master
+        run: go get -u github.com/weppos/publicsuffix-go@main
 
       - name: Run go mod tidy
         run: go mod tidy
