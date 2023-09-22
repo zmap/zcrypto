@@ -375,12 +375,18 @@ func (c *LogClient) GetEntries(start, end int64) ([]ct.LogEntry, error) {
 	entries := make([]ct.LogEntry, len(resp.Entries))
 	for index, entry := range resp.Entries {
 		leafBytes, err := base64.StdEncoding.DecodeString(entry.LeafInput)
+		if err != nil {
+			return nil, err
+		}
 		leaf, err := ct.ReadMerkleTreeLeaf(bytes.NewBuffer(leafBytes))
 		if err != nil {
 			return nil, err
 		}
 		entries[index].Leaf = *leaf
 		chainBytes, err := base64.StdEncoding.DecodeString(entry.ExtraData)
+		if err != nil {
+			return nil, err
+		}
 
 		var chain []ct.ASN1Cert
 		switch leaf.TimestampedEntry.EntryType {
