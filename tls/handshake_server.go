@@ -188,12 +188,18 @@ Curves:
 	}
 
 	hs.hello.vers = c.vers
+
 	hs.hello.random = make([]byte, 32)
-	_, err = io.ReadFull(c.config.rand(), hs.hello.random)
-	if err != nil {
-		c.sendAlert(alertInternalError)
-		return false, err
+	if len(c.config.ServerRandom) == 32 {
+		copy(hs.hello.random, c.config.ServerRandom)
+	} else {
+		_, err := io.ReadFull(c.config.rand(), hs.hello.random)
+		if err != nil {
+			c.sendAlert(alertInternalError)
+			return false, err
+		}
 	}
+
 	hs.hello.secureRenegotiation = hs.clientHello.secureRenegotiation
 	hs.hello.compressionMethod = compressionNone
 	hs.hello.extendedMasterSecret = c.vers >= VersionTLS10 && hs.clientHello.extendedMasterSecret && c.config.ExtendedMasterSecret
