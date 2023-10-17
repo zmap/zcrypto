@@ -564,6 +564,9 @@ func marshalField(out *forkableWriter, v reflect.Value, params fieldParameters) 
 			length:     bodyLen + tags.Len(),
 			isCompound: true,
 		})
+		if err != nil {
+			return
+		}
 	}
 
 	return nil
