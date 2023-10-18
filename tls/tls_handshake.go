@@ -65,8 +65,10 @@ type ServerHello struct {
 	HeartbeatSupported          bool              `json:"heartbeat"`
 	ExtendedRandom              []byte            `json:"extended_random,omitempty"`
 	ExtendedMasterSecret        bool              `json:"extended_master_secret"`
+	NextProtoNeg                bool              `json:"next_protocol_negotiation"`
 	SignedCertificateTimestamps []ParsedAndRawSCT `json:"scts,omitempty"`
 	AlpnProtocol                string            `json:"alpn_protocol,omitempty"`
+	UnknownExtensions           [][]byte          `json:"unknown_extensions,omitempty"`
 }
 
 // SimpleCertificate holds a *x509.Certificate and a []byte for the certificate
@@ -350,6 +352,7 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 		sh.ExtendedRandom = make([]byte, len(m.extendedRandom))
 		copy(sh.ExtendedRandom, m.extendedRandom)
 	}
+	sh.NextProtoNeg = m.nextProtoNeg
 	if len(m.scts) > 0 {
 		for _, rawSCT := range m.scts {
 			var out ParsedAndRawSCT
@@ -364,6 +367,12 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	}
 	sh.ExtendedMasterSecret = m.extendedMasterSecret
 	sh.AlpnProtocol = m.alpnProtocol
+	sh.UnknownExtensions = make([][]byte, len(m.unknownExtensions))
+	for i, extBytes := range m.unknownExtensions {
+		tempBytes := make([]byte, len(extBytes))
+		copy(tempBytes, extBytes)
+		sh.UnknownExtensions[i] = tempBytes
+	}
 	return sh
 }
 
