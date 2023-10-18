@@ -54,12 +54,11 @@ type ParsedAndRawSCT struct {
 }
 
 type ServerHello struct {
-	Version     TLSVersion  `json:"version"`
-	Random      []byte      `json:"random"`
-	SessionID   []byte      `json:"session_id"`
-	CipherSuite CipherSuite `json:"cipher_suite"`
-	// TODO FIXME: Why is this a raw uint8, not a CompressionMethod?
-	CompressionMethod           uint8             `json:"compression_method"`
+	Version                     TLSVersion        `json:"version"`
+	Random                      []byte            `json:"random"`
+	SessionID                   []byte            `json:"session_id"`
+	CipherSuite                 CipherSuite       `json:"cipher_suite"`
+	CompressionMethod           CompressionMethod `json:"compression_method"`
 	OcspStapling                bool              `json:"ocsp_stapling"`
 	TicketSupported             bool              `json:"ticket"`
 	SecureRenegotiation         bool              `json:"secure_renegotiation"`
@@ -342,7 +341,7 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	sh.SessionID = make([]byte, len(m.sessionId))
 	copy(sh.SessionID, m.sessionId)
 	sh.CipherSuite = CipherSuite(m.cipherSuite)
-	sh.CompressionMethod = m.compressionMethod
+	sh.CompressionMethod = CompressionMethod(m.compressionMethod)
 	sh.OcspStapling = m.ocspStapling
 	sh.TicketSupported = m.ticketSupported
 	sh.SecureRenegotiation = m.secureRenegotiation
