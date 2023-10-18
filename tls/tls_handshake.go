@@ -54,20 +54,21 @@ type ParsedAndRawSCT struct {
 }
 
 type ServerHello struct {
-	Version     TLSVersion  `json:"version"`
-	Random      []byte      `json:"random"`
-	SessionID   []byte      `json:"session_id"`
-	CipherSuite CipherSuite `json:"cipher_suite"`
-	// TODO FIXME: Why is this a raw uint8, not a CompressionMethod?
-	CompressionMethod           uint8             `json:"compression_method"`
+	Version                     TLSVersion        `json:"version"`
+	Random                      []byte            `json:"random"`
+	SessionID                   []byte            `json:"session_id"`
+	CipherSuite                 CipherSuite       `json:"cipher_suite"`
+	CompressionMethod           CompressionMethod `json:"compression_method"`
 	OcspStapling                bool              `json:"ocsp_stapling"`
 	TicketSupported             bool              `json:"ticket"`
 	SecureRenegotiation         bool              `json:"secure_renegotiation"`
 	HeartbeatSupported          bool              `json:"heartbeat"`
 	ExtendedRandom              []byte            `json:"extended_random,omitempty"`
 	ExtendedMasterSecret        bool              `json:"extended_master_secret"`
+	NextProtoNeg                bool              `json:"next_protocol_negotiation"`
 	SignedCertificateTimestamps []ParsedAndRawSCT `json:"scts,omitempty"`
 	AlpnProtocol                string            `json:"alpn_protocol,omitempty"`
+	UnknownExtensions           [][]byte          `json:"unknown_extensions,omitempty"`
 }
 
 // SimpleCertificate holds a *x509.Certificate and a []byte for the certificate
@@ -342,7 +343,7 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	sh.SessionID = make([]byte, len(m.sessionId))
 	copy(sh.SessionID, m.sessionId)
 	sh.CipherSuite = CipherSuite(m.cipherSuite)
-	sh.CompressionMethod = m.compressionMethod
+	sh.CompressionMethod = CompressionMethod(m.compressionMethod)
 	sh.OcspStapling = m.ocspStapling
 	sh.TicketSupported = m.ticketSupported
 	sh.SecureRenegotiation = m.secureRenegotiation
@@ -351,6 +352,7 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 		sh.ExtendedRandom = make([]byte, len(m.extendedRandom))
 		copy(sh.ExtendedRandom, m.extendedRandom)
 	}
+	sh.NextProtoNeg = m.nextProtoNeg
 	if len(m.scts) > 0 {
 		for _, rawSCT := range m.scts {
 			var out ParsedAndRawSCT
@@ -365,6 +367,12 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	}
 	sh.ExtendedMasterSecret = m.extendedMasterSecret
 	sh.AlpnProtocol = m.alpnProtocol
+	sh.UnknownExtensions = make([][]byte, len(m.unknownExtensions))
+	for i, extBytes := range m.unknownExtensions {
+		tempBytes := make([]byte, len(extBytes))
+		copy(tempBytes, extBytes)
+		sh.UnknownExtensions[i] = tempBytes
+	}
 	return sh
 }
 
