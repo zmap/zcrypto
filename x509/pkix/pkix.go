@@ -280,6 +280,7 @@ func (n Name) ToRDNSequence() (ret RDNSequence) {
 	ret = n.appendRDNs(ret, n.PostalCode, oidPostalCode)
 	ret = n.appendRDNs(ret, n.Country, oidCountry)
 	ret = n.appendRDNs(ret, n.DomainComponent, oidDomainComponent)
+	ret = n.appendRDNs(ret, n.EmailAddress, oidDNEmailAddress)
 	// EV Components
 	ret = n.appendRDNs(ret, n.JurisdictionLocality, oidJurisdictionLocality)
 	ret = n.appendRDNs(ret, n.JurisdictionProvince, oidJurisdictionProvince)
