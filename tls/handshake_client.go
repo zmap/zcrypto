@@ -319,14 +319,28 @@ func (c *Conn) clientHandshake() error {
 			return errors.New("tls: either ServerName or InsecureSkipVerify must be specified in the tls.Config")
 		}
 
+		supportedPoints := []uint8{pointFormatUncompressed}
+		if c.config.SupportedPoints != nil {
+			supportedPoints = c.config.SupportedPoints
+		}
+		oscpStapling := true
+		if c.config.NoOcspStapling {
+			oscpStapling = false
+		}
+
+		compressionMethods := []uint8{compressionNone}
+		if c.config.CompressionMethods != nil {
+			compressionMethods = c.config.CompressionMethods
+		}
+
 		hello = &clientHelloMsg{
 			vers:                 c.config.maxVersion(),
-			compressionMethods:   []uint8{compressionNone},
+			compressionMethods:   compressionMethods,
 			random:               make([]byte, 32),
-			ocspStapling:         true,
+			ocspStapling:         oscpStapling,
 			serverName:           c.config.ServerName,
 			supportedCurves:      c.config.curvePreferences(),
-			supportedPoints:      []uint8{pointFormatUncompressed},
+			supportedPoints:      supportedPoints,
 			nextProtoNeg:         len(c.config.NextProtos) > 0,
 			secureRenegotiation:  true,
 			alpnProtocols:        c.config.NextProtos,

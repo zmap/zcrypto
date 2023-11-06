@@ -438,6 +438,17 @@ type Config struct {
 	// supported for ECDHE key exchanges
 	ExplicitCurvePreferences bool
 
+	// EC Point Formats. Specifies what compressed points the client supports
+	SupportedPoints []uint8
+
+	// Online Certificate Status Protocol (OCSP) stapling,
+	// formally knows as TLS Certificate Status Request.
+	// If this option enabled, the certificate status won't be checked
+	NoOcspStapling bool
+
+	// Specifies what compression methods the client supports
+	CompressionMethods []uint8
+
 	// If enabled, specifies the signature and hash algorithms to be accepted by
 	// a server, or sent by a client
 	SignatureAndHashes []SigAndHash
