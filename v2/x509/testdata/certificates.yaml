@@ -1,0 +1,4 @@
+certificates:
+  - name: "dadrian.io.pem"
+    sha256: "cebb0a86d8382fda754269c75363129143335d76e5cd0ce97ec439ed58e22a76"
+
