@@ -1,0 +1,8 @@
+SEQUENCE {
+  SEQUENCE {
+    [0] {
+      INTEGER { 2 }
+    }
+    INTEGER { `00c71e983fe9f9fc9ece65efe1cae3857e` }
+  }
+}
