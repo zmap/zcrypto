@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/x509"
 )
 
@@ -853,7 +854,7 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 	certs := make([]*x509.Certificate, len(certificates))
 	for i, asn1Data := range certificates {
 		cert, err := x509.ParseCertificate(asn1Data)
-		if err != nil {
+		if err != nil && (!asn1.AllowPermissiveParsing || !strings.HasPrefix(err.Error(), "permissive")) {
 			c.sendAlert(alertBadCertificate)
 			return errors.New("tls: failed to parse certificate from server: " + err.Error())
 		}

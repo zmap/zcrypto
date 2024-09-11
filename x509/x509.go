@@ -1668,6 +1668,9 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 	out.SubjectUniqueId = in.TBSCertificate.SubjectUniqueId
 
 	out.ExtensionsMap = make(map[string]pkix.Extension, len(in.TBSCertificate.Extensions))
+
+	// collect all permissive parse errors for extensions
+	var permissiveErrors []error
 	for _, e := range in.TBSCertificate.Extensions {
 		out.Extensions = append(out.Extensions, e)
 		out.ExtensionsMap[e.Id.String()] = e
@@ -1706,6 +1709,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 					out.URIs, out.DirectoryNames, out.EDIPartyNames,
 					out.IPAddresses, out.RegisteredIDs, out.FailedToParseNames, err = parseGeneralNames(e.Value)
 				if err != nil {
+					if asn1.AllowPermissiveParsing {
+						permissiveErrors = append(permissiveErrors, err)
+						continue
+					}
 					return nil, err
 				}
 
@@ -1719,6 +1726,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 					out.IANURIs, out.IANDirectoryNames, out.IANEDIPartyNames,
 					out.IANIPAddresses, out.IANRegisteredIDs, out.FailedToParseNames, err = parseGeneralNames(e.Value)
 				if err != nil {
+					if asn1.AllowPermissiveParsing {
+						permissiveErrors = append(permissiveErrors, err)
+						continue
+					}
 					return nil, err
 				}
 
@@ -1743,6 +1754,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 
 				var constraints nameConstraints
 				_, err := asn1.Unmarshal(e.Value, &constraints)
+				if err != nil && asn1.AllowPermissiveParsing {
+					permissiveErrors = append(permissiveErrors, err)
+					continue
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -1762,6 +1777,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 					case 4:
 						var rawdn pkix.RDNSequence
 						if _, err := asn1.Unmarshal(subtree.Value.Bytes, &rawdn); err != nil {
+							if asn1.AllowPermissiveParsing {
+								permissiveErrors = append(permissiveErrors, err)
+								continue
+							}
 							return out, err
 						}
 						var dn pkix.Name
@@ -1771,6 +1790,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 						var ediName pkix.EDIPartyName
 						_, err = asn1.UnmarshalWithParams(subtree.Value.FullBytes, &ediName, "tag:5")
 						if err != nil {
+							if asn1.AllowPermissiveParsing {
+								permissiveErrors = append(permissiveErrors, err)
+								continue
+							}
 							return out, err
 						}
 						out.PermittedEdiPartyNames = append(out.PermittedEdiPartyNames, GeneralSubtreeEdi{Data: ediName, Max: subtree.Max, Min: subtree.Min})
@@ -1793,6 +1816,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 						var id asn1.ObjectIdentifier
 						_, err = asn1.UnmarshalWithParams(subtree.Value.FullBytes, &id, "tag:8")
 						if err != nil {
+							if asn1.AllowPermissiveParsing {
+								permissiveErrors = append(permissiveErrors, err)
+								continue
+							}
 							return out, err
 						}
 						out.PermittedRegisteredIDs = append(out.PermittedRegisteredIDs, GeneralSubtreeOid{Data: id, Max: subtree.Max, Min: subtree.Min})
@@ -1809,6 +1836,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 					case 4:
 						var rawdn pkix.RDNSequence
 						if _, err := asn1.Unmarshal(subtree.Value.Bytes, &rawdn); err != nil {
+							if asn1.AllowPermissiveParsing {
+								permissiveErrors = append(permissiveErrors, err)
+								continue
+							}
 							return out, err
 						}
 						var dn pkix.Name
@@ -1818,6 +1849,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 						var ediName pkix.EDIPartyName
 						_, err = asn1.Unmarshal(subtree.Value.Bytes, &ediName)
 						if err != nil {
+							if asn1.AllowPermissiveParsing {
+								permissiveErrors = append(permissiveErrors, err)
+								continue
+							}
 							return out, err
 						}
 						out.ExcludedEdiPartyNames = append(out.ExcludedEdiPartyNames, GeneralSubtreeEdi{Data: ediName, Max: subtree.Max, Min: subtree.Min})
@@ -1840,6 +1875,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 						var id asn1.ObjectIdentifier
 						_, err = asn1.Unmarshal(subtree.Value.Bytes, &id)
 						if err != nil {
+							if asn1.AllowPermissiveParsing {
+								permissiveErrors = append(permissiveErrors, err)
+								continue
+							}
 							return out, err
 						}
 						out.ExcludedRegisteredIDs = append(out.ExcludedRegisteredIDs, GeneralSubtreeOid{Data: id, Max: subtree.Max, Min: subtree.Min})
@@ -1863,6 +1902,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 
 				var cdp []distributionPoint
 				_, err := asn1.Unmarshal(e.Value, &cdp)
+				if err != nil && asn1.AllowPermissiveParsing {
+					permissiveErrors = append(permissiveErrors, err)
+					continue
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -1883,6 +1926,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 					for len(dpName) > 0 {
 						dpName, err = asn1.Unmarshal(dpName, &n)
 						if err != nil {
+							if asn1.AllowPermissiveParsing {
+								permissiveErrors = append(permissiveErrors, err)
+								continue
+							}
 							return nil, err
 						}
 						if n.Tag == 6 {
@@ -1897,6 +1944,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				var a authKeyId
 				_, err = asn1.Unmarshal(e.Value, &a)
 				if err != nil {
+					if asn1.AllowPermissiveParsing {
+						permissiveErrors = append(permissiveErrors, err)
+						continue
+					}
 					return nil, err
 				}
 				out.AuthorityKeyId = a.Id
@@ -1934,6 +1985,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				// RFC 5280, 4.2.1.2
 				var keyid []byte
 				_, err = asn1.Unmarshal(e.Value, &keyid)
+				if err != nil && asn1.AllowPermissiveParsing {
+					permissiveErrors = append(permissiveErrors, err)
+					continue
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -1944,6 +1999,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				// RFC 5280 4.2.1.4: Certificate Policies
 				var policies []policyInformation
 				if _, err = asn1.Unmarshal(e.Value, &policies); err != nil {
+					if asn1.AllowPermissiveParsing {
+						permissiveErrors = append(permissiveErrors, err)
+						continue
+					}
 					return nil, err
 				}
 				out.PolicyIdentifiers = make([]asn1.ObjectIdentifier, len(policies))
@@ -2027,6 +2086,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 			// RFC 5280 4.2.2.1: Authority Information Access
 			var aia []authorityInfoAccess
 			if _, err = asn1.Unmarshal(e.Value, &aia); err != nil {
+				if asn1.AllowPermissiveParsing {
+					permissiveErrors = append(permissiveErrors, err)
+					continue
+				}
 				return nil, err
 			}
 
@@ -2043,6 +2106,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 			}
 		} else if e.Id.Equal(oidExtensionSignedCertificateTimestampList) {
 			err := parseSignedCertificateTimestampList(out, e)
+			if err != nil && asn1.AllowPermissiveParsing {
+				permissiveErrors = append(permissiveErrors, err)
+				continue
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -2058,6 +2125,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 		} else if e.Id.Equal(oidBRTorServiceDescriptor) {
 			descs, err := parseTorServiceDescriptorSyntax(e)
 			if err != nil {
+				if asn1.AllowPermissiveParsing {
+					permissiveErrors = append(permissiveErrors, err)
+					continue
+				}
 				return nil, err
 			}
 			out.TorServiceDescriptors = descs
@@ -2065,6 +2136,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 			cabf := CABFOrganizationIDASN{}
 			_, err := asn1.Unmarshal(e.Value, &cabf)
 			if err != nil {
+				if asn1.AllowPermissiveParsing {
+					permissiveErrors = append(permissiveErrors, err)
+					continue
+				}
 				return nil, err
 			}
 			out.CABFOrganizationIdentifier = &CABFOrganizationIdentifier{
@@ -2077,10 +2152,18 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 			rawStatements := QCStatementsASN{}
 			_, err := asn1.Unmarshal(e.Value, &rawStatements.QCStatements)
 			if err != nil {
+				if asn1.AllowPermissiveParsing {
+					permissiveErrors = append(permissiveErrors, err)
+					continue
+				}
 				return nil, err
 			}
 			qcStatements := QCStatements{}
 			if err := qcStatements.Parse(&rawStatements); err != nil {
+				if asn1.AllowPermissiveParsing {
+					permissiveErrors = append(permissiveErrors, err)
+					continue
+				}
 				return nil, err
 			}
 			out.QCStatements = &qcStatements
@@ -2089,6 +2172,10 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 		//if e.Critical {
 		//	return out, UnhandledCriticalExtension{e.Id}
 		//}
+	}
+
+	if len(permissiveErrors) != 0 {
+		return out, fmt.Errorf("permissive: %v", errors.Join(permissiveErrors...))
 	}
 
 	return out, nil
