@@ -2,11 +2,14 @@ package x509
 
 import (
 	"fmt"
+	"math/big"
 	"os"
 	"path"
 	"testing"
 
 	"github.com/zmap/zcrypto/v2/pem"
+	"github.com/zmap/zcrypto/v2/pkg/must"
+	"github.com/zmap/zcrypto/v2/zcryptobyte"
 	"golang.org/x/crypto/cryptobyte"
 	"gopkg.in/yaml.v3"
 	"gotest.tools/assert"
@@ -18,8 +21,10 @@ type Manifest struct {
 }
 
 type CertificateTestCase struct {
-	Name      string `yaml:"name"`
-	SHA256Hex string `yaml:"sha256"`
+	Name            string `yaml:"name"`
+	SHA256Hex       string `yaml:"sha256"`
+	RawVersion      string `yaml:"RawVersion"`
+	RawSerialNumber string `yaml:"RawSerialNumber"`
 }
 
 func TestParseReal(t *testing.T) {
@@ -49,22 +54,47 @@ func TestParseReal(t *testing.T) {
 			// than the total length.
 			totalRawLen := len(c.RawTBSCertificate) + len(c.RawSignatureAlgorithm) + len(c.RawSignature)
 			assert.Check(t, cmp.Equal(len(b)-4, totalRawLen))
+
+			if testcase.RawVersion != "" {
+				assert.DeepEqual(t, must.HexDecodeString(testcase.RawVersion), []byte(c.TBSCertificate.RawVersion))
+			}
+			if testcase.RawSerialNumber != "" {
+				assert.DeepEqual(t, must.HexDecodeString(testcase.RawSerialNumber), []byte(c.TBSCertificate.RawSerialNumber))
+			}
 		})
 	}
 }
 
 func TestParseVersion(t *testing.T) {
-	standardVersions := []int64{0, 1, 2}
+	standardVersions := []int64{0, 1, 5}
 	for i, v := range standardVersions {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			var buf [3]byte
-			b := cryptobyte.NewBuilder(buf[:])
+			// TODO(dadrian)[2024-10-22]: This should use zcryptobyte, not cryptobyte.
+			b := cryptobyte.NewBuilder(buf[:0])
 			b.AddASN1Int64WithTag(v, 0)
 			enc := b.BytesOrPanic()
 			v, raw, err := ParseVersion(enc)
 			assert.NilError(t, err, "ParseVersion(%X) returned an error %s", enc, err)
-			assert.Check(t, cmp.DeepEqual(raw, enc))
-			assert.Check(t, cmp.Equal(v, int64(enc[1])))
+			assert.Check(t, cmp.DeepEqual(raw, zcryptobyte.String(enc)))
+			assert.Check(t, cmp.Equal(*v, standardVersions[i]))
+		})
+	}
+}
+
+func TestParseSerialNumber(t *testing.T) {
+	numbers := []*big.Int{big.NewInt(-1), big.NewInt(42), big.NewInt(20231201)}
+	for i, v := range numbers {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			var buf [9]byte
+			// TODO(dadrian)[2024-10-22]: This should use zcryptobyte, not cryptobyte.
+			b := cryptobyte.NewBuilder(buf[:0])
+			b.AddASN1BigInt(v)
+			enc := b.BytesOrPanic()
+			serial, raw, err := ParseSerialNumber(enc)
+			assert.NilError(t, err, "ParserSerialNumber(%X) returned an error %s", enc, err)
+			assert.Check(t, cmp.DeepEqual(raw, zcryptobyte.String(enc)))
+			assert.Check(t, cmp.Equal((*big.Int)(serial).Cmp(v), 0))
 		})
 	}
 }

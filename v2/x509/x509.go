@@ -14,7 +14,7 @@
 package x509
 
 import (
-	"errors"
+	"math/big"
 
 	"github.com/zmap/zcrypto/v2/zcryptobyte"
 	"github.com/zmap/zcrypto/v2/zcryptobyte/asn1"
@@ -133,10 +133,15 @@ func parseTBSCertificate(in zcryptobyte.String, out *zcryptobyte.String, parsed 
 		return
 	}
 
-	err = parseVersion(it, &parsed.RawVersion, &parsed.Version)
+	err = parseVersion(&it, &parsed.RawVersion, &parsed.Version)
 	if err != nil {
 		err = InvalidASN1("version", err)
 		return
+	}
+
+	err = parseSerialNumber(&it, &parsed.RawSerialNumber, &parsed.SerialNumber)
+	if err != nil {
+		err = InvalidASN1("serialNumber", err)
 	}
 
 	return
@@ -167,43 +172,64 @@ func asn1Signed(out *int64, n []byte) bool {
 	return true
 }
 
-func readASN1BigIntegerAsBytes(out *zcryptobyte.String, in zcryptobyte.String) error {
-	return errors.New("unimplemented")
+var bigOne = big.NewInt(1)
+
+func readASN1BigIntegerAsBytes(in zcryptobyte.String, out *big.Int) (err error) {
+	if len(in) < 1 {
+		return asn1.ErrInvalidInteger
+	}
+	if in[0]&0x80 == 0x80 {
+		// Negative number.
+		neg := make([]byte, len(in))
+		for i, b := range in {
+			neg[i] = ^b
+		}
+		out.SetBytes(neg)
+		out.Add(out, bigOne)
+		out.Neg(out)
+	} else {
+		out.SetBytes(in)
+	}
+	return nil
 }
 
-func parseVersion(in zcryptobyte.String, out *zcryptobyte.String, parsed *int64) (err error) {
+func parseVersion(in *zcryptobyte.String, out *zcryptobyte.String, parsed *int64) (err error) {
 	var data zcryptobyte.String
 	var tag asn1.Tag
-	var n uint32
 	// TODO(dadrian)[2024-10-21]: Move integer parsing to ZCryptobyte?
-	n, err = in.ReadAnyASN1(out, nil, &data, &tag)
+	_, err = in.ReadAnyASN1(out, nil, &data, &tag)
 	if err != nil {
 		return err
 	}
 	if !checkASN1Integer(data) || !asn1Signed(parsed, (data)) {
 		return asn1.ErrInvalidInteger
 	}
-	if n > 8 {
-		panic("fuck")
-	}
 	// Turn `out` into an INTEGER
 	return nil
 }
 
-// ParseVersion returns an int64 representing the Version field in the
-// tbsCertificate sequence.
-func ParseVersion(b []byte) (v int64, raw []byte, err error) {
-	return 0, nil, errors.New("unimplemented")
+func ParseVersion(in zcryptobyte.String) (parsed *int64, raw zcryptobyte.String, err error) {
+	var v int64
+	err = parseVersion(&in, &raw, &v)
+	return &v, raw, err
 }
 
-func ParseSerialNumber(b []byte) (serial []byte, raw []byte, err error) {
-	var out zcryptobyte.String
-	err = readASN1BigIntegerAsBytes(&out, b)
+func parseSerialNumber(in *zcryptobyte.String, out *zcryptobyte.String, parsed *CertificateSerialNumber) (err error) {
+	var data zcryptobyte.String
+	var tag asn1.Tag
+	_, err = in.ReadAnyASN1(out, nil, &data, &tag)
 	if err != nil {
-		return nil, out, err
+		return err
 	}
-	serial = out[1:]
-	return serial, out, err
+	// TODO(dadrian)[2024-10-22]: Move big integer parsing to ZCryptobyte?
+	err = readASN1BigIntegerAsBytes(data, (*big.Int)(parsed))
+	return err
+}
+
+func ParseSerialNumber(in zcryptobyte.String) (parsed *CertificateSerialNumber, raw zcryptobyte.String, err error) {
+	var v CertificateSerialNumber
+	err = parseSerialNumber(&in, &raw, &v)
+	return &v, raw, err
 }
 
 type AlgorithmIdentifier struct {
@@ -212,7 +238,7 @@ type AlgorithmIdentifier struct {
 }
 
 type BitString []byte
-type CertificateSerialNumber []byte
+type CertificateSerialNumber big.Int
 type Name []byte
 type Validity []byte
 type SubjectPublicKeyInfo []byte
