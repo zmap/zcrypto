@@ -44,47 +44,44 @@ type Certificate struct {
 	Signature    BitString
 }
 
-func ParseCertificate(b []byte) (*Certificate, error) {
-	var c Certificate
+func ParseCertificate(b []byte) (n uint32, c *Certificate, err error) {
+	c = &Certificate{}
 	s := zcryptobyte.String(b)
 
 	// A CERTFIICATE is a SEQUENCE, so pull off the header and get a pointer to
 	// the start of the contents of the sequence.
 	var contents zcryptobyte.String
 	var tag asn1.Tag
-	var n uint32
-	var err error
 
 	var certificate zcryptobyte.String
-	var totalLen uint32
 	n, err = s.ReadAnyASN1(&certificate, nil, &contents, &tag)
-	totalLen += n
 	if err != nil {
-		return &c, err
+		return
 	}
 
 	var tbsCertificate, algorithmIdentifier, signature zcryptobyte.String
-	n, err = contents.ReadAnyASN1(&tbsCertificate, nil, nil, &tag)
-	totalLen += n
+	_, err = contents.ReadAnyASN1(&tbsCertificate, nil, nil, &tag)
 	if err != nil {
-		return &c, InvalidASN1("tbsCertificate", err)
+		err = InvalidASN1("tbsCertificate", err)
+		return
 	}
-	n, err = contents.ReadAnyASN1(&algorithmIdentifier, nil, nil, &tag)
-	totalLen += n
+	_, err = contents.ReadAnyASN1(&algorithmIdentifier, nil, nil, &tag)
 	if err != nil {
-		return &c, InvalidASN1("algorithmIdentifier", err)
+		err = InvalidASN1("algorithmIdentifier", err)
+		return
 	}
-	n, err = contents.ReadAnyASN1(&signature, nil, nil, &tag)
-	totalLen += n
+	_, err = contents.ReadAnyASN1(&signature, nil, nil, &tag)
 	if err != nil {
-		return &c, InvalidASN1("signature", err)
+		err = InvalidASN1("signature", err)
+		return
 	}
 
 	c.RawTBSCertificate = tbsCertificate
 	c.RawSignatureAlgorithm = algorithmIdentifier
 	c.RawSignature = signature
 
-	return &c, nil
+	err = parseTBSCertificate(tbsCertificate, nil, &c.TBSCertificate)
+	return
 }
 
 // TBSCertificate  ::=  SEQUENCE  {
@@ -114,36 +111,39 @@ type TBSCertificate struct {
 	SubjectUniqueID      UniqueIdentifier
 	Extensions           Extensions
 
-	RawVersion              []byte
-	RawSerialNumber         []byte
-	RawSignature            []byte
-	RawIssuer               []byte
-	RawValidity             []byte
-	RawSubject              []byte
-	RawSubjectPublicKeyInfo []byte
-	RawIssuerUniqueID       []byte
-	RawSubjectUniqueID      []byte
-	RawExtensions           []byte
+	RawVersion              zcryptobyte.String
+	RawSerialNumber         zcryptobyte.String
+	RawSignature            zcryptobyte.String
+	RawIssuer               zcryptobyte.String
+	RawValidity             zcryptobyte.String
+	RawSubject              zcryptobyte.String
+	RawSubjectPublicKeyInfo zcryptobyte.String
+	RawIssuerUniqueID       zcryptobyte.String
+	RawSubjectUniqueID      zcryptobyte.String
+	RawExtensions           zcryptobyte.String
+}
+
+func parseTBSCertificate(in zcryptobyte.String, out *zcryptobyte.String, parsed *TBSCertificate) (err error) {
+	var it zcryptobyte.String
+	var tbsHeader zcryptobyte.String
+	var tbsTag asn1.Tag
+	_, err = in.ReadAnyASN1(nil, &tbsHeader, &it, &tbsTag)
+	if err != nil {
+		err = InvalidASN1("tbsCertificate:SEQUENCE", err)
+		return
+	}
+
+	err = parseVersion(it, &parsed.RawVersion, &parsed.Version)
+	if err != nil {
+		err = InvalidASN1("version", err)
+		return
+	}
+
+	return
 }
 
 func ParseTBSCertificate(b []byte) (*TBSCertificate, error) {
-	var tbs TBSCertificate
-	var err error
-
-	it := b
-
-	tbs.Version, tbs.RawVersion, err = ParseVersion(it)
-	if err != nil {
-		return nil, err
-	}
-	it = it[len(tbs.RawVersion):]
-
-	tbs.SerialNumber, tbs.RawSerialNumber, err = ParseSerialNumber(it)
-	if err != nil {
-		return nil, err
-	}
-
-	return &tbs, nil
+	panic("unimplemented")
 }
 
 func checkASN1Integer(b []byte) bool {
@@ -167,31 +167,33 @@ func asn1Signed(out *int64, n []byte) bool {
 	return true
 }
 
-func readASN1IntegerWithTag(out *zcryptobyte.String, in zcryptobyte.String, tag asn1.Tag) (v int64, err error) {
-	// TODO(dadrian)[2024-08-04]: The validation methods should propagate the
-	// real ASN.1 error up, instead of inferring it on the next line.
-	_, err = in.ReadTaggedASN1(nil, out, tag)
-	if err != nil {
-		return 0, err
-	}
-	ok := checkASN1Integer(*out) && asn1Signed(&v, *out)
-	if !ok {
-		return 0, asn1.ErrInvalidInteger
-	}
-	return
-}
-
 func readASN1BigIntegerAsBytes(out *zcryptobyte.String, in zcryptobyte.String) error {
 	return errors.New("unimplemented")
+}
+
+func parseVersion(in zcryptobyte.String, out *zcryptobyte.String, parsed *int64) (err error) {
+	var data zcryptobyte.String
+	var tag asn1.Tag
+	var n uint32
+	// TODO(dadrian)[2024-10-21]: Move integer parsing to ZCryptobyte?
+	n, err = in.ReadAnyASN1(out, nil, &data, &tag)
+	if err != nil {
+		return err
+	}
+	if !checkASN1Integer(data) || !asn1Signed(parsed, (data)) {
+		return asn1.ErrInvalidInteger
+	}
+	if n > 8 {
+		panic("fuck")
+	}
+	// Turn `out` into an INTEGER
+	return nil
 }
 
 // ParseVersion returns an int64 representing the Version field in the
 // tbsCertificate sequence.
 func ParseVersion(b []byte) (v int64, raw []byte, err error) {
-	s := zcryptobyte.String(b)
-	var rawVersion zcryptobyte.String
-	v, err = readASN1IntegerWithTag(&rawVersion, s, asn1.Tag(0))
-	return v, rawVersion, err
+	return 0, nil, errors.New("unimplemented")
 }
 
 func ParseSerialNumber(b []byte) (serial []byte, raw []byte, err error) {

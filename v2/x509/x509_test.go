@@ -36,13 +36,13 @@ func TestParseReal(t *testing.T) {
 			assert.NilError(t, err)
 			b, err := pem.DecodeContents(pemBytes)
 			assert.NilError(t, err)
-			c, err := ParseCertificate(b)
-			assert.NilError(t, err)
+			n, c, err := ParseCertificate(b)
 			assert.NilError(t, err)
 
 			assert.Check(t, len(c.RawTBSCertificate) > 0)
 			assert.Check(t, len(c.RawSignatureAlgorithm) > 0)
 			assert.Check(t, len(c.RawSignature) > 0)
+			assert.Check(t, cmp.Equal(uint32(len(b)), n))
 
 			// The certificate should have a 4 byte "prefix" describing the core
 			// SEQUENCE, so the sum of the remaining lengths should be 4 less
