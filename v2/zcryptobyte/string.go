@@ -16,6 +16,8 @@ package zcryptobyte
 import (
 	"errors"
 
+	encoding_asn1 "encoding/asn1"
+
 	"github.com/zmap/zcrypto/v2/zcryptobyte/asn1"
 )
 
@@ -85,15 +87,18 @@ func (s *String) ReadAnyASN1(out *String, header, data *String, tag *asn1.Tag) (
 }
 
 func (s *String) ReadTaggedASN1(out *String, data *String, tag asn1.Tag) (n uint32, err error) {
+	input := *s
 	var actual asn1.Tag
 	totalLen, headerLen, dataLen, err := s.readAnyASN1(out, &actual)
 	if err != nil {
 		return totalLen, err
 	}
+	if data != nil {
+		*data = input[headerLen : headerLen+dataLen]
+	}
 	if actual != tag {
 		return totalLen, asn1.MismatchedTag(tag, actual)
 	}
-	*data = (*out)[headerLen : headerLen+dataLen]
 	return totalLen, nil
 }
 
@@ -185,4 +190,79 @@ func (s *String) readAnyASN1(out *String, outTag *asn1.Tag) (totalLen, headerLen
 		return 0, 0, 0, ErrUnderflow
 	}
 	return
+}
+
+func (s *String) readBase128Int(out *int) bool {
+	ret := 0
+	for i := 0; len(*s) > 0; i++ {
+		if i == 5 {
+			return false
+		}
+		// Avoid overflowing int on a 32-bit platform.
+		// We don't want different behavior based on the architecture.
+		if ret >= 1<<(31-7) {
+			return false
+		}
+		ret <<= 7
+		b := s.read(1)[0]
+
+		// ITU-T X.690, section 8.19.2:
+		// The subidentifier shall be encoded in the fewest possible octets,
+		// that is, the leading octet of the subidentifier shall not have the value 0x80.
+		if i == 0 && b == 0x80 {
+			return false
+		}
+
+		ret |= int(b & 0x7f)
+		if b&0x80 == 0 {
+			*out = ret
+			return true
+		}
+	}
+	return false // truncated
+}
+
+// ReadObjectIdentifier decodes an ASN.1 OBJECT IDENTIFIER from the input into out
+// and returns whether the operation succeeded.
+func (s *String) ReadObjectIdentifier(out, data *String, parsed *encoding_asn1.ObjectIdentifier) error {
+	var bytes String
+	if _, err := s.ReadTaggedASN1(out, &bytes, asn1.OBJECT_IDENTIFIER); err != nil {
+		return err
+	}
+	if len(bytes) == 0 {
+		return asn1.ErrUnderflow
+	}
+	if data != nil {
+		*data = bytes
+	}
+
+	// In the worst case, we get two elements from the first byte (which is
+	// encoded differently) and then every varint is a single byte long.
+	components := make([]int, len(bytes)+1)
+
+	// The first varint is 40*value1 + value2:
+	// According to this packing, value1 can take the values 0, 1 and 2 only.
+	// When value1 = 0 or value1 = 1, then value2 is <= 39. When value1 = 2,
+	// then there are no restrictions on value2.
+	var v int
+	if !bytes.readBase128Int(&v) {
+		return asn1.ErrInvalidInteger
+	}
+	if v < 80 {
+		components[0] = v / 40
+		components[1] = v % 40
+	} else {
+		components[0] = 2
+		components[1] = v - 80
+	}
+
+	i := 2
+	for ; len(bytes) > 0; i++ {
+		if !bytes.readBase128Int(&v) {
+			return asn1.ErrInvalidInteger
+		}
+		components[i] = v
+	}
+	*parsed = components[:i]
+	return nil
 }

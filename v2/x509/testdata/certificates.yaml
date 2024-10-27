@@ -3,4 +3,6 @@ certificates:
     sha256: "cebb0a86d8382fda754269c75363129143335d76e5cd0ce97ec439ed58e22a76"
     RawVersion: "a003020102"
     RawSerialNumber: "021100c71e983fe9f9fc9ece65efe1cae3857e"
+    RawTBSSignatureAlgorithmOID: "2a8648ce3d040302"
+    TBSSignatureAlgorithmOID: [1,2,840,10045,4,3,2]
 

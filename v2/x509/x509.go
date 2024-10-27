@@ -16,6 +16,8 @@ package x509
 import (
 	"math/big"
 
+	encoding_asn1 "encoding/asn1"
+
 	"github.com/zmap/zcrypto/v2/zcryptobyte"
 	"github.com/zmap/zcrypto/v2/zcryptobyte/asn1"
 )
@@ -102,7 +104,7 @@ func ParseCertificate(b []byte) (n uint32, c *Certificate, err error) {
 type TBSCertificate struct {
 	Version              int64
 	SerialNumber         CertificateSerialNumber
-	Signature            AlgorithmIdentifier
+	SignatureAlgorithm   AlgorithmIdentifier
 	Issuer               Name
 	Validity             Validity
 	Subject              Name
@@ -142,6 +144,11 @@ func parseTBSCertificate(in zcryptobyte.String, out *zcryptobyte.String, parsed 
 	err = parseSerialNumber(&it, &parsed.RawSerialNumber, &parsed.SerialNumber)
 	if err != nil {
 		err = InvalidASN1("serialNumber", err)
+	}
+
+	err = parseAlgorithmIdentifier(&it, &parsed.RawSignature, &parsed.SignatureAlgorithm)
+	if err != nil {
+		err = InvalidASN1("algorithmIdentifier", err)
 	}
 
 	return
@@ -232,9 +239,32 @@ func ParseSerialNumber(in zcryptobyte.String) (parsed *CertificateSerialNumber, 
 	return &v, raw, err
 }
 
+// AlgorithmIdentifier holds the RFC 5280 SEQUENCE AlgorithmIdentifier, which
+// consists of an OID and an optional set of opaque parameters.
+//
+//	AlgorithmIdentifier  ::=  SEQUENCE  {
+//	  algorithm               OBJECT IDENTIFIER,
+//	  parameters              ANY DEFINED BY algorithm OPTIONAL  }
 type AlgorithmIdentifier struct {
-	AlgorithmIdentifier ObjectIdentifier
-	Parameters          Parameters
+	ObjectIdentifier encoding_asn1.ObjectIdentifier
+	Parameters       Parameters
+}
+
+func parseAlgorithmIdentifier(in *zcryptobyte.String, out *zcryptobyte.String, parsed *AlgorithmIdentifier) (err error) {
+	var seq zcryptobyte.String
+	var tag asn1.Tag
+	_, err = in.ReadAnyASN1(out, nil, &seq, &tag)
+	if err != nil {
+		return err
+	}
+	var oid zcryptobyte.String
+	var rawOid zcryptobyte.String
+	err = seq.ReadObjectIdentifier(&oid, &rawOid, &parsed.ObjectIdentifier)
+	if err != nil {
+		return err
+	}
+	// TODO(dadrian)[2024-10-27]: Parse Parameters
+	return nil
 }
 
 type BitString []byte

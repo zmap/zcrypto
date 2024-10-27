@@ -20,6 +20,11 @@ import (
 
 type Tag uint8
 
+const (
+	classConstructed     = 0x20
+	classContextSpecific = 0x80
+)
+
 var ErrHeaderUnderflow = errors.New("underflow in header (missing header bytes)")
 var ErrMultiByteTag = errors.New("multibyte tags are unsupported")
 var ErrUnderflow = errors.New("underflow, missing data bytes")
@@ -44,3 +49,22 @@ func MismatchedTag(expected, actual Tag) error {
 		Actual:   actual,
 	}
 }
+
+const (
+	BOOLEAN           = Tag(1)
+	INTEGER           = Tag(2)
+	BIT_STRING        = Tag(3)
+	OCTET_STRING      = Tag(4)
+	NULL              = Tag(5)
+	OBJECT_IDENTIFIER = Tag(6)
+	ENUM              = Tag(10)
+	UTF8String        = Tag(12)
+	SEQUENCE          = Tag(16 | classConstructed)
+	SET               = Tag(17 | classConstructed)
+	PrintableString   = Tag(19)
+	T61String         = Tag(20)
+	IA5String         = Tag(22)
+	UTCTime           = Tag(23)
+	GeneralizedTime   = Tag(24)
+	GeneralString     = Tag(27)
+)

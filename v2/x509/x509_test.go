@@ -21,10 +21,12 @@ type Manifest struct {
 }
 
 type CertificateTestCase struct {
-	Name            string `yaml:"name"`
-	SHA256Hex       string `yaml:"sha256"`
-	RawVersion      string `yaml:"RawVersion"`
-	RawSerialNumber string `yaml:"RawSerialNumber"`
+	Name                        string `yaml:"name"`
+	SHA256Hex                   string `yaml:"sha256"`
+	RawVersion                  string `yaml:"RawVersion"`
+	RawSerialNumber             string `yaml:"RawSerialNumber"`
+	TBSSignatureAlgorithmOID    []int  `yaml:"TBSSignatureAlgorithmOID"`
+	RawTBSSignatureAlgorithmOID string `yaml:"RawTBSSignatureAlgorithmOID"`
 }
 
 func TestParseReal(t *testing.T) {
@@ -60,6 +62,9 @@ func TestParseReal(t *testing.T) {
 			}
 			if testcase.RawSerialNumber != "" {
 				assert.DeepEqual(t, must.HexDecodeString(testcase.RawSerialNumber), []byte(c.TBSCertificate.RawSerialNumber))
+			}
+			if len(testcase.TBSSignatureAlgorithmOID) > 0 {
+				assert.DeepEqual(t, testcase.TBSSignatureAlgorithmOID, []int(c.TBSCertificate.SignatureAlgorithm.ObjectIdentifier))
 			}
 		})
 	}
