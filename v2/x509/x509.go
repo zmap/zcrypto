@@ -129,7 +129,7 @@ func parseTBSCertificate(in zcryptobyte.String, out *zcryptobyte.String, parsed 
 	var it zcryptobyte.String
 	var tbsHeader zcryptobyte.String
 	var tbsTag asn1.Tag
-	_, err = in.ReadAnyASN1(nil, &tbsHeader, &it, &tbsTag)
+	_, err = in.ReadAnyASN1(out, &tbsHeader, &it, &tbsTag)
 	if err != nil {
 		err = InvalidASN1("tbsCertificate:SEQUENCE", err)
 		return
@@ -144,11 +144,54 @@ func parseTBSCertificate(in zcryptobyte.String, out *zcryptobyte.String, parsed 
 	err = parseSerialNumber(&it, &parsed.RawSerialNumber, &parsed.SerialNumber)
 	if err != nil {
 		err = InvalidASN1("serialNumber", err)
+		return
 	}
 
 	err = parseAlgorithmIdentifier(&it, &parsed.RawSignature, &parsed.SignatureAlgorithm)
 	if err != nil {
 		err = InvalidASN1("algorithmIdentifier", err)
+		return
+	}
+
+	err = parseName(&it, &parsed.RawIssuer, &parsed.Issuer)
+	if err != nil {
+		err = InvalidASN1("issuer", err)
+		return
+	}
+
+	err = parseValidity(&it, &parsed.RawValidity, &parsed.Validity)
+	if err != nil {
+		err = InvalidASN1("validity", err)
+	}
+
+	err = parseName(&it, &parsed.RawSubject, &parsed.Subject)
+	if err != nil {
+		err = InvalidASN1("subject", err)
+		return
+	}
+
+	err = parseSubjectPublicKeyInfo(&it, &parsed.RawSubjectPublicKeyInfo, &parsed.SubjectPublicKeyInfo)
+	if err != nil {
+		err = InvalidASN1("subjectPublicKeyInfo", err)
+		return
+	}
+
+	err = parseUniqueID(&it, &parsed.RawIssuerUniqueID, &parsed.IssuerUniqueID)
+	if err != nil {
+		err = InvalidASN1("issuerUniqueID", err)
+		return
+	}
+
+	err = parseUniqueID(&it, &parsed.RawSubjectUniqueID, &parsed.SubjectUniqueID)
+	if err != nil {
+		err = InvalidASN1("subjectUniqueID", err)
+		return
+	}
+
+	err = parseExtensions(&it, &parsed.RawExtensions, &parsed.Extensions)
+	if err != nil {
+		err = InvalidASN1("extensions", err)
+		return
 	}
 
 	return
@@ -265,6 +308,31 @@ func parseAlgorithmIdentifier(in *zcryptobyte.String, out *zcryptobyte.String, p
 	}
 	// TODO(dadrian)[2024-10-27]: Parse Parameters
 	return nil
+}
+
+func parseName(in *zcryptobyte.String, out *zcryptobyte.String, parsed *Name) (err error) {
+	// TODO
+	return
+}
+
+func parseValidity(in *zcryptobyte.String, out *zcryptobyte.String, parsed *Validity) (err error) {
+	// TODO
+	return
+}
+
+func parseSubjectPublicKeyInfo(in *zcryptobyte.String, out *zcryptobyte.String, parsed *SubjectPublicKeyInfo) (err error) {
+	// TODO
+	return
+}
+
+func parseUniqueID(in *zcryptobyte.String, out *zcryptobyte.String, parsed *UniqueIdentifier) (err error) {
+	// TODO
+	return
+}
+
+func parseExtensions(in *zcryptobyte.String, out *zcryptobyte.String, parsed *Extensions) (err error) {
+	// TODO
+	return
 }
 
 type BitString []byte
