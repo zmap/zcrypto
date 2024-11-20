@@ -436,6 +436,8 @@ func init() {
 	curveNames[258] = "ffdhe4096"
 	curveNames[259] = "ffdhe6144"
 	curveNames[260] = "ffdhe8192"
+	curveNames[4587] = "secp256r1mlkem768" // draft-kwiatkowski-tls-ecdhe-mlkem
+	curveNames[4588] = "ecdh_x25519mlkem768" // draft-kwiatkowski-tls-ecdhe-mlkem
 	curveNames[65281] = "arbitrary_explicit_prime_curves"
 	curveNames[65282] = "arbitrary_explicit_char2_curves"
 
