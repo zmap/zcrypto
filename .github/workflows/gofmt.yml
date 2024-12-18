@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Check gofmt
-      uses: Jerome1337/gofmt-action@v1.0.4
+      uses: Jerome1337/gofmt-action@v1.0.5
       with:
         gofmt-path: './'
         gofmt-flags: -l -s
