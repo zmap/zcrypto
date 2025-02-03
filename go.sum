@@ -33,8 +33,8 @@ github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXl
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/weppos/publicsuffix-go v0.13.0/go.mod h1:z3LCPQ38eedDQSwmsSRW4Y7t2L8Ln16JPQ02lHAdn5k=
-github.com/weppos/publicsuffix-go v0.40.3-0.20250127173806-e489a31678ca h1:Cno+VZU+XBPscI/pEMZPlzAB21kjo00dy8OWpxa3ECo=
-github.com/weppos/publicsuffix-go v0.40.3-0.20250127173806-e489a31678ca/go.mod h1:43Dfyxu2dpmLg56at26Q4k9gwf3yWSUiwk8kGnwzULk=
+github.com/weppos/publicsuffix-go v0.40.3-0.20250203150734-9d41a2bf414c h1:gncOIyyEqDbRl9X81tzjj+PfktZ/gCLXgl6CFZ/sYtE=
+github.com/weppos/publicsuffix-go v0.40.3-0.20250203150734-9d41a2bf414c/go.mod h1:43Dfyxu2dpmLg56at26Q4k9gwf3yWSUiwk8kGnwzULk=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 github.com/zmap/rc2 v0.0.0-20131011165748-24b9757f5521/go.mod h1:3YZ9o3WnatTIZhuOtot4IcUfzoKVjUHqu6WALIyI0nE=
 github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 h1:Nzukz5fNOBIHOsnP+6I79kPx3QhLv8nBy2mfFhBRq30=
