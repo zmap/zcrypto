@@ -606,7 +606,6 @@ ClientHello = SubRecordType({
     "heartbeat": Boolean(doc="This is true if the client has the Heartbeat Supported extension (see https://tools.ietf.org/html/rfc6520)."),
     "extended_random": Binary(doc="The value of the Extended Random extension, if present (see https://tools.ietf.org/html/draft-rescorla-tls-extended-random-02)."),
     "extended_master_secret": Boolean(doc="This is true if the client has the Extended Master Secret extension (see https://tools.ietf.org/html/rfc7627)."),
-    "next_protocol_negotiation": Boolean(doc="This is true if the client has the Next Protocol Negotiation extension (see https://datatracker.ietf.org/doc/html/draft-agl-tls-nextprotoneg-04)."),
     "server_name": String(doc="This contains the server name from the Server Name Identification (SNI) extension, if present (see https://tools.ietf.org/html/rfc6066#section-3)."),
     "scts": Boolean(doc="This is true if the client has the Signed Certificate Timestamp extension, if present (see https://tools.ietf.org/html/rfc6962#section-3.3.1)"),
     "supported_curves": ListOf(CurveID(), doc="The list of supported curves in the Supported Elliptic Curves extension, if present (see https://tools.ietf.org/html/rfc4492#section-5.1.1)"),
@@ -630,7 +629,6 @@ ServerHello = SubRecordType({
     "secure_renegotiation": Boolean(doc="This is true if the client has the Secure Renegotiation extension (see https://tools.ietf.org/html/rfc5746)."),
     "heartbeat": Boolean(doc="This is true if the client has the Heartbeat Supported extension (see https://tools.ietf.org/html/rfc6520)."),
     "extended_random": Binary(doc="The value of the Extended Random extension, if present (see https://tools.ietf.org/html/draft-rescorla-tls-extended-random-02)."),
-    "next_protocol_negotiation": Boolean(doc="This is true if the server has the Next Protocol Negotiation extension (see https://datatracker.ietf.org/doc/html/draft-agl-tls-nextprotoneg-04)."),
     "extended_master_secret": Boolean(doc="This is true if the server has the Extended Master Secret extension (see https://tools.ietf.org/html/rfc7627)."),
     "scts": ListOf(SubRecord({
         "parsed": SCTRecord(),

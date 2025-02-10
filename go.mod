@@ -6,7 +6,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	github.com/weppos/publicsuffix-go v0.40.3-0.20241218111332-1518a6f1cb34
-	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248
 	github.com/zmap/zcertificate v0.0.1
 	golang.org/x/crypto v0.32.0
 	golang.org/x/net v0.33.0

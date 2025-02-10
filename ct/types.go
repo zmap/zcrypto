@@ -237,12 +237,16 @@ func (d *DigitallySigned) UnmarshalJSON(b []byte) error {
 
 // LogEntry represents the contents of an entry in a CT log, see section 3.1.
 type LogEntry struct {
-	Index    int64
-	Leaf     MerkleTreeLeaf
+	Index     int64
+	Leaf      MerkleTreeLeaf
+	RawCert   []byte
+	IsPrecert bool
+	Chain     []ASN1Cert
+	Server    string
+	// When the raw cert is parseable, and not a precert,
+	// X509Cert contains the parsed certificate for convenience.
 	X509Cert *x509.Certificate
 	Precert  *Precertificate
-	Chain    []ASN1Cert
-	Server   string
 }
 
 // SHA256Hash represents the output from the SHA256 hash function.
@@ -348,8 +352,8 @@ type Precertificate struct {
 	// SHA256 hash of the issuing key
 	IssuerKeyHash [issuerKeyHashLength]byte
 	// Parsed TBSCertificate structure (held in an x509.Certificate for ease of
-	// access.
-	TBSCertificate x509.Certificate
+	// access), when possible.
+	TBSCertificate *x509.Certificate
 }
 
 // X509Certificate returns the X.509 Certificate contained within the

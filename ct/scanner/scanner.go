@@ -13,7 +13,19 @@ import (
 	"github.com/zmap/zcrypto/ct"
 	"github.com/zmap/zcrypto/ct/client"
 	"github.com/zmap/zcrypto/ct/x509"
+	"github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/zmap/zcrypto/x509/pkix"
 )
+
+// ASN1Certificate holds the top-level asn1 fields in a certificate.
+//
+// It is used to determine if a certificate contains well-formed asn1 data or is corrupted.
+type ASN1Certificate struct {
+	Raw                asn1.RawContent
+	TBSCertificate     asn1.RawValue
+	SignatureAlgorithm pkix.AlgorithmIdentifier
+	SignatureValue     asn1.BitString
+}
 
 // Clients wishing to implement their own Matchers should implement this interface:
 type Matcher interface {
@@ -137,6 +149,9 @@ type ScannerOptions struct {
 	Name string
 
 	MaximumIndex int64
+
+	// Always output encountered certificates, so long as they are valid ASN.1
+	IgnoreParsingErrors bool
 }
 
 // Creates a new ScannerOptions struct with sensible defaults
@@ -188,30 +203,87 @@ type fetchRange struct {
 	end   int64
 }
 
-// Takes the error returned by either x509.ParseCertificate() or
-// x509.ParseTBSCertificate() and determines if it's non-fatal or otherwise.
-// In the case of non-fatal errors, the error will be logged,
-// entriesWithNonFatalErrors will be incremented, and the return value will be
-// nil.
-// Fatal errors will be logged, unparsableEntires will be incremented, and the
+// parseCertificate takes a raw certificate, parses it, and if there is an error,
+// determines if it is fatal. In the case of non-fatal errors, the error will be logged,
+// entriesWithNonFatalErrors will be incremented, and the returned error will be nil.
+//
+// Fatal parse errors will be logged, unparsableEntries will be incremented, and the
 // fatal error itself will be returned.
-// When |err| is nil, this method does nothing.
-func (s *Scanner) handleParseEntryError(err error, entryType ct.LogEntryType, index int64) error {
+//
+// This function does NOT promise that the returned certificate will be non-nil
+// whenever err is non-nil.
+func (s *Scanner) parseCertificate(
+	precert bool,
+	entryType ct.LogEntryType,
+	index int64,
+	raw []byte,
+) (*x509.Certificate, error) {
+	var cert *x509.Certificate
+	var err error
+	if precert {
+		cert, err = x509.ParseTBSCertificate(raw)
+	} else {
+		cert, err = x509.ParseCertificate(raw)
+	}
+
 	if err == nil {
 		// No error to handle
-		return nil
+		return cert, nil
 	}
+
+	var isFatal bool
+
 	switch err.(type) {
 	case x509.NonFatalErrors:
 		s.entriesWithNonFatalErrors++
-		// We'll make a note, but continue.
-		s.logger.Warnf("Non-fatal error in %+v at index %d of log at %s: %s", entryType, index, s.logClient.Uri, err)
 	default:
 		s.unparsableEntries++
-		s.logger.Warnf("Failed to parse in %+v at index %d of log at %s: %s", entryType, index, s.logClient.Uri, err)
-		return err
+		isFatal = true
 	}
-	return nil
+
+	if !isFatal {
+		s.logger.Warnf(
+			"Ignored non-fatal error in %+v at index %d of log at %s: %s",
+			entryType,
+			index,
+			s.logClient.Uri,
+			err,
+		)
+		return cert, nil
+	}
+
+	if !s.opts.IgnoreParsingErrors {
+		s.logger.Errorf(
+			"Fatal parse error in %+v at index %d of log at %s: %s",
+			entryType,
+			index,
+			s.logClient.Uri,
+			err,
+		)
+		return nil, err
+	}
+
+	var asn1cert ASN1Certificate
+	if _, perr := asn1.Unmarshal(raw, &asn1cert); perr != nil {
+		s.logger.Warnf(
+			"Corrupted cert ASN.1 in %+v at index %d of log %s: %s",
+			entryType,
+			index,
+			s.logClient.Uri,
+			perr,
+		)
+		return nil, perr
+	}
+
+	s.logger.Warnf(
+		"Ignored fatal parse error in %+v at index %d of log %s: %s",
+		entryType,
+		index,
+		s.logClient.Uri,
+		err,
+	)
+
+	return cert, nil
 }
 
 // Processes the given |entry| in the specified log.
@@ -223,29 +295,52 @@ func (s *Scanner) processEntry(entry ct.LogEntry, foundCert func(*ct.LogEntry, s
 			// Only interested in precerts and this is an X.509 cert, early-out.
 			return
 		}
-		cert, err := x509.ParseCertificate(entry.Leaf.TimestampedEntry.X509Entry)
-		if err = s.handleParseEntryError(err, entry.Leaf.TimestampedEntry.EntryType, entry.Index); err != nil {
-			// We hit an unparseable entry, already logged inside handleParseEntryError()
+		cert, err := s.parseCertificate(
+			false,
+			entry.Leaf.TimestampedEntry.EntryType,
+			entry.Index,
+			entry.Leaf.TimestampedEntry.X509Entry,
+		)
+		if err != nil {
 			return
 		}
-		if s.opts.Matcher.CertificateMatches(cert) {
-			entry.X509Cert = cert
+		if cert != nil {
+			if s.opts.Matcher.CertificateMatches(cert) {
+				entry.RawCert = entry.Leaf.TimestampedEntry.X509Entry
+				entry.X509Cert = cert
+				foundCert(&entry, s.opts.Name)
+			}
+		} else {
+			entry.RawCert = entry.Leaf.TimestampedEntry.X509Entry
 			foundCert(&entry, s.opts.Name)
 		}
 	case ct.PrecertLogEntryType:
-		c, err := x509.ParseTBSCertificate(entry.Leaf.TimestampedEntry.PrecertEntry.TBSCertificate)
-		if err = s.handleParseEntryError(err, entry.Leaf.TimestampedEntry.EntryType, entry.Index); err != nil {
-			// We hit an unparseable entry, already logged inside handleParseEntryError()
+		cert, err := s.parseCertificate(
+			true,
+			entry.Leaf.TimestampedEntry.EntryType,
+			entry.Index,
+			entry.Leaf.TimestampedEntry.PrecertEntry.TBSCertificate,
+		)
+		if err != nil {
 			return
 		}
 		precert := &ct.Precertificate{
 			Raw:            entry.Chain[0],
-			TBSCertificate: *c,
+			TBSCertificate: cert,
 			IssuerKeyHash:  entry.Leaf.TimestampedEntry.PrecertEntry.IssuerKeyHash}
-		if s.opts.Matcher.PrecertificateMatches(precert) {
-			entry.Precert = precert
+
+		entry.IsPrecert = true
+		entry.RawCert = entry.Leaf.TimestampedEntry.PrecertEntry.TBSCertificate
+		entry.Precert = precert
+
+		if cert != nil {
+			if s.opts.Matcher.PrecertificateMatches(precert) {
+				foundPrecert(&entry, s.opts.Name)
+			}
+		} else {
 			foundPrecert(&entry, s.opts.Name)
 		}
+
 		s.precertsSeen++
 	}
 }
