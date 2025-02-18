@@ -204,10 +204,14 @@ func (hs *serverHandshakeState) processClientHello() error {
 		}
 		serverRandom = serverRandom[:24]
 	}
+
+	// If the server random is being overridden, use it.
 	if len(c.config.ServerRandom) == 32 {
 		copy(hs.hello.random, c.config.ServerRandom)
 	} else {
-		_, err := io.ReadFull(c.config.rand(), hs.hello.random)
+		// Otherwise, generate a random server random. If downgrade canary is set,
+		// this should only update the first 24 bytes of the server random.
+		_, err := io.ReadFull(c.config.rand(), serverRandom)
 		if err != nil {
 			c.sendAlert(alertInternalError)
 			return err
