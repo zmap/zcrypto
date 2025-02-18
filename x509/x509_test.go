@@ -733,6 +733,96 @@ func TestVerifyCertificateWithDSASignature(t *testing.T) {
 	}
 }
 
+const pemCertPolicyUserNotices = `-----BEGIN CERTIFICATE-----
+MIIEiTCCA3GgAwIBAgIUMYpvK6wyDbRymJE+DvP7moEyrzYwDQYJKoZIhvcNAQEL
+BQAwgZUxCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJNSTESMBAGA1UEBwwJQW5uIEFy
+Ym9yMQ8wDQYDVQQKDAZDZW5zeXMxDzANBgNVBAsMBkNlbnN5czEPMA0GA1UEAwwG
+Q2Vuc3lzMTIwMAYJKoZIhvcNAQkBFiNhYnNvbHV0ZWx5bm90eW91cmJ1c2luZXNz
+QGNlbnN5cy5pbzAeFw0yMjA1MDUxNzQxMjBaFw0yMjA2MDQxNzQxMjBaMIGVMQsw
+CQYDVQQGEwJVUzELMAkGA1UECAwCTUkxEjAQBgNVBAcMCUFubiBBcmJvcjEPMA0G
+A1UECgwGQ2Vuc3lzMQ8wDQYDVQQLDAZDZW5zeXMxDzANBgNVBAMMBkNlbnN5czEy
+MDAGCSqGSIb3DQEJARYjYWJzb2x1dGVseW5vdHlvdXJidXNpbmVzc0BjZW5zeXMu
+aW8wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQD0zShNJeZsIR/aZNS1
+TDTLbx61Y2qkllUzr+Lh47/SQAw4c2jdJB/yAdqEIWXPgmvlegYb+0XJRz1FeUBU
+A8mzStDVPgfmW9vJksdPdp5yBoxodpBJ5NA5Ez+S3+znJL6F4vH+orgOO2D+ah4E
+9qybSxVXjKxWGTjqKvKJOohRi9VxaGNVvJbvg2K+HtgEl7J7nkJfT+a4yIsM086U
+e0p/ZzxNLummTwrZmEmD78HnrEIg91m2vb/I9QJvGtLnZDBp2TdeqKh0ihmadldG
+w8hXYr25hh1TQQLxi7F3b22LQexRsg/GKDKAVu2HQL9V8Qty97RExPRdLDJDAFVK
+XzwXAgMBAAGjgc4wgcswgcgGA1UdIASBwDCBvTAFBgMqAwQwBQYDLQYHMIGsBgMr
+BQcwgaQwEAYIKwYBBQUHAgEWBHVybDEwEAYIKwYBBQUHAgEWBHVybDIwQQYIKwYB
+BQUHAgIwNTArFht0aGUgbWluaXN0cnkgb2Ygc2lsbHkgd2Fsa3MwDAIBAQIBAgIB
+AwIBBBoGZm9vYmFyMBQGCCsGAQUFBwICMAgaBmZvb2JhejAlBggrBgEFBQcCAjAZ
+MBcWEGFwZXJ0dXJlIHNjaWVuY2UwAwIBKjANBgkqhkiG9w0BAQsFAAOCAQEAxXVD
+/1kBp1ro5EfPGxiDscjQ7cOJBVUdbLMfqQzXmBLzFnJUj0DryyeUZsMHIw8PMctr
+NUR6rrNWFX0IQENOJIwFjHv0X1gih1dJcohBcgaT8SNCCcZsGImEqdFZlL6mgwtI
+K4YBIAde0Jl0Kwrk+6CdR1/tlXN0PegycogBvfItSXwKkKvjkIKGy7A9g6+MWtMg
+DcOdH/BxukeT6hfvOAI5r6eFMkpbK/tL2RuygdMk9hIwqnJ3E/SjTRs8jkEACZ2y
+PXbTZ4ymfTyPXCwA8szaFzz/LXJ7yak1YzDqyAh7fTN+om9mBcmciDoz6+JV027o
+0/KLWM5xP8R3VbSbYQ==
+-----END CERTIFICATE-----`
+
+func assertUserNoticeEqual(t *testing.T, n1, n2 UserNotice) {
+
+	assert.Equal(t, n1.ExplicitText, n2.ExplicitText)
+
+	if (n1.NoticeReference == nil) != (n2.NoticeReference == nil) {
+		return
+	}
+
+	if n1.NoticeReference != nil {
+		r1 := *n1.NoticeReference
+		r2 := *n2.NoticeReference
+		assert.Equal(t, r1.Organization, r2.Organization)
+		assert.Equal(t, r1.NoticeNumbers, r2.NoticeNumbers)
+	}
+}
+
+// TestCertificatePolicyUserNotices ensures that the UserNotices field of
+// the CertificatePolicies extension are parsed correctly, using an example
+// certificate with an unorthodox usage of the extension.
+func TestCertificatePolicyUserNotices(t *testing.T) {
+	block, _ := pem.Decode([]byte(pemCertPolicyUserNotices))
+	cert, err := ParseCertificate(block.Bytes)
+	if err != nil {
+		t.Errorf("couldn't parse test cert %s", err.Error())
+	}
+
+	if !assert.Len(t, cert.UserNotices, 3) {
+		return
+	}
+
+	if !assert.Len(t, cert.UserNotices[2], 3) {
+		return
+	}
+
+	e1 := "foobar"
+	e2 := "foobaz"
+
+	p1 := UserNotice{
+		ExplicitText: &e1,
+		NoticeReference: &NoticeReference{
+			Organization:  "the ministry of silly walks",
+			NoticeNumbers: []int{1, 2, 3, 4},
+		},
+	}
+
+	p2 := UserNotice{
+		ExplicitText:    &e2,
+		NoticeReference: nil,
+	}
+
+	p3 := UserNotice{
+		NoticeReference: &NoticeReference{
+			Organization:  "aperture science",
+			NoticeNumbers: []int{42},
+		},
+	}
+
+	assertUserNoticeEqual(t, p1, cert.UserNotices[2][0])
+	assertUserNoticeEqual(t, p2, cert.UserNotices[2][1])
+	assertUserNoticeEqual(t, p3, cert.UserNotices[2][2])
+}
+
 const pemCertificate = `-----BEGIN CERTIFICATE-----
 MIIB5DCCAZCgAwIBAgIBATALBgkqhkiG9w0BAQUwLTEQMA4GA1UEChMHQWNtZSBDbzEZMBcGA1UE
 AxMQdGVzdC5leGFtcGxlLmNvbTAeFw03MDAxMDEwMDE2NDBaFw03MDAxMDIwMzQ2NDBaMC0xEDAO
