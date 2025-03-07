@@ -502,6 +502,10 @@ func (m *clientHandshakeState) MakeLog() *KeyMaterial {
 	copy(keymat.MasterSecret.Value, m.masterSecret)
 
 	keymat.PreMasterSecret = new(PreMasterSecret)
+	keymat.PreMasterSecret.Length = len(m.preMasterSecret)
+	keymat.PreMasterSecret.Value = make([]byte, len(m.preMasterSecret))
+	copy(keymat.PreMasterSecret.Value, m.preMasterSecret)
+
 	return keymat
 }
 
@@ -514,6 +518,10 @@ func (m *serverHandshakeState) MakeLog() *KeyMaterial {
 	copy(keymat.MasterSecret.Value, m.masterSecret)
 
 	keymat.PreMasterSecret = new(PreMasterSecret)
+	keymat.PreMasterSecret.Length = len(m.preMasterSecret)
+	keymat.PreMasterSecret.Value = make([]byte, len(m.preMasterSecret))
+	copy(keymat.PreMasterSecret.Value, m.preMasterSecret)
+
 	return keymat
 }
 
@@ -529,9 +537,8 @@ func (m *clientKeyExchangeMsg) MakeLog(ka keyAgreement) *ClientKeyExchange {
 		ckx.RSAParams.EncryptedPMS = make([]byte, len(m.ciphertext)-2)
 		copy(ckx.RSAParams.EncryptedPMS, m.ciphertext[2:])
 	// Premaster-Secret is available in KeyMaterial record
-	// TODO: ZGrab2
-	//case *dheKeyAgreement:
-	//	ckx.DHParams = ka.ClientDHParams()
+	case *dheKeyAgreement:
+		ckx.DHParams = ka.ClientDHParams()
 	case *ecdheKeyAgreement:
 		ckx.ECDHParams = ka.ClientECDHParams()
 	default:

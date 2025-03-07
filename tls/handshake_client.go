@@ -25,13 +25,14 @@ import (
 )
 
 type clientHandshakeState struct {
-	c            *Conn
-	serverHello  *serverHelloMsg
-	hello        *clientHelloMsg
-	suite        *cipherSuite
-	finishedHash finishedHash
-	masterSecret []byte
-	session      *ClientSessionState
+	c               *Conn
+	serverHello     *serverHelloMsg
+	hello           *clientHelloMsg
+	suite           *cipherSuite
+	finishedHash    finishedHash
+	masterSecret    []byte
+	preMasterSecret []byte
+	session         *ClientSessionState
 }
 
 type CacheKeyGenerator interface {
@@ -873,7 +874,8 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 	}
 
-	preMasterSecret, ckx, err := keyAgreement.generateClientKeyExchange(c.config, hs.hello, c.peerCertificates[0])
+	var ckx *clientKeyExchangeMsg
+	hs.preMasterSecret, ckx, err = keyAgreement.generateClientKeyExchange(c.config, hs.hello, c.peerCertificates[0])
 	if err != nil {
 		c.sendAlert(alertInternalError)
 		return err
@@ -936,7 +938,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 	}
 
-	hs.masterSecret = masterFromPreMasterSecret(c.vers, hs.suite, preMasterSecret, hs.hello.random, hs.serverHello.random)
+	hs.masterSecret = masterFromPreMasterSecret(c.vers, hs.suite, hs.preMasterSecret, hs.hello.random, hs.serverHello.random)
 	if err := c.config.writeKeyLog(keyLogLabelTLS12, hs.hello.random, hs.masterSecret); err != nil {
 		c.sendAlert(alertInternalError)
 		return errors.New("tls: failed to write to key log: " + err.Error())

@@ -23,18 +23,19 @@ import (
 // serverHandshakeState contains details of a server handshake in progress.
 // It's discarded once the handshake has completed.
 type serverHandshakeState struct {
-	c            *Conn
-	clientHello  *clientHelloMsg
-	hello        *serverHelloMsg
-	suite        *cipherSuite
-	ecdheOk      bool
-	ecSignOk     bool
-	rsaDecryptOk bool
-	rsaSignOk    bool
-	sessionState *sessionState
-	finishedHash finishedHash
-	masterSecret []byte
-	cert         *Certificate
+	c               *Conn
+	clientHello     *clientHelloMsg
+	hello           *serverHelloMsg
+	suite           *cipherSuite
+	ecdheOk         bool
+	ecSignOk        bool
+	rsaDecryptOk    bool
+	rsaSignOk       bool
+	sessionState    *sessionState
+	finishedHash    finishedHash
+	masterSecret    []byte
+	preMasterSecret []byte
+	cert            *Certificate
 }
 
 // serverHandshake performs a TLS handshake as a server.
@@ -613,14 +614,14 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 	}
 	hs.finishedHash.Write(ckx.marshal())
 
-	preMasterSecret, err := keyAgreement.processClientKeyExchange(c.config, hs.cert, ckx, c.vers)
+	hs.preMasterSecret, err = keyAgreement.processClientKeyExchange(c.config, hs.cert, ckx, c.vers)
 	if err != nil {
 		c.sendAlert(alertHandshakeFailure)
 		return err
 	}
 	c.handshakeLog.ClientKeyExchange = ckx.MakeLog(keyAgreement)
 
-	hs.masterSecret = masterFromPreMasterSecret(c.vers, hs.suite, preMasterSecret, hs.clientHello.random, hs.hello.random)
+	hs.masterSecret = masterFromPreMasterSecret(c.vers, hs.suite, hs.preMasterSecret, hs.clientHello.random, hs.hello.random)
 	if err := c.config.writeKeyLog(keyLogLabelTLS12, hs.clientHello.random, hs.masterSecret); err != nil {
 		c.sendAlert(alertInternalError)
 		return err

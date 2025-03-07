@@ -143,3 +143,20 @@ func (ka *dheKeyAgreement) DHParams() *jsonKeys.DHParams {
 	}
 	return out
 }
+
+func (ka *dheKeyAgreement) ClientDHParams() *jsonKeys.DHParams {
+	out := new(jsonKeys.DHParams)
+	if ka.p != nil {
+		out.Prime = new(big.Int).Set(ka.p)
+	}
+	if ka.g != nil {
+		out.Generator = new(big.Int).Set(ka.g)
+	}
+	if ka.yClient != nil {
+		out.ClientPublic = new(big.Int).Set(ka.yClient)
+		if ka.yOurs != nil && ka.xOurs != nil && ka.yClient.Cmp(ka.yOurs) == 0 {
+			out.ClientPrivate = new(big.Int).Set(ka.xOurs)
+		}
+	}
+	return out
+}
