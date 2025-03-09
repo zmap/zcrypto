@@ -74,6 +74,20 @@ func signatureTypeToName(sigType uint8) string {
 	return "unknown." + strconv.Itoa(int(sigType))
 }
 
+func (ka *signedKeyAgreement) Signature() *DigitalSignature {
+	out := DigitalSignature{
+		Raw:     ka.raw,
+		Type:    signatureTypeToName(ka.sigType),
+		Valid:   ka.valid,
+		Version: TLSVersion(ka.version),
+	}
+	if ka.version >= VersionTLS12 {
+		out.SigHashExtension = new(SignatureAndHash)
+		*out.SigHashExtension = SignatureAndHash(ka.sh)
+	}
+	return &out
+}
+
 func (ka *rsaKeyAgreement) RSAParams() *jsonKeys.RSAPublicKey {
 	out := new(jsonKeys.RSAPublicKey)
 	//out.PublicKey = ka.publicKey

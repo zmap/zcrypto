@@ -555,24 +555,20 @@ func tls10MAC(h hash.Hash, out, seq, header, data, extra []byte) []byte {
 }
 
 func rsaKA(version uint16) keyAgreement {
-	return rsaKeyAgreement{}
-}
-
-/* TODO
-func rsaEphemeralKA(version uint16) keyAgreement {
-	return &rsaKeyAgreement{
-		version:   version,
-		ephemeral: true,
+	return rsaKeyAgreement{
 		auth: &signedKeyAgreement{
 			sigType: signatureRSA,
 			version: version,
-		},
-	}
+		}}
 }
-*/
 
 func ecdheECDSAKA(version uint16) keyAgreement {
 	return &ecdheKeyAgreement{
+		auth: &signedKeyAgreement{
+			sigType: signatureECDSA,
+			version: version,
+		},
+
 		isRSA:   false,
 		version: version,
 	}
@@ -580,6 +576,11 @@ func ecdheECDSAKA(version uint16) keyAgreement {
 
 func ecdheRSAKA(version uint16) keyAgreement {
 	return &ecdheKeyAgreement{
+		auth: &signedKeyAgreement{
+			sigType: signatureRSA,
+			version: version,
+		},
+
 		isRSA:   true,
 		version: version,
 	}

@@ -434,7 +434,7 @@ func (c *Certificates) addParsed(certs []*x509.Certificate, validation *x509.Val
 func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 	skx := new(ServerKeyExchange)
 	skx.Raw = make([]byte, len(m.key))
-	//var auth keyAgreementAuthentication
+	var auth keyAgreementAuthentication
 	var errAuth error
 	copy(skx.Raw, m.key)
 	skx.Digest = append(make([]byte, 0), m.digest...)
@@ -443,31 +443,29 @@ func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 	switch ka := ka.(type) {
 	case *rsaKeyAgreement:
 		skx.RSAParams = ka.RSAParams()
-		//auth = ka.auth
+		auth = ka.auth
 		errAuth = ka.verifyError
 
 	case *dheKeyAgreement:
 		skx.DHParams = ka.DHParams()
-		//auth = ka.auth
+		auth = ka.auth
 		errAuth = ka.verifyError
 
 	case *ecdheKeyAgreement:
 		skx.ECDHParams = ka.ECDHParams()
-		//auth = ka.auth
+		auth = ka.auth
 		errAuth = ka.verifyError
 	default:
 		break
 	}
 
-	/*
-		// Write out signature
-		switch auth := auth.(type) {
-		case *signedKeyAgreement:
-			skx.Signature = auth.Signature()
-		default:
-			break
-		}
-	*/
+	// Write out signature
+	switch auth := auth.(type) {
+	case *signedKeyAgreement:
+		skx.Signature = auth.Signature()
+	default:
+		break
+	}
 
 	// Write the signature validation error
 	if errAuth != nil {

@@ -205,6 +205,7 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 // rsaKeyAgreement implements the standard TLS key agreement where the client
 // encrypts the pre-master secret to the server's public key.
 type rsaKeyAgreement struct {
+	auth        keyAgreementAuthentication
 	verifyError error
 }
 
@@ -381,6 +382,8 @@ func pickTLS12HashForSignature(sigType uint8, clientList, serverList []SigAndHas
 // pre-master secret is then calculated using ECDH. The signature may
 // be ECDSA, Ed25519 or RSA.
 type ecdheKeyAgreement struct {
+	auth keyAgreementAuthentication
+
 	version uint16
 	isRSA   bool
 	params  ecdheParameters
@@ -570,7 +573,21 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	sig = sig[2:]
 
 	signed := hashForServerKeyExchange(sigType, sigHash, ka.version, clientHello.random, serverHello.random, serverECDHEParams)
-	if ka.verifyError = verifyHandshakeSignature(sigType, cert.PublicKey, sigHash, signed, sig); ka.verifyError != nil {
+	ka.verifyError = verifyHandshakeSignature(sigType, cert.PublicKey, sigHash, signed, sig)
+
+	// For logging purposes
+	skx.digest = signed
+	switch auth := ka.auth.(type) {
+	case *signedKeyAgreement:
+		auth.raw = sig
+		auth.valid = ka.verifyError == nil
+		auth.sh.Signature = sigType
+		auth.sh.Hash = uint8(sigHash)
+	default:
+		break
+	}
+
+	if ka.verifyError != nil {
 		return errors.New("tls: invalid signature by the server certificate: " + ka.verifyError.Error())
 	}
 	return nil
