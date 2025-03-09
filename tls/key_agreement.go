@@ -405,7 +405,7 @@ func (ka *ecdheKeyAgreement) generateServerKeyExchange(config *Config, cert *Cer
 		return nil, err
 	}
 	ka.params = params
-	ka.serverParams.Clone()
+	ka.serverParams = params.Clone()
 
 	// See RFC 4492, Section 5.4.
 	ecdhePublic := params.PublicKey()
