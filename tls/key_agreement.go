@@ -8,6 +8,7 @@ import (
 	"crypto"
 	"crypto/dsa"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
@@ -31,20 +32,6 @@ var errServerKeyExchange = errors.New("tls: invalid ServerKeyExchange message")
 type keyAgreementAuthentication interface {
 	signParameters(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg, params []byte) (*serverKeyExchangeMsg, error)
 	verifyParameters(config *Config, clientHello *clientHelloMsg, serverHello *serverHelloMsg, cert *x509.Certificate, params []byte, sig []byte) ([]byte, error)
-}
-
-// nilKeyAgreementAuthentication does not authenticate the key
-// agreement parameters.
-type nilKeyAgreementAuthentication struct{}
-
-func (ka *nilKeyAgreementAuthentication) signParameters(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg, params []byte) (*serverKeyExchangeMsg, error) {
-	skx := new(serverKeyExchangeMsg)
-	skx.key = params
-	return skx, nil
-}
-
-func (ka *nilKeyAgreementAuthentication) verifyParameters(config *Config, clientHello *clientHelloMsg, serverHello *serverHelloMsg, cert *x509.Certificate, params []byte, sig []byte) ([]byte, error) {
-	return nil, nil
 }
 
 // signedKeyAgreement signs the ServerKeyExchange parameters with the
@@ -382,7 +369,8 @@ func pickTLS12HashForSignature(sigType uint8, clientList, serverList []SigAndHas
 // pre-master secret is then calculated using ECDH. The signature may
 // be ECDSA, Ed25519 or RSA.
 type ecdheKeyAgreement struct {
-	auth keyAgreementAuthentication
+	auth         keyAgreementAuthentication
+	serverParams ecdheParameters
 
 	version uint16
 	isRSA   bool
@@ -417,6 +405,7 @@ func (ka *ecdheKeyAgreement) generateServerKeyExchange(config *Config, cert *Cer
 		return nil, err
 	}
 	ka.params = params
+	ka.serverParams.Clone()
 
 	// See RFC 4492, Section 5.4.
 	ecdhePublic := params.PublicKey()
@@ -495,6 +484,20 @@ func (ka *ecdheKeyAgreement) processClientKeyExchange(config *Config, cert *Cert
 		return nil, errClientKeyExchange
 	}
 
+	// This part is solely for logging purposes. Later in MakeLog(), we only have access to ka.params
+	// for the client key exchange parameters. We need to store the client's public key here
+	// to make the log later. The Go TLS library doesn't store the parsed client public key anywhere.
+	ka.params = nil
+	if ka.serverParams.CurveID() == X25519 {
+		ka.params = &x25519Parameters{publicKey: ckx.ciphertext[1:]}
+	} else {
+		curve, ok := curveForCurveID(ka.serverParams.CurveID())
+		if ok {
+			x, y := elliptic.Unmarshal(curve, ckx.ciphertext[1:])
+			ka.params = &nistParameters{x: x, y: y, curveID: ka.serverParams.CurveID()}
+		}
+	}
+
 	return preMasterSecret, nil
 }
 
@@ -519,8 +522,15 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 		return errServerKeyExchange
 	}
 
-	if _, ok := curveForCurveID(curveID); curveID != X25519 && !ok {
+	if curve, ok := curveForCurveID(curveID); curveID != X25519 && !ok {
 		return errors.New("tls: server selected unsupported curve")
+	} else {
+		if curveID == X25519 {
+			ka.serverParams = &x25519Parameters{publicKey: publicKey}
+		} else {
+			x, y := elliptic.Unmarshal(curve, publicKey)
+			ka.serverParams = &nistParameters{x: x, y: y, curveID: curveID}
+		}
 	}
 
 	params, err := generateECDHEParameters(config.rand(), curveID)

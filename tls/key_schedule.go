@@ -12,6 +12,7 @@ import (
 	"io"
 	"math/big"
 
+	jsonKeys "github.com/zmap/zcrypto/json"
 	"golang.org/x/crypto/cryptobyte"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"
@@ -107,6 +108,9 @@ type ecdheParameters interface {
 	CurveID() CurveID
 	PublicKey() []byte
 	SharedKey(peerPublicKey []byte) []byte
+
+	Clone() ecdheParameters
+	MakeLog() (*jsonKeys.ECPoint, *jsonKeys.ECDHPrivateParams)
 }
 
 func generateECDHEParameters(rand io.Reader, curveID CurveID) (ecdheParameters, error) {
@@ -177,6 +181,49 @@ func (p *nistParameters) SharedKey(peerPublicKey []byte) []byte {
 	return xShared.FillBytes(sharedKey)
 }
 
+func (p *nistParameters) Clone() ecdheParameters {
+	clone := *p
+
+	if p.privateKey != nil {
+		clone.privateKey = make([]byte, len(p.privateKey))
+		copy(clone.privateKey, p.privateKey)
+	}
+
+	if p.x != nil {
+		clone.x = new(big.Int).Set(p.x)
+	}
+
+	if p.y != nil {
+		clone.y = new(big.Int).Set(p.y)
+	}
+
+	return &clone
+}
+
+func (p *nistParameters) MakeLog() (*jsonKeys.ECPoint, *jsonKeys.ECDHPrivateParams) {
+	public := new(jsonKeys.ECPoint)
+
+	if p.x != nil {
+		public.X = new(big.Int)
+		public.X.Set(p.x)
+	}
+
+	if p.y != nil {
+		public.Y = new(big.Int)
+		public.Y.Set(p.y)
+	}
+
+	var private *jsonKeys.ECDHPrivateParams
+	if len(p.privateKey) > 0 {
+		private = new(jsonKeys.ECDHPrivateParams)
+		private.Length = len(p.privateKey)
+		private.Value = make([]byte, len(p.privateKey))
+		copy(private.Value, p.privateKey)
+	}
+
+	return public, private
+}
+
 type x25519Parameters struct {
 	privateKey []byte
 	publicKey  []byte
@@ -196,4 +243,39 @@ func (p *x25519Parameters) SharedKey(peerPublicKey []byte) []byte {
 		return nil
 	}
 	return sharedKey
+}
+
+func (p *x25519Parameters) Clone() ecdheParameters {
+	clone := *p
+
+	if p.privateKey != nil {
+		clone.privateKey = make([]byte, len(p.privateKey))
+		copy(clone.privateKey, p.privateKey)
+	}
+
+	if p.publicKey != nil {
+		clone.publicKey = make([]byte, len(p.publicKey))
+		copy(clone.publicKey, p.publicKey)
+	}
+
+	return &clone
+}
+
+func (p *x25519Parameters) MakeLog() (*jsonKeys.ECPoint, *jsonKeys.ECDHPrivateParams) {
+	public := new(jsonKeys.ECPoint)
+
+	if p.publicKey != nil {
+		public.X = new(big.Int)
+		public.X.SetBytes(p.publicKey)
+	}
+
+	var private *jsonKeys.ECDHPrivateParams
+	if len(p.privateKey) > 0 {
+		private = new(jsonKeys.ECDHPrivateParams)
+		private.Length = len(p.privateKey)
+		private.Value = make([]byte, len(p.privateKey))
+		copy(private.Value, p.privateKey)
+	}
+
+	return public, private
 }
