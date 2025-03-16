@@ -94,6 +94,8 @@ func (e CertificateInvalidError) Error() string {
 		return "x509: issuer name does not match subject from issuing certificate"
 	case NeverValid:
 		return "x509: certificate will never be valid"
+	case IsSelfSigned:
+		return "x509: certificate is self-signed and not a trusted root"
 	}
 	return "x509: unknown error"
 }
