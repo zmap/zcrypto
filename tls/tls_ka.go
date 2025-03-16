@@ -66,8 +66,14 @@ func signatureTypeToName(sigType uint8) string {
 		return "rsa"
 	case signatureDSA:
 		return "dsa"
+	case signaturePKCS1v15:
+		return "pkcs1v15"
+	case signatureRSAPSS:
+		return "rsapss"
 	case signatureECDSA:
 		return "ecdsa"
+	case signatureEd25519:
+		return "ed25519"
 	default:
 		break
 	}

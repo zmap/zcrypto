@@ -249,13 +249,16 @@ const (
 )
 
 // Hash functions for TLS 1.2 (See RFC 5246, section A.4.1)
+// https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-18
 const (
-	hashMD5    uint8 = 1
-	hashSHA1   uint8 = 2
-	hashSHA224 uint8 = 3
-	hashSHA256 uint8 = 4
-	hashSHA384 uint8 = 5
-	hashSHA512 uint8 = 6
+	hashNone      uint8 = 0
+	hashMD5       uint8 = 1
+	hashSHA1      uint8 = 2
+	hashSHA224    uint8 = 3
+	hashSHA256    uint8 = 4
+	hashSHA384    uint8 = 5
+	hashSHA512    uint8 = 6
+	hashIntrinsic uint8 = 8
 )
 
 var supportedHashFunc = map[uint8]crypto.Hash{

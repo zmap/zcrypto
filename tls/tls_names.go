@@ -19,22 +19,27 @@ var clientAuthTypeNames map[int]string
 var signatureSchemeNames map[uint16]string
 
 func init() {
-	// RFC 5246 7.4.1.4.1
+	// Signature algorithms (for internal signaling use). Starting at 225 to avoid overlap with
+	// TLS 1.2 codepoints (RFC 5246, Appendix A.4.1), with which these have nothing to do.
 	signatureNames = make(map[uint8]string, 8)
-	// TODO FIXME: the RFC also defines anonymous(0) and (255).
 	signatureNames[signatureRSA] = "rsa"
 	signatureNames[signatureDSA] = "dsa"
+	signatureNames[signaturePKCS1v15] = "pkcs1v15"
+	signatureNames[signatureRSAPSS] = "rsapss"
 	signatureNames[signatureECDSA] = "ecdsa"
+	signatureNames[signatureEd25519] = "ed25519"
 
 	// RFC 5246 7.4.1.4.1
+	// https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-18
 	hashNames = make(map[uint8]string, 16)
-	// TODO FIXME: the RFC also defines none(0) and (255).
+	hashNames[hashNone] = "none"
 	hashNames[hashMD5] = "md5"
 	hashNames[hashSHA1] = "sha1"
 	hashNames[hashSHA224] = "sha224"
 	hashNames[hashSHA256] = "sha256"
 	hashNames[hashSHA384] = "sha384"
 	hashNames[hashSHA512] = "sha512"
+	hashNames[hashIntrinsic] = "intrinsic"
 
 	cipherSuiteNames = make(map[int]string, 512)
 	cipherSuiteNames[0x0000] = "TLS_NULL_WITH_NULL_NULL"
