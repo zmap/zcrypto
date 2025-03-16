@@ -89,13 +89,12 @@ type Certificates struct {
 
 // ServerKeyExchange represents the raw key data sent by the server in TLS key exchange message
 type ServerKeyExchange struct {
-	Raw            []byte                 `json:"-"`
-	RSAParams      *jsonKeys.RSAPublicKey `json:"rsa_params,omitempty"`
-	DHParams       *jsonKeys.DHParams     `json:"dh_params,omitempty"`
-	ECDHParams     *jsonKeys.ECDHParams   `json:"ecdh_params,omitempty"`
-	Digest         []byte                 `json:"digest,omitempty"`
-	Signature      *DigitalSignature      `json:"signature,omitempty"`
-	SignatureError string                 `json:"signature_error,omitempty"`
+	Raw            []byte               `json:"-"`
+	DHParams       *jsonKeys.DHParams   `json:"dh_params,omitempty"`
+	ECDHParams     *jsonKeys.ECDHParams `json:"ecdh_params,omitempty"`
+	Digest         []byte               `json:"digest,omitempty"`
+	Signature      *DigitalSignature    `json:"signature,omitempty"`
+	SignatureError string               `json:"signature_error,omitempty"`
 }
 
 // ClientKeyExchange represents the raw key data sent by the client in TLS key exchange message
@@ -441,11 +440,6 @@ func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 
 	// Write out parameters
 	switch ka := ka.(type) {
-	case *rsaKeyAgreement:
-		skx.RSAParams = ka.RSAParams()
-		auth = ka.auth
-		errAuth = ka.verifyError
-
 	case *dheKeyAgreement:
 		skx.DHParams = ka.DHParams()
 		auth = ka.auth

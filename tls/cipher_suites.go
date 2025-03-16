@@ -555,7 +555,7 @@ func tls10MAC(h hash.Hash, out, seq, header, data, extra []byte) []byte {
 }
 
 func rsaKA(version uint16) keyAgreement {
-	return rsaKeyAgreement{
+	return &rsaKeyAgreement{
 		auth: &signedKeyAgreement{
 			sigType: signatureRSA,
 			version: version,
