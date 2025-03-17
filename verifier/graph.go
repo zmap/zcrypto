@@ -254,12 +254,23 @@ func (g *Graph) IsRoot(c *x509.Certificate) bool {
 }
 
 // AppendFromPEM adds any certificates encoded as PEM from r to the graph. If
-// root is true, it marks them as roots. It returns the number of certificates
-// parsed.
+// root is true, it marks them as roots. It completely ignores all errors, and
+// is deprecated. Use AppendFromPEMErr, which this function wraps, instead.
 func (g *Graph) AppendFromPEM(r io.Reader, root bool) int {
+	n, _, _ := g.AppendFromPEMErr(r, root)
+	return n
+}
+
+// AppendFromPEM adds any certificates encoded as PEM from r to the graph. If
+// root is true, it marks them as roots. It returns:
+// - The number of certificates parsed
+// - A slice of errors encountered while parsing certificates
+// - Any non-EOF error encountered reading from r
+func (g *Graph) AppendFromPEMErr(r io.Reader, root bool) (int, []error, error) {
 	count := 0
 	scanner := bufio.NewScanner(r)
 	scanner.Split(zcertificate.ScannerSplitPEM)
+	var parsingErrs []error
 	for scanner.Scan() {
 		p, _ := pem.Decode(scanner.Bytes())
 		if p == nil {
@@ -267,6 +278,7 @@ func (g *Graph) AppendFromPEM(r io.Reader, root bool) int {
 		}
 		c, err := x509.ParseCertificate(p.Bytes)
 		if err != nil {
+			parsingErrs = append(parsingErrs, err)
 			continue
 		}
 		g.AddCert(c)
@@ -275,7 +287,7 @@ func (g *Graph) AppendFromPEM(r io.Reader, root bool) int {
 		}
 		count++
 	}
-	return count
+	return count, parsingErrs, scanner.Err()
 }
 
 // NewGraphEdgeSet initializes an empty GraphEdgeSet.

@@ -16,8 +16,11 @@ package verifier
 
 import (
 	"encoding/hex"
+	"errors"
+	"io"
 	"strings"
 	"testing"
+	"testing/iotest"
 
 	"github.com/zmap/zcrypto/x509"
 
@@ -33,6 +36,45 @@ type graphTest struct {
 	certificates  []string
 	expectedNodes []string
 	expectedEdges []edgeIdx
+}
+
+type graphErrorTest struct {
+	name string
+	in   io.Reader
+	errs int
+	err  error
+}
+
+var graphErrorTests = []graphErrorTest{
+	{
+		name: "io",
+		in:   iotest.ErrReader(io.ErrUnexpectedEOF),
+		errs: 0,
+		err:  io.ErrUnexpectedEOF,
+	},
+	{
+		name: "parsing",
+		in:   strings.NewReader(data.CorruptCertificate),
+		errs: 1,
+		err:  nil,
+	},
+	{
+		name: "both",
+		in: io.MultiReader(
+			strings.NewReader(
+				strings.Join(
+					[]string{
+						data.CorruptCertificate,
+						data.CorruptCertificate,
+					},
+					"\n",
+				),
+			),
+			iotest.ErrReader(io.ErrUnexpectedEOF),
+		),
+		errs: 2,
+		err:  io.ErrUnexpectedEOF,
+	},
 }
 
 var graphTests = []graphTest{
@@ -401,12 +443,48 @@ func TestGraph(t *testing.T) {
 
 func TestAppendFromPEM(t *testing.T) {
 	for _, test := range graphTests {
-		g := NewGraph()
-		joined := strings.Join(test.certificates, "\n")
-		r := strings.NewReader(joined)
-		n := g.AppendFromPEM(r, false)
-		if len(test.certificates) != n {
-			t.Errorf("%s: expected size %d, got %d", test.name, len(test.certificates), n)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			g := NewGraph()
+			joined := strings.Join(test.certificates, "\n")
+			r := strings.NewReader(joined)
+			n := g.AppendFromPEM(r, false)
+			if len(test.certificates) != n {
+				t.Errorf("%s: expected size %d, got %d", test.name, len(test.certificates), n)
+			}
+		})
 	}
+}
+
+func TestAppendFromPEMErr(t *testing.T) {
+	for _, test := range graphTests {
+		t.Run(test.name, func(t *testing.T) {
+			g := NewGraph()
+			joined := strings.Join(test.certificates, "\n")
+			r := strings.NewReader(joined)
+			n, errs, err := g.AppendFromPEMErr(r, false)
+			if len(errs) > 0 {
+				t.Errorf("expected no parsing errors, got %d: %v", len(errs), errs)
+			}
+			if err != nil {
+				t.Errorf("expected nil err, got %v", err)
+			}
+			if len(test.certificates) != n {
+				t.Errorf("%s: expected size %d, got %d", test.name, len(test.certificates), n)
+			}
+		})
+	}
+
+	t.Run("errors", func(t *testing.T) {
+		for _, test := range graphErrorTests {
+			t.Run(test.name, func(t *testing.T) {
+				_, errs, err := NewGraph().AppendFromPEMErr(test.in, false)
+				if len(errs) != test.errs {
+					t.Errorf("want %d parsing errs got %d", test.errs, len(errs))
+				}
+				if !errors.Is(err, test.err) {
+					t.Errorf("expected error %v but got %v", test.err, err)
+				}
+			})
+		}
+	})
 }
