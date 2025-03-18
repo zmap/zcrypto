@@ -156,7 +156,7 @@ tls_curve_id_names = [
     "sect571r1", "secp160k1", "secp160r1", "secp160r2", "secp192k1",
     "secp192r1", "secp224k1", "secp224r1", "secp256k1", "secp256r1",
     "secp384r1", "secp521r1", "brainpoolp256r1", "brainpoolp384r1",
-    "brainpoolp512r1"]
+    "brainpoolp512r1", "x25519"]
 
 # json/ecdhe.go: TLSCurveID.MarshalJSON()
 TLSCurveID = SubRecordType({
@@ -497,18 +497,22 @@ signature_algorithm_names = getUnknowns({
     # 0: "anonymous",
     1: "rsa",
     2: "dsa",
-    3: "ecdsa",
+    227: "pkcs1v15",
+    228: "rsapss",
+    229: "ecdsa",
+    230: "ed25519",
     # 255: "",
 }, range(0, 256), lambda x: "unknown." + str(x))
 
 hash_algorithm_names = getUnknowns({
-    # 0: "none",
+    0: "none",
     1: "md5",
     2: "sha1",
     3: "sha224",
     4: "sha256",
     5: "sha384",
     6: "sha512",
+    8: "intrinsic",
     # 255: "",
 }, range(0, 256), lambda x: "unknown." + str(x))
 
@@ -567,13 +571,30 @@ curve_id_names = {
     26: "brainpoolP256r1",
     27: "brainpoolP384r1",
     28: "brainpoolP512r1",
-    29: "ecdh_x25519",
-    30: "ecdh_x448",
+    29: "x25519",
+    30: "x448",
+    31: "brainpoolP256r1tls13",
+    32: "brainpoolP384r1tls13",
+    33: "brainpoolP512r1tls13",
+    34: "GC256A",
+    35: "GC256B",
+    36: "GC256C",
+    37: "GC256D",
+    38: "GC512A",
+    39: "GC512B",
+    40: "GC512C",
+    41: "curveSM2",
     256: "ffdhe2048",
     257: "ffdhe3072",
     258: "ffdhe4096",
     259: "ffdhe6144",
     260: "ffdhe8192",
+    512: "MLKEM512",
+    513: "MLKEM768",
+    514: "MLKEM1024",
+    4587: "SecP256r1MLKEM768",
+    4588: "X25519MLKEM768",
+    4589: "SecP384r1MLKEM1024",
     65281: "arbitrary_explicit_prime_curves",
     65282: "arbitrary_explicit_char2_curves",
 }
@@ -606,7 +627,6 @@ ClientHello = SubRecordType({
     "heartbeat": Boolean(doc="This is true if the client has the Heartbeat Supported extension (see https://tools.ietf.org/html/rfc6520)."),
     "extended_random": Binary(doc="The value of the Extended Random extension, if present (see https://tools.ietf.org/html/draft-rescorla-tls-extended-random-02)."),
     "extended_master_secret": Boolean(doc="This is true if the client has the Extended Master Secret extension (see https://tools.ietf.org/html/rfc7627)."),
-    "next_protocol_negotiation": Boolean(doc="This is true if the client has the Next Protocol Negotiation extension (see https://datatracker.ietf.org/doc/html/draft-agl-tls-nextprotoneg-04)."),
     "server_name": String(doc="This contains the server name from the Server Name Identification (SNI) extension, if present (see https://tools.ietf.org/html/rfc6066#section-3)."),
     "scts": Boolean(doc="This is true if the client has the Signed Certificate Timestamp extension, if present (see https://tools.ietf.org/html/rfc6962#section-3.3.1)"),
     "supported_curves": ListOf(CurveID(), doc="The list of supported curves in the Supported Elliptic Curves extension, if present (see https://tools.ietf.org/html/rfc4492#section-5.1.1)"),
@@ -637,6 +657,7 @@ ServerHello = SubRecordType({
         "raw": Binary(),
     }), doc="The values in the SignedCertificateTimestampList of the Signed Certificate Timestamp, if present."),
     "alpn_protocol": String(doc="This contains the selected protocol from the Application-Layer Protocol Negotiation extension, if present (see https://tools.ietf.org/html/rfc7301)."),
+    "extension_identifiers": ListOf(Unsigned16BitInteger(), category="Extension Identifiers", doc="The list of unparsed TLS extension identifiers in handshake."),
     "unknown_extensions": ListOf(Binary(), doc="A list of any unrecognized extensions in raw form."),
 }, doc="The Server Hello message (see https://tools.ietf.org/html/rfc5246#section-7.4.1.3).")
 
