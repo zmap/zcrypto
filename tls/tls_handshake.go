@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/zmap/zcrypto/ct"
 	jsonKeys "github.com/zmap/zcrypto/json"
 	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zcrypto/x509/ct"
 )
 
 var ErrUnimplementedCipher error = errors.New("unimplemented cipher suite")
@@ -22,13 +22,11 @@ var ErrNoMutualCipher error = errors.New("no mutual cipher suite")
 
 type TLSVersion uint16
 
-type CipherSuite uint16
-
 type ClientHello struct {
 	Version              TLSVersion          `json:"version"`
 	Random               []byte              `json:"random"`
 	SessionID            []byte              `json:"session_id,omitempty"`
-	CipherSuites         []CipherSuite       `json:"cipher_suites"`
+	CipherSuites         []CipherSuiteID     `json:"cipher_suites"`
 	CompressionMethods   []CompressionMethod `json:"compression_methods"`
 	OcspStapling         bool                `json:"ocsp_stapling"`
 	TicketSupported      bool                `json:"ticket"`
@@ -36,7 +34,6 @@ type ClientHello struct {
 	HeartbeatSupported   bool                `json:"heartbeat"`
 	ExtendedRandom       []byte              `json:"extended_random,omitempty"`
 	ExtendedMasterSecret bool                `json:"extended_master_secret"`
-	NextProtoNeg         bool                `json:"next_protocol_negotiation"`
 	ServerName           string              `json:"server_name,omitempty"`
 	Scts                 bool                `json:"scts"`
 	SupportedCurves      []CurveID           `json:"supported_curves,omitempty"`
@@ -54,21 +51,26 @@ type ParsedAndRawSCT struct {
 }
 
 type ServerHello struct {
-	Version                     TLSVersion        `json:"version"`
-	Random                      []byte            `json:"random"`
-	SessionID                   []byte            `json:"session_id"`
-	CipherSuite                 CipherSuite       `json:"cipher_suite"`
-	CompressionMethod           CompressionMethod `json:"compression_method"`
-	OcspStapling                bool              `json:"ocsp_stapling"`
-	TicketSupported             bool              `json:"ticket"`
-	SecureRenegotiation         bool              `json:"secure_renegotiation"`
-	HeartbeatSupported          bool              `json:"heartbeat"`
-	ExtendedRandom              []byte            `json:"extended_random,omitempty"`
-	ExtendedMasterSecret        bool              `json:"extended_master_secret"`
-	NextProtoNeg                bool              `json:"next_protocol_negotiation"`
-	SignedCertificateTimestamps []ParsedAndRawSCT `json:"scts,omitempty"`
-	AlpnProtocol                string            `json:"alpn_protocol,omitempty"`
-	UnknownExtensions           [][]byte          `json:"unknown_extensions,omitempty"`
+	Version                     TLSVersion            `json:"version"`
+	Random                      []byte                `json:"random"`
+	SessionID                   []byte                `json:"session_id"`
+	CipherSuite                 CipherSuiteID         `json:"cipher_suite"`
+	CompressionMethod           CompressionMethod     `json:"compression_method"`
+	OcspStapling                bool                  `json:"ocsp_stapling"`
+	TicketSupported             bool                  `json:"ticket"`
+	SecureRenegotiation         bool                  `json:"secure_renegotiation"`
+	HeartbeatSupported          bool                  `json:"heartbeat"`
+	ExtendedRandom              []byte                `json:"extended_random,omitempty"`
+	ExtendedMasterSecret        bool                  `json:"extended_master_secret"`
+	SignedCertificateTimestamps []ParsedAndRawSCT     `json:"scts,omitempty"`
+	AlpnProtocol                string                `json:"alpn_protocol,omitempty"`
+	SupportedVersions           *SupportedVersionsExt `json:"supported_versions,omitempty"`
+	ExtensionIdentifiers        []uint16              `json:"extension_identifiers,omitempty"`
+	UnknownExtensions           [][]byte              `json:"unknown_extensions,omitempty"`
+}
+
+type SupportedVersionsExt struct {
+	SelectedVersion TLSVersion `json:"selected_version"`
 }
 
 // SimpleCertificate holds a *x509.Certificate and a []byte for the certificate
@@ -87,13 +89,12 @@ type Certificates struct {
 
 // ServerKeyExchange represents the raw key data sent by the server in TLS key exchange message
 type ServerKeyExchange struct {
-	Raw            []byte                 `json:"-"`
-	RSAParams      *jsonKeys.RSAPublicKey `json:"rsa_params,omitempty"`
-	DHParams       *jsonKeys.DHParams     `json:"dh_params,omitempty"`
-	ECDHParams     *jsonKeys.ECDHParams   `json:"ecdh_params,omitempty"`
-	Digest         []byte                 `json:"digest,omitempty"`
-	Signature      *DigitalSignature      `json:"signature,omitempty"`
-	SignatureError string                 `json:"signature_error,omitempty"`
+	Raw            []byte               `json:"-"`
+	DHParams       *jsonKeys.DHParams   `json:"dh_params,omitempty"`
+	ECDHParams     *jsonKeys.ECDHParams `json:"ecdh_params,omitempty"`
+	Digest         []byte               `json:"digest,omitempty"`
+	Signature      *DigitalSignature    `json:"signature,omitempty"`
+	SignatureError string               `json:"signature_error,omitempty"`
 }
 
 // ClientKeyExchange represents the raw key data sent by the client in TLS key exchange message
@@ -177,7 +178,7 @@ func (v *TLSVersion) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalJSON implements the json.Marshler interface
-func (cs *CipherSuite) MarshalJSON() ([]byte, error) {
+func (cs *CipherSuiteID) MarshalJSON() ([]byte, error) {
 	buf := make([]byte, 2)
 	buf[0] = byte(*cs >> 8)
 	buf[1] = byte(*cs)
@@ -195,7 +196,7 @@ func (cs *CipherSuite) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface
-func (cs *CipherSuite) UnmarshalJSON(b []byte) error {
+func (cs *CipherSuiteID) UnmarshalJSON(b []byte) error {
 	aux := struct {
 		Hex   string `json:"hex"`
 		Name  string `json:"name"`
@@ -207,7 +208,7 @@ func (cs *CipherSuite) UnmarshalJSON(b []byte) error {
 	if expectedName := nameForSuite(aux.Value); expectedName != aux.Name {
 		return fmt.Errorf("mismatched cipher suite and name, suite: %d, name: %s, expected name: %s", aux.Value, aux.Name, expectedName)
 	}
-	*cs = CipherSuite(aux.Value)
+	*cs = CipherSuiteID(aux.Value)
 	return nil
 }
 
@@ -277,9 +278,9 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 	ch.SessionID = make([]byte, len(m.sessionId))
 	copy(ch.SessionID, m.sessionId)
 
-	ch.CipherSuites = make([]CipherSuite, len(m.cipherSuites))
+	ch.CipherSuites = make([]CipherSuiteID, len(m.cipherSuites))
 	for i, aCipher := range m.cipherSuites {
-		ch.CipherSuites[i] = CipherSuite(aCipher)
+		ch.CipherSuites[i] = CipherSuiteID(aCipher)
 	}
 
 	ch.CompressionMethods = make([]CompressionMethod, len(m.compressionMethods))
@@ -289,15 +290,8 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 
 	ch.OcspStapling = m.ocspStapling
 	ch.TicketSupported = m.ticketSupported
-	ch.SecureRenegotiation = m.secureRenegotiation
-	ch.HeartbeatSupported = m.heartbeatEnabled
+	ch.SecureRenegotiation = m.secureRenegotiationSupported && len(m.secureRenegotiation) > 0
 
-	if len(m.extendedRandom) > 0 {
-		ch.ExtendedRandom = make([]byte, len(m.extendedRandom))
-		copy(ch.ExtendedRandom, m.extendedRandom)
-	}
-
-	ch.NextProtoNeg = m.nextProtoNeg
 	ch.ServerName = m.serverName
 	ch.Scts = m.scts
 
@@ -316,12 +310,12 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 		ch.SessionTicket.LifetimeHint = 0 // Clients don't send
 	}
 
-	ch.SignatureAndHashes = make([]SignatureAndHash, len(m.signatureAndHashes))
-	for i, aGroup := range m.signatureAndHashes {
-		ch.SignatureAndHashes[i] = SignatureAndHash(aGroup)
+	ch.SignatureAndHashes = []SignatureAndHash{}
+	for _, sigAndAlg := range m.supportedSignatureAlgorithms {
+		if sa, ok := signatureAlgorithms[SignatureScheme(sigAndAlg)]; ok {
+			ch.SignatureAndHashes = append(ch.SignatureAndHashes, SignatureAndHash(sa))
+		}
 	}
-
-	ch.SctEnabled = m.sctEnabled
 
 	ch.AlpnProtocols = make([]string, len(m.alpnProtocols))
 	copy(ch.AlpnProtocols, m.alpnProtocols)
@@ -332,6 +326,7 @@ func (m *clientHelloMsg) MakeLog() *ClientHello {
 		copy(tempBytes, extBytes)
 		ch.UnknownExtensions[i] = tempBytes
 	}
+
 	return ch
 }
 
@@ -342,17 +337,16 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	copy(sh.Random, m.random)
 	sh.SessionID = make([]byte, len(m.sessionId))
 	copy(sh.SessionID, m.sessionId)
-	sh.CipherSuite = CipherSuite(m.cipherSuite)
+	sh.CipherSuite = CipherSuiteID(m.cipherSuite)
 	sh.CompressionMethod = CompressionMethod(m.compressionMethod)
 	sh.OcspStapling = m.ocspStapling
 	sh.TicketSupported = m.ticketSupported
-	sh.SecureRenegotiation = m.secureRenegotiation
-	sh.HeartbeatSupported = m.heartbeatEnabled
-	if len(m.extendedRandom) > 0 {
-		sh.ExtendedRandom = make([]byte, len(m.extendedRandom))
-		copy(sh.ExtendedRandom, m.extendedRandom)
+	sh.SecureRenegotiation = m.secureRenegotiationSupported && len(m.secureRenegotiation) > 0
+	extensionIdentifiers, success := m.extractExtensions()
+	if success {
+		sh.ExtensionIdentifiers = extensionIdentifiers
 	}
-	sh.NextProtoNeg = m.nextProtoNeg
+
 	if len(m.scts) > 0 {
 		for _, rawSCT := range m.scts {
 			var out ParsedAndRawSCT
@@ -367,12 +361,20 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	}
 	sh.ExtendedMasterSecret = m.extendedMasterSecret
 	sh.AlpnProtocol = m.alpnProtocol
+
+	if m.supportedVersion != 0 {
+		sh.SupportedVersions = &SupportedVersionsExt{
+			SelectedVersion: TLSVersion(m.supportedVersion),
+		}
+	}
+
 	sh.UnknownExtensions = make([][]byte, len(m.unknownExtensions))
 	for i, extBytes := range m.unknownExtensions {
 		tempBytes := make([]byte, len(extBytes))
 		copy(tempBytes, extBytes)
 		sh.UnknownExtensions[i] = tempBytes
 	}
+
 	return sh
 }
 
@@ -385,6 +387,24 @@ func (m *certificateMsg) MakeLog() *Certificates {
 	}
 	if len(m.certificates) >= 2 {
 		chain := m.certificates[1:]
+		sc.Chain = make([]SimpleCertificate, len(chain))
+		for idx, cert := range chain {
+			sc.Chain[idx].Raw = make([]byte, len(cert))
+			copy(sc.Chain[idx].Raw, cert)
+		}
+	}
+	return sc
+}
+
+func (m *certificateMsgTLS13) MakeLog() *Certificates {
+	sc := new(Certificates)
+	if len(m.certificate.Certificate) >= 1 {
+		cert := m.certificate.Certificate[0]
+		sc.Certificate.Raw = make([]byte, len(cert))
+		copy(sc.Certificate.Raw, cert)
+	}
+	if len(m.certificate.Certificate) >= 2 {
+		chain := m.certificate.Certificate[1:]
 		sc.Chain = make([]SimpleCertificate, len(chain))
 		for idx, cert := range chain {
 			sc.Chain[idx].Raw = make([]byte, len(cert))
@@ -409,6 +429,7 @@ func (c *Certificates) addParsed(certs []*x509.Certificate, validation *x509.Val
 	c.Validation = validation
 }
 
+// TODO: ZGrab2
 func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 	skx := new(ServerKeyExchange)
 	skx.Raw = make([]byte, len(m.key))
@@ -419,14 +440,11 @@ func (m *serverKeyExchangeMsg) MakeLog(ka keyAgreement) *ServerKeyExchange {
 
 	// Write out parameters
 	switch ka := ka.(type) {
-	case *rsaKeyAgreement:
-		skx.RSAParams = ka.RSAParams()
-		auth = ka.auth
-		errAuth = ka.verifyError
 	case *dheKeyAgreement:
 		skx.DHParams = ka.DHParams()
 		auth = ka.auth
 		errAuth = ka.verifyError
+
 	case *ecdheKeyAgreement:
 		skx.ECDHParams = ka.ECDHParams()
 		auth = ka.auth
@@ -510,7 +528,7 @@ func (m *clientKeyExchangeMsg) MakeLog(ka keyAgreement) *ClientKeyExchange {
 		ckx.RSAParams.Length = uint16(len(m.ciphertext) - 2) // First 2 bytes are length
 		ckx.RSAParams.EncryptedPMS = make([]byte, len(m.ciphertext)-2)
 		copy(ckx.RSAParams.EncryptedPMS, m.ciphertext[2:])
-		// Premaster-Secret is available in KeyMaterial record
+	// Premaster-Secret is available in KeyMaterial record
 	case *dheKeyAgreement:
 		ckx.DHParams = ka.ClientDHParams()
 	case *ecdheKeyAgreement:

@@ -14,10 +14,10 @@ jobs:
     steps:
 
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Check gofmt
-      uses: Jerome1337/gofmt-action@v1.0.4
+      uses: Jerome1337/gofmt-action@v1.0.5
       with:
         gofmt-path: './'
         gofmt-flags: -l -s
