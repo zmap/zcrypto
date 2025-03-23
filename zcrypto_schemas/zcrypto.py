@@ -524,13 +524,17 @@ SignatureAndHash = SubRecordType({
 }, doc="mirrors the TLS 1.2, SignatureAndHashAlgorithm struct. See RFC 5246, section A.4.1.")
 
 # tls_names.go: TLSVersion.String()
-TLSVersionName = Enum.with_args(values=["SSLv3", "TLSv1.0", "TLSv1.1", "TLSv1.2", "unknown"], doc="A human-readable version of the TLS version.")
+TLSVersionName = Enum.with_args(values=["SSLv3", "TLSv1.0", "TLSv1.1", "TLSv1.2", "TLSv1.3", "unknown"], doc="A human-readable version of the TLS version.")
 
 # tls/tls_handshake.go: type TLSVersion uint16 (marshal -> name/value)
 TLSVersion = SubRecordType({
     "name": TLSVersionName(),
     # Note -- this is an "int" (at least 32 bits) in the go struct, but the value itself is 16 bits.
     "value": Unsigned16BitInteger(doc="The TLS version identifier."),
+})
+
+ServerSupportedVersions = SubRecordType({
+    "selected_version": TLSVersion(doc="The version of the TLS protocol selected by the server."),
 })
 
 # tls/tls_handshake.go: type SessionTicket
@@ -656,6 +660,7 @@ ServerHello = SubRecordType({
         "parsed": SCTRecord(),
         "raw": Binary(),
     }), doc="The values in the SignedCertificateTimestampList of the Signed Certificate Timestamp, if present."),
+    "supported_versions": ServerSupportedVersions(doc="The list of supported versions in the Supported Versions extension, if present (see https://tools.ietf.org/html/draft-ietf-tls-tls13-18#section-4.2.1)."),
     "alpn_protocol": String(doc="This contains the selected protocol from the Application-Layer Protocol Negotiation extension, if present (see https://tools.ietf.org/html/rfc7301)."),
     "extension_identifiers": ListOf(Unsigned16BitInteger(), category="Extension Identifiers", doc="The list of unparsed TLS extension identifiers in handshake."),
     "unknown_extensions": ListOf(Binary(), doc="A list of any unrecognized extensions in raw form."),
