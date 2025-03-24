@@ -1132,7 +1132,7 @@ func (c *Conn) Write(b []byte) (int, error) {
 	}
 
 	n, err := c.writeRecordLocked(recordTypeApplicationData, b)
-	return n + m, c.out.setErrorLocked(err)
+	return n, c.out.setErrorLocked(err)
 }
 
 // handleRenegotiation processes a HelloRequest handshake message.
