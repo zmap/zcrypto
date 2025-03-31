@@ -8,7 +8,7 @@ require (
 	github.com/weppos/publicsuffix-go v0.40.3-0.20250311103038-7794c8c0723b
 	github.com/zmap/zcertificate v0.0.1
 	golang.org/x/crypto v0.36.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 )
 
@@ -24,4 +24,4 @@ require (
 
 go 1.23.0
 
-toolchain go1.23.7
+toolchain go1.24.1
