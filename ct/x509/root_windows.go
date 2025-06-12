@@ -109,7 +109,7 @@ func checkChainSSLServerPolicy(c *Certificate, chainCtx *syscall.CertChainContex
 	sslPara.Size = uint32(unsafe.Sizeof(*sslPara))
 
 	para := &syscall.CertChainPolicyPara{
-		ExtraPolicyPara: uintptr(unsafe.Pointer(sslPara)),
+		ExtraPolicyPara: syscall.Pointer(unsafe.Pointer(sslPara)),
 	}
 	para.Size = uint32(unsafe.Sizeof(*para))
 
@@ -229,7 +229,7 @@ func loadSystemRoots() (*CertPool, error) {
 	// TODO: restore this functionality on Windows. We tried to do
 	// it in Go 1.8 but had to revert it. See Issue 18609.
 	// Returning (nil, nil) was the old behavior, prior to CL 30578.
-	return nil, nil
+	// return nil, nil
 
 	const CRYPT_E_NOT_FOUND = 0x80092004
 
