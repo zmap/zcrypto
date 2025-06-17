@@ -6,6 +6,7 @@ package tls
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -26,6 +27,7 @@ import (
 
 type clientHandshakeState struct {
 	c               *Conn
+	ctx             context.Context
 	serverHello     *serverHelloMsg
 	hello           *clientHelloMsg
 	suite           *cipherSuite
@@ -324,108 +326,18 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, ecdheParameters, error) {
 	return hello, params, nil
 }
 
-func (c *Conn) clientHandshake() (err error) {
+func (c *Conn) clientHandshake(ctx context.Context) (err error) {
 	if c.config == nil {
 		c.config = defaultConfig()
 	}
-	var hello *clientHelloMsg
-	var helloBytes []byte
-	var session *ClientSessionState
-	var sessionCache ClientSessionCache
-	var cacheKey string
-	var ecdheParams ecdheParameters
 
 	// This may be a renegotiation handshake, in which case some fields
 	// need to be reset.
 	c.didResume = false
 
-	// first, let's check if a ClientFingerprintConfiguration template was provided by the config
-	if c.config.ClientFingerprintConfiguration != nil {
-		if err := c.config.ClientFingerprintConfiguration.WriteToConfig(c.config); err != nil {
-			return err
-		}
-		session = nil
-		sessionCache = c.config.ClientFingerprintConfiguration.SessionCache
-		if sessionCache != nil {
-			if c.config.ClientFingerprintConfiguration.CacheKey == nil {
-				return errors.New("tls: must specify CacheKey if SessionCache is defined in Config.ClientFingerprintConfiguration")
-			}
-			cacheKey = c.config.ClientFingerprintConfiguration.CacheKey.Key(c.conn.RemoteAddr())
-			candidateSession, ok := sessionCache.Get(cacheKey)
-			if ok {
-				cipherSuiteOk := false
-				for _, id := range c.config.ClientFingerprintConfiguration.CipherSuites {
-					if id == candidateSession.cipherSuite {
-						cipherSuiteOk = true
-						break
-					}
-				}
-				versOk := candidateSession.vers >= c.config.minSupportedVersion() &&
-					candidateSession.vers <= c.config.ClientFingerprintConfiguration.HandshakeVersion
-				if versOk && cipherSuiteOk {
-					session = candidateSession
-				}
-			}
-		}
-		for i, ext := range c.config.ClientFingerprintConfiguration.Extensions {
-			switch casted := ext.(type) {
-			case *SessionTicketExtension:
-				if casted.Autopopulate {
-					if session == nil {
-						if !c.config.ForceSessionTicketExt {
-							c.config.ClientFingerprintConfiguration.Extensions[i] = &NullExtension{}
-						}
-					} else {
-						c.config.ClientFingerprintConfiguration.Extensions[i] = &SessionTicketExtension{session.sessionTicket, true}
-						if c.config.ClientFingerprintConfiguration.RandomSessionID > 0 {
-							c.config.ClientFingerprintConfiguration.SessionID = make([]byte, c.config.ClientFingerprintConfiguration.RandomSessionID)
-							if _, err := io.ReadFull(c.config.rand(), c.config.ClientFingerprintConfiguration.SessionID); err != nil {
-								c.sendAlert(alertInternalError)
-								return errors.New("tls: short read from Rand: " + err.Error())
-							}
-
-						}
-					}
-				}
-			}
-		}
-		var err error
-		helloBytes, err = c.config.ClientFingerprintConfiguration.marshal(c.config)
-		if err != nil {
-			return err
-		}
-		hello = &clientHelloMsg{}
-		if ok := hello.unmarshal(helloBytes); !ok {
-			return errors.New("tls: incompatible ClientFingerprintConfiguration")
-		}
-
-		// next, let's check if a ClientHello template was provided by the user
-	} else if c.config.ExternalClientHello != nil {
-
-		hello = new(clientHelloMsg)
-
-		if !hello.unmarshal(c.config.ExternalClientHello) {
-			return errors.New("could not read the ClientHello provided")
-		}
-		if err := hello.WriteToConfig(c.config); err != nil {
-			return err
-		}
-
-		// update the SNI with one name, whether or not the extension was already there
-		hello.serverName = c.config.ServerName
-
-		// then we update the 'raw' value of the message
-		hello.raw = nil
-		helloBytes = hello.marshal()
-
-		session = nil
-		sessionCache = nil
-	} else {
-
-		hello, ecdheParams, err = c.makeClientHello()
-		if err != nil {
-			return err
-		}
+	hello, ecdheParams, err := c.makeClientHello()
+	if err != nil {
+		return err
 	}
 	c.serverName = hello.serverName
 
@@ -444,16 +356,6 @@ func (c *Conn) clientHandshake() (err error) {
 		}()
 	}
 
-	c.handshakeLog = new(ServerHandshake)
-
-	if c.config.ForceSessionTicketExt {
-		hello.ticketSupported = true
-	}
-
-	if c.config.SignedCertificateTimestampExt {
-		hello.sctEnabled = true
-	}
-
 	if _, err := c.writeRecord(recordTypeHandshake, hello.marshal()); err != nil {
 		return err
 	}
@@ -462,14 +364,12 @@ func (c *Conn) clientHandshake() (err error) {
 	if err != nil {
 		return err
 	}
-	c.handshakeLog.ClientHello = hello.MakeLog()
 
 	serverHello, ok := msg.(*serverHelloMsg)
 	if !ok {
 		c.sendAlert(alertUnexpectedMessage)
 		return unexpectedMessageError(serverHello, msg)
 	}
-	c.handshakeLog.ServerHello = serverHello.MakeLog()
 
 	if err := c.pickTLSVersion(serverHello); err != nil {
 		return err
@@ -490,6 +390,7 @@ func (c *Conn) clientHandshake() (err error) {
 	if c.vers == VersionTLS13 {
 		hs := &clientHandshakeStateTLS13{
 			c:           c,
+			ctx:         ctx,
 			serverHello: serverHello,
 			hello:       hello,
 			ecdheParams: ecdheParams,
@@ -504,6 +405,7 @@ func (c *Conn) clientHandshake() (err error) {
 
 	hs := &clientHandshakeState{
 		c:           c,
+		ctx:         ctx,
 		serverHello: serverHello,
 		hello:       hello,
 		session:     session,
@@ -512,14 +414,6 @@ func (c *Conn) clientHandshake() (err error) {
 	if err := hs.handshake(); err != nil {
 		return err
 	}
-
-	if hs.session == nil {
-		c.handshakeLog.SessionTicket = nil
-	} else {
-		c.handshakeLog.SessionTicket = hs.session.MakeLog()
-	}
-
-	c.handshakeLog.KeyMaterial = hs.MakeLog()
 
 	// If we had a successful handshake and hs.session is different from
 	// the one already cached - cache a new one.

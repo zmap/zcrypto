@@ -6,6 +6,7 @@ package tls
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/hmac"
 	"crypto/rsa"
@@ -17,6 +18,7 @@ import (
 
 type clientHandshakeStateTLS13 struct {
 	c           *Conn
+	ctx         context.Context
 	serverHello *serverHelloMsg
 	hello       *clientHelloMsg
 	ecdheParams ecdheParameters

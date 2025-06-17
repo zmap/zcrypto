@@ -7,6 +7,7 @@ package tls
 import (
 	"bytes"
 	"container/list"
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -629,6 +630,9 @@ type ClientHelloInfo struct {
 	// config is embedded by the GetCertificate or GetConfigForClient caller,
 	// for use with SupportsCertificate.
 	config *Config
+
+	// ctx is the context of the handshake that is in progress.
+	ctx context.Context
 }
 
 // CertificateRequestInfo contains information from a server's

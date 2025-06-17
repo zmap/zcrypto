@@ -6,6 +6,7 @@ package tls
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/elliptic"
 	"encoding/pem"
@@ -20,8 +21,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zmap/zcrypto/x509"
 	"golang.org/x/crypto/curve25519"
+
+	"github.com/zmap/zcrypto/x509"
 )
 
 func testClientHello(t *testing.T, serverConfig *Config, m handshakeMessage) {
@@ -39,7 +41,7 @@ func testClientHelloFailure(t *testing.T, serverConfig *Config, m handshakeMessa
 		c.Close()
 	}()
 	conn := Server(s, serverConfig)
-	ch, err := conn.readClientHello()
+	ch, err := conn.readClientHello(context.Background())
 	hs := serverHandshakeState{
 		c:           conn,
 		clientHello: ch,
@@ -1423,7 +1425,7 @@ func TestSNIGivenOnFailure(t *testing.T) {
 		c.Close()
 	}()
 	conn := Server(s, serverConfig)
-	ch, err := conn.readClientHello()
+	ch, err := conn.readClientHello(context.Background())
 	hs := serverHandshakeState{
 		c:           conn,
 		clientHello: ch,

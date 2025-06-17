@@ -8,6 +8,7 @@ package tls
 
 import (
 	"bytes"
+	"context"
 	"crypto/cipher"
 	"crypto/subtle"
 	"errors"
@@ -28,7 +29,7 @@ type Conn struct {
 	// constant
 	conn        net.Conn
 	isClient    bool
-	handshakeFn func() error // (*Conn).clientHandshake or serverHandshake
+	handshakeFn func(ctx context.Context) error // (*Conn).clientHandshake or serverHandshake
 
 	// handshakeStatus is 1 if the connection is currently transferring
 	// application data (i.e. is not currently processing a handshake).
@@ -152,6 +153,13 @@ func (c *Conn) SetReadDeadline(t time.Time) error {
 // After a Write has timed out, the TLS state is corrupt and all future writes will return the same error.
 func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return c.conn.SetWriteDeadline(t)
+}
+
+// NetConn returns the underlying connection that is wrapped by c.
+// Note that writing to or reading from this connection directly will corrupt the
+// TLS session.
+func (c *Conn) NetConn() net.Conn {
+	return c.conn
 }
 
 // A halfConn represents one direction of the record layer
@@ -583,12 +591,14 @@ func (c *Conn) readChangeCipherSpec() error {
 
 // readRecordOrCCS reads one or more TLS records from the connection and
 // updates the record layer state. Some invariants:
-//   * c.in must be locked
-//   * c.input must be empty
+//   - c.in must be locked
+//   - c.input must be empty
+//
 // During the handshake one and only one of the following will happen:
 //   - c.hand grows
 //   - c.in.changeCipherSpec is called
 //   - an error is returned
+//
 // After the handshake one and only one of the following will happen:
 //   - c.hand grows
 //   - c.input is set
@@ -1194,7 +1204,7 @@ func (c *Conn) handleRenegotiation() error {
 	defer c.handshakeMutex.Unlock()
 
 	atomic.StoreUint32(&c.handshakeStatus, 0)
-	if c.handshakeErr = c.clientHandshake(); c.handshakeErr == nil {
+	if c.handshakeErr = c.clientHandshake(context.Background()); c.handshakeErr == nil {
 		c.handshakes++
 	}
 	return c.handshakeErr
@@ -1377,8 +1387,68 @@ func (c *Conn) closeNotify() error {
 // first Read or Write will call it automatically.
 //
 // For control over canceling or setting a timeout on a handshake, use
-// the Dialer's DialContext method.
+// HandshakeContext or the Dialer's DialContext method instead.
 func (c *Conn) Handshake() error {
+	return c.HandshakeContext(context.Background())
+}
+
+// HandshakeContext runs the client or server handshake
+// protocol if it has not yet been run.
+//
+// The provided Context must be non-nil. If the context is canceled before
+// the handshake is complete, the handshake is interrupted and an error is returned.
+// Once the handshake has completed, cancellation of the context will not affect the
+// connection.
+//
+// Most uses of this package need not call HandshakeContext explicitly: the
+// first Read or Write will call it automatically.
+func (c *Conn) HandshakeContext(ctx context.Context) error {
+	// Delegate to unexported method for named return
+	// without confusing documented signature.
+	return c.handshakeContext(ctx)
+}
+
+func (c *Conn) handshakeContext(ctx context.Context) (ret error) {
+	// Fast sync/atomic-based exit if there is no handshake in flight and the
+	// last one succeeded without an error. Avoids the expensive context setup
+	// and mutex for most Read and Write calls.
+	if c.handshakeComplete() {
+		return nil
+	}
+
+	handshakeCtx, cancel := context.WithCancel(ctx)
+	// Note: defer this before starting the "interrupter" goroutine
+	// so that we can tell the difference between the input being canceled and
+	// this cancellation. In the former case, we need to close the connection.
+	defer cancel()
+
+	// Start the "interrupter" goroutine, if this context might be canceled.
+	// (The background context cannot).
+	//
+	// The interrupter goroutine waits for the input context to be done and
+	// closes the connection if this happens before the function returns.
+	if ctx.Done() != nil {
+		done := make(chan struct{})
+		interruptRes := make(chan error, 1)
+		defer func() {
+			close(done)
+			if ctxErr := <-interruptRes; ctxErr != nil {
+				// Return context error to user.
+				ret = ctxErr
+			}
+		}()
+		go func() {
+			select {
+			case <-handshakeCtx.Done():
+				// Close the connection, discarding the error
+				_ = c.conn.Close()
+				interruptRes <- handshakeCtx.Err()
+			case <-done:
+				interruptRes <- nil
+			}
+		}()
+	}
+
 	c.handshakeMutex.Lock()
 	defer c.handshakeMutex.Unlock()
 
@@ -1392,16 +1462,7 @@ func (c *Conn) Handshake() error {
 	c.in.Lock()
 	defer c.in.Unlock()
 
-	// TODO: c.handshakeFn() gives a race condition in ZGrab2
-	// using explicit calls here instead
-
-	//c.handshakeErr = c.handshakeFn()
-	if c.isClient {
-		c.handshakeErr = c.clientHandshake()
-	} else {
-		c.handshakeErr = c.serverHandshake()
-	}
-
+	c.handshakeErr = c.handshakeFn(handshakeCtx)
 	if c.handshakeErr == nil {
 		c.handshakes++
 	} else {
@@ -1412,6 +1473,9 @@ func (c *Conn) Handshake() error {
 
 	if c.handshakeErr == nil && !c.handshakeComplete() {
 		c.handshakeErr = errors.New("tls: internal error: handshake should have had a result")
+	}
+	if c.handshakeErr != nil && c.handshakeComplete() {
+		panic("tls: internal error: handshake returned an error but is marked successful")
 	}
 
 	return c.handshakeErr
