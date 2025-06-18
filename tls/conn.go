@@ -1442,7 +1442,14 @@ func (c *Conn) handshakeContext(ctx context.Context) (ret error) {
 	c.in.Lock()
 	defer c.in.Unlock()
 
-	c.handshakeErr = c.handshakeFn(handshakeCtx)
+	// TODO: c.handshakeFn() gives a race condition in ZGrab2
+	// using explicit calls here instead
+	if c.isClient {
+		c.handshakeErr = c.clientHandshake(ctx)
+	} else {
+		c.handshakeErr = c.serverHandshake(ctx)
+	}
+
 	if c.handshakeErr == nil {
 		c.handshakes++
 	} else {
