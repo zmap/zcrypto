@@ -8,6 +8,7 @@ package tls
 
 import (
 	"bytes"
+	"context"
 	"crypto/cipher"
 	"crypto/subtle"
 	"errors"
@@ -152,6 +153,13 @@ func (c *Conn) SetReadDeadline(t time.Time) error {
 // After a Write has timed out, the TLS state is corrupt and all future writes will return the same error.
 func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return c.conn.SetWriteDeadline(t)
+}
+
+// NetConn returns the underlying connection that is wrapped by c.
+// Note that writing to or reading from this connection directly will corrupt the
+// TLS session.
+func (c *Conn) NetConn() net.Conn {
+	return c.conn
 }
 
 // A halfConn represents one direction of the record layer
@@ -583,12 +591,14 @@ func (c *Conn) readChangeCipherSpec() error {
 
 // readRecordOrCCS reads one or more TLS records from the connection and
 // updates the record layer state. Some invariants:
-//   * c.in must be locked
-//   * c.input must be empty
+//   - c.in must be locked
+//   - c.input must be empty
+//
 // During the handshake one and only one of the following will happen:
 //   - c.hand grows
 //   - c.in.changeCipherSpec is called
 //   - an error is returned
+//
 // After the handshake one and only one of the following will happen:
 //   - c.hand grows
 //   - c.input is set
@@ -1350,6 +1360,26 @@ func (c *Conn) closeNotify() error {
 	return c.closeNotifyErr
 }
 
+// HandshakeContext runs the client or server handshake
+// protocol if it has not yet been run.
+//
+// The provided Context must be non-nil. If the context is canceled before
+// the handshake is complete, the handshake is interrupted and an error is returned.
+// Once the handshake has completed, cancellation of the context will not affect the
+// connection.
+//
+// Most uses of this package need not call HandshakeContext explicitly: the
+// first [Conn.Read] or [Conn.Write] will call it automatically.
+func (c *Conn) HandshakeContext(ctx context.Context) error {
+	// Delegate to unexported method for named return
+	// without confusing documented signature.
+	return c.handshakeContext(ctx)
+}
+
+func (c *Conn) handshakeContext(ctx context.Context) (ret error) {
+	return c.handshake(ctx)
+}
+
 // Handshake runs the client or server handshake
 // protocol if it has not yet been run.
 //
@@ -1357,8 +1387,12 @@ func (c *Conn) closeNotify() error {
 // first Read or Write will call it automatically.
 //
 // For control over canceling or setting a timeout on a handshake, use
-// the Dialer's DialContext method.
+// HandshakeContext or the Dialer's DialContext method.
 func (c *Conn) Handshake() error {
+	return c.handshake(context.Background())
+}
+
+func (c *Conn) handshake(ctx context.Context) (ret error) {
 	c.handshakeMutex.Lock()
 	defer c.handshakeMutex.Unlock()
 
@@ -1367,6 +1401,44 @@ func (c *Conn) Handshake() error {
 	}
 	if c.handshakeComplete() {
 		return nil
+	}
+
+	handshakeCtx, cancel := context.WithCancel(ctx)
+	// Note: defer this before starting the "interrupter" goroutine
+	// so that we can tell the difference between the input being canceled and
+	// this cancellation. In the former case, we need to close the connection.
+	defer cancel()
+
+	// TODO This is pulled from a newer version of crypto/TLS with quic support which we lack. Commenting out for now.
+	//if c.quic != nil {
+	//	c.quic.cancelc = handshakeCtx.Done()
+	//	c.quic.cancel = cancel
+	//} else if ctx.Done() != nil {
+	if ctx.Done() != nil {
+		// Start the "interrupter" goroutine, if this context might be canceled.
+		// (The background context cannot).
+		//
+		// The interrupter goroutine waits for the input context to be done and
+		// closes the connection if this happens before the function returns.
+		done := make(chan struct{})
+		interruptRes := make(chan error, 1)
+		defer func() {
+			close(done)
+			if ctxErr := <-interruptRes; ctxErr != nil {
+				// Return context error to user.
+				ret = ctxErr
+			}
+		}()
+		go func() {
+			select {
+			case <-handshakeCtx.Done():
+				// Close the connection, discarding the error
+				_ = c.conn.Close()
+				interruptRes <- handshakeCtx.Err()
+			case <-done:
+				interruptRes <- nil
+			}
+		}()
 	}
 
 	c.in.Lock()
