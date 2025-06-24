@@ -1466,6 +1466,14 @@ func (c *Conn) handshake(ctx context.Context) (ret error) {
 		c.handshakeErr = errors.New("tls: internal error: handshake should have had a result")
 	}
 
+	// Check if the handshake error is a net.OpError with an alert error
+	if c.handshakeErr != nil {
+		var alertErr alert
+		if errors.As(c.handshakeErr, &alertErr) {
+			c.handshakeLog.Alert = &alertErr
+		}
+	}
+
 	return c.handshakeErr
 }
 
