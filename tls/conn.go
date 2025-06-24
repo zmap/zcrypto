@@ -211,7 +211,7 @@ func (hc *halfConn) prepareCipherSpec(version uint16, cipher interface{}, mac ha
 // to the ones previously passed to prepareCipherSpec.
 func (hc *halfConn) changeCipherSpec() error {
 	if hc.nextCipher == nil || hc.version == VersionTLS13 {
-		return alertInternalError
+		return AlertInternalError
 	}
 	hc.cipher = hc.nextCipher
 	hc.mac = hc.nextMac
@@ -355,7 +355,7 @@ func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error) {
 			c.XORKeyStream(payload, payload)
 		case aead:
 			if len(payload) < explicitNonceLen {
-				return nil, 0, alertBadRecordMAC
+				return nil, 0, AlertBadRecordMAC
 			}
 			nonce := payload[:explicitNonceLen]
 			if len(nonce) == 0 {
@@ -376,13 +376,13 @@ func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error) {
 			var err error
 			plaintext, err = c.Open(payload[:0], nonce, payload, additionalData)
 			if err != nil {
-				return nil, 0, alertBadRecordMAC
+				return nil, 0, AlertBadRecordMAC
 			}
 		case cbcMode:
 			blockSize := c.BlockSize()
 			minPayload := explicitNonceLen + roundUp(hc.mac.Size()+1, blockSize)
 			if len(payload)%blockSize != 0 || len(payload) < minPayload {
-				return nil, 0, alertBadRecordMAC
+				return nil, 0, AlertBadRecordMAC
 			}
 
 			if explicitNonceLen > 0 {
@@ -404,10 +404,10 @@ func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error) {
 
 		if hc.version == VersionTLS13 {
 			if typ != recordTypeApplicationData {
-				return nil, 0, alertUnexpectedMessage
+				return nil, 0, AlertUnexpectedMessage
 			}
 			if len(plaintext) > maxPlaintext+1 {
-				return nil, 0, alertRecordOverflow
+				return nil, 0, AlertRecordOverflow
 			}
 			// Remove padding and find the ContentType scanning from the end.
 			for i := len(plaintext) - 1; i >= 0; i-- {
@@ -417,7 +417,7 @@ func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error) {
 					break
 				}
 				if i == 0 {
-					return nil, 0, alertUnexpectedMessage
+					return nil, 0, AlertUnexpectedMessage
 				}
 			}
 		}
@@ -428,7 +428,7 @@ func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error) {
 	if hc.mac != nil {
 		macSize := hc.mac.Size()
 		if len(payload) < macSize {
-			return nil, 0, alertBadRecordMAC
+			return nil, 0, AlertBadRecordMAC
 		}
 
 		n := len(payload) - macSize - paddingLen
@@ -447,7 +447,7 @@ func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error) {
 		// See also the logic at the end of extractPadding.
 		macAndPaddingGood := subtle.ConstantTimeCompare(localMAC, remoteMAC) & int(paddingGood)
 		if macAndPaddingGood != 1 {
-			return nil, 0, alertBadRecordMAC
+			return nil, 0, AlertBadRecordMAC
 		}
 
 		plaintext = payload[:n]
@@ -617,7 +617,7 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 
 	// Read header, payload.
 	if err := c.readFromUntil(c.conn, recordHeaderLen); err != nil {
-		// RFC 8446, Section 6.1 suggests that EOF without an alertCloseNotify
+		// RFC 8446, Section 6.1 suggests that EOF without an AlertCloseNotify
 		// is an error, but popular web sites seem to do this, so we accept it
 		// if and only if at the record boundary.
 		if err == io.ErrUnexpectedEOF && c.rawInput.Len() == 0 {
@@ -636,14 +636,14 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 	// is always < 256 bytes long. Therefore typ == 0x80 strongly suggests
 	// an SSLv2 client.
 	if !handshakeComplete && typ == 0x80 {
-		c.sendAlert(alertProtocolVersion)
+		c.sendAlert(AlertProtocolVersion)
 		return c.in.setErrorLocked(c.newRecordHeaderError(nil, "unsupported SSLv2 handshake received"))
 	}
 
 	vers := uint16(hdr[1])<<8 | uint16(hdr[2])
 	n := int(hdr[3])<<8 | int(hdr[4])
 	if c.haveVers && c.vers != VersionTLS13 && vers != c.vers {
-		c.sendAlert(alertProtocolVersion)
+		c.sendAlert(AlertProtocolVersion)
 		msg := fmt.Sprintf("received record with version %x when expecting version %x", vers, c.vers)
 		return c.in.setErrorLocked(c.newRecordHeaderError(nil, msg))
 	}
@@ -657,7 +657,7 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 		}
 	}
 	if c.vers == VersionTLS13 && n > maxCiphertextTLS13 || n > maxCiphertext {
-		c.sendAlert(alertRecordOverflow)
+		c.sendAlert(AlertRecordOverflow)
 		msg := fmt.Sprintf("oversized record received with length %d", n)
 		return c.in.setErrorLocked(c.newRecordHeaderError(nil, msg))
 	}
@@ -672,15 +672,15 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 	record := c.rawInput.Next(recordHeaderLen + n)
 	data, typ, err := c.in.decrypt(record)
 	if err != nil {
-		return c.in.setErrorLocked(c.sendAlert(err.(alert)))
+		return c.in.setErrorLocked(c.sendAlert(err.(Alert)))
 	}
 	if len(data) > maxPlaintext {
-		return c.in.setErrorLocked(c.sendAlert(alertRecordOverflow))
+		return c.in.setErrorLocked(c.sendAlert(AlertRecordOverflow))
 	}
 
 	// Application Data messages are always protected.
 	if c.in.cipher == nil && typ == recordTypeApplicationData {
-		return c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+		return c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 	}
 
 	if typ != recordTypeAlert && typ != recordTypeChangeCipherSpec && len(data) > 0 {
@@ -690,40 +690,40 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 
 	// Handshake messages MUST NOT be interleaved with other record types in TLS 1.3.
 	if c.vers == VersionTLS13 && typ != recordTypeHandshake && c.hand.Len() > 0 {
-		return c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+		return c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 	}
 
 	switch typ {
 	default:
-		return c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+		return c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 
 	case recordTypeAlert:
 		if len(data) != 2 {
-			return c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+			return c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 		}
-		if alert(data[1]) == alertCloseNotify {
+		if Alert(data[1]) == AlertCloseNotify {
 			return c.in.setErrorLocked(io.EOF)
 		}
 		if c.vers == VersionTLS13 {
-			return c.in.setErrorLocked(&net.OpError{Op: "remote error", Err: alert(data[1])})
+			return c.in.setErrorLocked(&net.OpError{Op: "remote error", Err: Alert(data[1])})
 		}
 		switch data[0] {
-		case alertLevelWarning:
+		case AlertLevelWarning:
 			// Drop the record on the floor and retry.
 			return c.retryReadRecord(expectChangeCipherSpec)
-		case alertLevelError:
-			return c.in.setErrorLocked(&net.OpError{Op: "remote error", Err: alert(data[1])})
+		case AlertLevelError:
+			return c.in.setErrorLocked(&net.OpError{Op: "remote error", Err: Alert(data[1])})
 		default:
-			return c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+			return c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 		}
 
 	case recordTypeChangeCipherSpec:
 		if len(data) != 1 || data[0] != 1 {
-			return c.in.setErrorLocked(c.sendAlert(alertDecodeError))
+			return c.in.setErrorLocked(c.sendAlert(AlertDecodeError))
 		}
 		// Handshake messages are not allowed to fragment across the CCS.
 		if c.hand.Len() > 0 {
-			return c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+			return c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 		}
 		// In TLS 1.3, change_cipher_spec records are ignored until the
 		// Finished. See RFC 8446, Appendix D.4. Note that according to Section
@@ -734,15 +734,15 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 			return c.retryReadRecord(expectChangeCipherSpec)
 		}
 		if !expectChangeCipherSpec {
-			return c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+			return c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 		}
 		if err := c.in.changeCipherSpec(); err != nil {
-			return c.in.setErrorLocked(c.sendAlert(err.(alert)))
+			return c.in.setErrorLocked(c.sendAlert(err.(Alert)))
 		}
 
 	case recordTypeApplicationData:
 		if !handshakeComplete || expectChangeCipherSpec {
-			return c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+			return c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 		}
 		// Some OpenSSL servers send empty records in order to randomize the
 		// CBC IV. Ignore a limited number of empty records.
@@ -756,7 +756,7 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 
 	case recordTypeHandshake:
 		if len(data) == 0 || expectChangeCipherSpec {
-			return c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+			return c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 		}
 		c.hand.Write(data)
 	}
@@ -769,7 +769,7 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 func (c *Conn) retryReadRecord(expectChangeCipherSpec bool) error {
 	c.retryCount++
 	if c.retryCount > maxUselessRecords {
-		c.sendAlert(alertUnexpectedMessage)
+		c.sendAlert(AlertUnexpectedMessage)
 		return c.in.setErrorLocked(errors.New("tls: too many ignored records"))
 	}
 	return c.readRecordOrCCS(expectChangeCipherSpec)
@@ -814,17 +814,17 @@ func (c *Conn) readFromUntil(r io.Reader, n int) error {
 }
 
 // sendAlert sends a TLS alert message.
-func (c *Conn) sendAlertLocked(err alert) error {
+func (c *Conn) sendAlertLocked(err Alert) error {
 	switch err {
-	case alertNoRenegotiation, alertCloseNotify:
-		c.tmp[0] = alertLevelWarning
+	case AlertNoRenegotiation, AlertCloseNotify:
+		c.tmp[0] = AlertLevelWarning
 	default:
-		c.tmp[0] = alertLevelError
+		c.tmp[0] = AlertLevelError
 	}
 	c.tmp[1] = byte(err)
 
 	_, writeErr := c.writeRecordLocked(recordTypeAlert, c.tmp[0:2])
-	if err == alertCloseNotify {
+	if err == AlertCloseNotify {
 		// closeNotify is a special case in that it isn't an error.
 		return writeErr
 	}
@@ -833,7 +833,7 @@ func (c *Conn) sendAlertLocked(err alert) error {
 }
 
 // sendAlert sends a TLS alert message.
-func (c *Conn) sendAlert(err alert) error {
+func (c *Conn) sendAlert(err Alert) error {
 	c.out.Lock()
 	defer c.out.Unlock()
 	return c.sendAlertLocked(err)
@@ -999,7 +999,7 @@ func (c *Conn) writeRecordLocked(typ recordType, data []byte) (int, error) {
 
 	if typ == recordTypeChangeCipherSpec && c.vers != VersionTLS13 {
 		if err := c.out.changeCipherSpec(); err != nil {
-			return n, c.sendAlertLocked(err.(alert))
+			return n, c.sendAlertLocked(err.(Alert))
 		}
 	}
 
@@ -1027,7 +1027,7 @@ func (c *Conn) readHandshake() (interface{}, error) {
 	data := c.hand.Bytes()
 	n := int(data[1])<<16 | int(data[2])<<8 | int(data[3])
 	if n > maxHandshake {
-		c.sendAlertLocked(alertInternalError)
+		c.sendAlertLocked(AlertInternalError)
 		return nil, c.in.setErrorLocked(fmt.Errorf("tls: handshake message of length %d bytes exceeds maximum of %d bytes", n, maxHandshake))
 	}
 	for c.hand.Len() < 4+n {
@@ -1085,7 +1085,7 @@ func (c *Conn) readHandshake() (interface{}, error) {
 	case typeKeyUpdate:
 		m = new(keyUpdateMsg)
 	default:
-		return nil, c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+		return nil, c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 	}
 
 	// The handshake message unmarshalers
@@ -1094,7 +1094,7 @@ func (c *Conn) readHandshake() (interface{}, error) {
 	data = append([]byte(nil), data...)
 
 	if !m.unmarshal(data) {
-		return nil, c.in.setErrorLocked(c.sendAlert(alertUnexpectedMessage))
+		return nil, c.in.setErrorLocked(c.sendAlert(AlertUnexpectedMessage))
 	}
 	return m, nil
 }
@@ -1134,7 +1134,7 @@ func (c *Conn) Write(b []byte) (int, error) {
 	}
 
 	if !c.handshakeComplete() {
-		return 0, alertInternalError
+		return 0, AlertInternalError
 	}
 
 	if c.closeNotifySent {
@@ -1158,25 +1158,25 @@ func (c *Conn) handleRenegotiation() error {
 
 	helloReq, ok := msg.(*helloRequestMsg)
 	if !ok {
-		c.sendAlert(alertUnexpectedMessage)
+		c.sendAlert(AlertUnexpectedMessage)
 		return unexpectedMessageError(helloReq, msg)
 	}
 
 	if !c.isClient {
-		return c.sendAlert(alertNoRenegotiation)
+		return c.sendAlert(AlertNoRenegotiation)
 	}
 
 	switch c.config.Renegotiation {
 	case RenegotiateNever:
-		return c.sendAlert(alertNoRenegotiation)
+		return c.sendAlert(AlertNoRenegotiation)
 	case RenegotiateOnceAsClient:
 		if c.handshakes > 1 {
-			return c.sendAlert(alertNoRenegotiation)
+			return c.sendAlert(AlertNoRenegotiation)
 		}
 	case RenegotiateFreelyAsClient:
 		// Ok.
 	default:
-		c.sendAlert(alertInternalError)
+		c.sendAlert(AlertInternalError)
 		return errors.New("tls: unknown Renegotiation value")
 	}
 
@@ -1204,7 +1204,7 @@ func (c *Conn) handlePostHandshakeMessage() error {
 
 	c.retryCount++
 	if c.retryCount > maxUselessRecords {
-		c.sendAlert(alertUnexpectedMessage)
+		c.sendAlert(AlertUnexpectedMessage)
 		return c.in.setErrorLocked(errors.New("tls: too many non-advancing records"))
 	}
 
@@ -1214,7 +1214,7 @@ func (c *Conn) handlePostHandshakeMessage() error {
 	case *keyUpdateMsg:
 		return c.handleKeyUpdate(msg)
 	default:
-		c.sendAlert(alertUnexpectedMessage)
+		c.sendAlert(AlertUnexpectedMessage)
 		return fmt.Errorf("tls: received unexpected handshake message of type %T", msg)
 	}
 }
@@ -1222,7 +1222,7 @@ func (c *Conn) handlePostHandshakeMessage() error {
 func (c *Conn) handleKeyUpdate(keyUpdate *keyUpdateMsg) error {
 	cipherSuite := cipherSuiteTLS13ByID(c.cipherSuite)
 	if cipherSuite == nil {
-		return c.in.setErrorLocked(c.sendAlert(alertInternalError))
+		return c.in.setErrorLocked(c.sendAlert(AlertInternalError))
 	}
 
 	newSecret := cipherSuite.nextTrafficSecret(c.in.trafficSecret)
@@ -1314,7 +1314,7 @@ func (c *Conn) Close() error {
 		// If Close is called while a Write is currently in-flight,
 		// interpret that as a sign that this Close is really just
 		// being used to break the Write and/or clean up resources and
-		// avoid sending the alertCloseNotify, which may block
+		// avoid sending the AlertCloseNotify, which may block
 		// waiting on handshakeMutex or the c.out mutex.
 		return c.conn.Close()
 	}
@@ -1352,7 +1352,7 @@ func (c *Conn) closeNotify() error {
 	if !c.closeNotifySent {
 		// Set a Write Deadline to prevent possibly blocking forever.
 		c.SetWriteDeadline(time.Now().Add(time.Second * 5))
-		c.closeNotifyErr = c.sendAlertLocked(alertCloseNotify)
+		c.closeNotifyErr = c.sendAlertLocked(AlertCloseNotify)
 		c.closeNotifySent = true
 		// Any subsequent writes will fail.
 		c.SetWriteDeadline(time.Now())
@@ -1468,7 +1468,7 @@ func (c *Conn) handshake(ctx context.Context) (ret error) {
 
 	// Check if the handshake error is a net.OpError with an alert error
 	if c.handshakeErr != nil {
-		var alertErr alert
+		var alertErr Alert
 		if errors.As(c.handshakeErr, &alertErr) {
 			c.handshakeLog.Alert = &alertErr
 		}

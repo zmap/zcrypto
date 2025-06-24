@@ -323,7 +323,7 @@ func isTimeoutError(err error) bool {
 }
 
 // tests that Conn.Read returns (non-zero, io.EOF) instead of
-// (non-zero, nil) when a Close (alertCloseNotify) is sitting right
+// (non-zero, nil) when a Close (AlertCloseNotify) is sitting right
 // behind the application data in the buffer.
 func TestConnReadNonzeroAndEOF(t *testing.T) {
 	// This test is racy: it assumes that after a write to a
@@ -726,7 +726,7 @@ func TestWarningAlertFlood(t *testing.T) {
 	}
 
 	for i := 0; i < maxUselessRecords+1; i++ {
-		conn.sendAlert(alertNoRenegotiation)
+		conn.sendAlert(AlertNoRenegotiation)
 	}
 
 	if err := <-errChan; err != nil {
