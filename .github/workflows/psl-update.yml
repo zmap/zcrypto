@@ -1,9 +1,9 @@
 name: psl-update
 on:
   schedule:
-    # Run every hour, at the 15 minute mark. E.g.
-    # 2020-11-29 00:15:00 UTC, 2020-11-29 01:15:00 UTC, 2020-11-29 02:15:00 UTC
-    - cron:  '15 * * * *'
+    # Run every day
+    - cron:  '15 1 * * *'
+  workflow_dispatch:
 jobs:
   zcrypto-psl-update:
     name: Check for publicsuffix-go data updates
