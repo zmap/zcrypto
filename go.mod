@@ -5,7 +5,7 @@ require (
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/weppos/publicsuffix-go v0.40.3-0.20250617082559-9b2e24a9e482
+	github.com/weppos/publicsuffix-go v0.40.3-0.20250708083804-25ff8f86d8b3
 	github.com/zmap/zcertificate v0.0.1
 	golang.org/x/crypto v0.39.0
 	golang.org/x/net v0.41.0
