@@ -7,8 +7,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/weppos/publicsuffix-go v0.40.3-0.20250708083804-25ff8f86d8b3
 	github.com/zmap/zcertificate v0.0.1
-	golang.org/x/crypto v0.39.0
-	golang.org/x/net v0.41.0
+	golang.org/x/crypto v0.41.0
+	golang.org/x/net v0.43.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 )
 
@@ -17,8 +17,8 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kr/text v0.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.26.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
