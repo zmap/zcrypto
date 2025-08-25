@@ -55,7 +55,7 @@ type addChainResponse struct {
 	SCTVersion ct.Version `json:"sct_version"` // SCT structure version
 	ID         string     `json:"id"`          // Log ID
 	Timestamp  uint64     `json:"timestamp"`   // Timestamp of issuance
-	Extensions string     `json:"extensions"`  // Holder for any CT extensions
+	Extensions []byte     `json:"extensions"`  // Holder for any CT extensions
 	Signature  string     `json:"signature"`   // Log signature for this SCT
 }
 
