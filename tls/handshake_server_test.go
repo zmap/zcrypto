@@ -351,15 +351,15 @@ func TestTLSPointFormats(t *testing.T) {
 func TestAlertForwarding(t *testing.T) {
 	c, s := localPipe(t)
 	go func() {
-		Client(c, testConfig).sendAlert(alertUnknownCA)
+		Client(c, testConfig).sendAlert(AlertUnknownCA)
 		c.Close()
 	}()
 
 	err := Server(s, testConfig).Handshake()
 	s.Close()
 	var opErr *net.OpError
-	if !errors.As(err, &opErr) || opErr.Err != error(alertUnknownCA) {
-		t.Errorf("Got error: %s; expected: %s", err, error(alertUnknownCA))
+	if !errors.As(err, &opErr) || opErr.Err != error(AlertUnknownCA) {
+		t.Errorf("Got error: %s; expected: %s", err, error(AlertUnknownCA))
 	}
 }
 

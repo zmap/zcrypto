@@ -380,7 +380,7 @@ func (c *Conn) clientHandshake() (err error) {
 						if c.config.ClientFingerprintConfiguration.RandomSessionID > 0 {
 							c.config.ClientFingerprintConfiguration.SessionID = make([]byte, c.config.ClientFingerprintConfiguration.RandomSessionID)
 							if _, err := io.ReadFull(c.config.rand(), c.config.ClientFingerprintConfiguration.SessionID); err != nil {
-								c.sendAlert(alertInternalError)
+								c.sendAlert(AlertInternalError)
 								return errors.New("tls: short read from Rand: " + err.Error())
 							}
 
@@ -466,7 +466,7 @@ func (c *Conn) clientHandshake() (err error) {
 
 	serverHello, ok := msg.(*serverHelloMsg)
 	if !ok {
-		c.sendAlert(alertUnexpectedMessage)
+		c.sendAlert(AlertUnexpectedMessage)
 		return unexpectedMessageError(serverHello, msg)
 	}
 	c.handshakeLog.ServerHello = serverHello.MakeLog()
@@ -483,7 +483,7 @@ func (c *Conn) clientHandshake() (err error) {
 	tls11Downgrade := string(serverHello.random[24:]) == downgradeCanaryTLS11
 	if maxVers == VersionTLS13 && c.vers <= VersionTLS12 && (tls12Downgrade || tls11Downgrade) ||
 		maxVers == VersionTLS12 && c.vers <= VersionTLS11 && tls11Downgrade {
-		c.sendAlert(alertIllegalParameter)
+		c.sendAlert(AlertIllegalParameter)
 		return errors.New("tls: downgrade attempt detected, possibly due to a MitM attack or a broken middlebox")
 	}
 
@@ -654,7 +654,7 @@ func (c *Conn) pickTLSVersion(serverHello *serverHelloMsg) error {
 
 	vers, ok := c.config.mutualVersion([]uint16{peerVersion})
 	if !ok {
-		c.sendAlert(alertProtocolVersion)
+		c.sendAlert(AlertProtocolVersion)
 		return fmt.Errorf("tls: server selected unsupported protocol version %x", peerVersion)
 	}
 
@@ -707,7 +707,7 @@ func (hs *clientHandshakeState) handshake() error {
 		// they don't call verifyServerCertificate. See Issue 31641.
 		if c.config.VerifyConnection != nil {
 			if err := c.config.VerifyConnection(c.connectionStateLocked()); err != nil {
-				c.sendAlert(alertBadCertificate)
+				c.sendAlert(AlertBadCertificate)
 				return err
 			}
 		}
@@ -747,7 +747,7 @@ func (hs *clientHandshakeState) handshake() error {
 
 func (hs *clientHandshakeState) pickCipherSuite() error {
 	if hs.suite = mutualCipherSuite(hs.hello.cipherSuites, hs.serverHello.cipherSuite); hs.suite == nil {
-		hs.c.sendAlert(alertHandshakeFailure)
+		hs.c.sendAlert(AlertHandshakeFailure)
 		return errors.New("tls: server chose an unconfigured cipher suite")
 	}
 
@@ -764,7 +764,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 	}
 	certMsg, ok := msg.(*certificateMsg)
 	if !ok || len(certMsg.certificates) == 0 {
-		c.sendAlert(alertUnexpectedMessage)
+		c.sendAlert(AlertUnexpectedMessage)
 		return unexpectedMessageError(certMsg, msg)
 	}
 	hs.finishedHash.Write(certMsg.marshal())
@@ -784,7 +784,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 			// server MUST have included an extension of type "status_request"
 			// with empty "extension_data" in the extended server hello.
 
-			c.sendAlert(alertUnexpectedMessage)
+			c.sendAlert(AlertUnexpectedMessage)
 			return errors.New("tls: received unexpected CertificateStatus message")
 		}
 		hs.finishedHash.Write(cs.marshal())
@@ -813,7 +813,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		// See https://mitls.org/pages/attacks/3SHAKE for the
 		// motivation behind this requirement.
 		if !bytes.Equal(c.peerCertificates[0].Raw, certMsg.certificates[0]) {
-			c.sendAlert(alertBadCertificate)
+			c.sendAlert(AlertBadCertificate)
 			return errors.New("tls: server's identity changed during renegotiation")
 		}
 	}
@@ -825,7 +825,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		hs.finishedHash.Write(skx.marshal())
 		err = keyAgreement.processServerKeyExchange(c.config, hs.hello, hs.serverHello, c.peerCertificates[0], skx)
 		if err != nil {
-			c.sendAlert(alertUnexpectedMessage)
+			c.sendAlert(AlertUnexpectedMessage)
 			return err
 		}
 		c.handshakeLog.ServerKeyExchange = skx.MakeLog(keyAgreement)
@@ -845,7 +845,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 
 		cri := certificateRequestInfoFromMsg(c.vers, certReq)
 		if chainToSend, err = c.getClientCertificate(cri); err != nil {
-			c.sendAlert(alertInternalError)
+			c.sendAlert(AlertInternalError)
 			return err
 		}
 
@@ -857,7 +857,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 
 	shd, ok := msg.(*serverHelloDoneMsg)
 	if !ok {
-		c.sendAlert(alertUnexpectedMessage)
+		c.sendAlert(AlertUnexpectedMessage)
 		return unexpectedMessageError(shd, msg)
 	}
 	hs.finishedHash.Write(shd.marshal())
@@ -877,7 +877,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 	var ckx *clientKeyExchangeMsg
 	hs.preMasterSecret, ckx, err = keyAgreement.generateClientKeyExchange(c.config, hs.hello, c.peerCertificates[0])
 	if err != nil {
-		c.sendAlert(alertInternalError)
+		c.sendAlert(AlertInternalError)
 		return err
 	}
 
@@ -895,7 +895,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 
 		key, ok := chainToSend.PrivateKey.(crypto.Signer)
 		if !ok {
-			c.sendAlert(alertInternalError)
+			c.sendAlert(AlertInternalError)
 			return fmt.Errorf("tls: client certificate private key of type %T does not implement crypto.Signer", chainToSend.PrivateKey)
 		}
 
@@ -904,19 +904,19 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		if c.vers >= VersionTLS12 {
 			signatureAlgorithm, err := selectSignatureScheme(c.vers, chainToSend, certReq.supportedSignatureAlgorithms)
 			if err != nil {
-				c.sendAlert(alertIllegalParameter)
+				c.sendAlert(AlertIllegalParameter)
 				return err
 			}
 			sigType, sigHash, err = typeAndHashFromSignatureScheme(signatureAlgorithm)
 			if err != nil {
-				return c.sendAlert(alertInternalError)
+				return c.sendAlert(AlertInternalError)
 			}
 			certVerify.hasSignatureAlgorithm = true
 			certVerify.signatureAlgorithm = signatureAlgorithm
 		} else {
 			sigType, sigHash, err = legacyTypeAndHashFromPublicKey(key.Public())
 			if err != nil {
-				c.sendAlert(alertIllegalParameter)
+				c.sendAlert(AlertIllegalParameter)
 				return err
 			}
 		}
@@ -928,7 +928,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 		certVerify.signature, err = key.Sign(c.config.rand(), signed, signOpts)
 		if err != nil {
-			c.sendAlert(alertInternalError)
+			c.sendAlert(AlertInternalError)
 			return err
 		}
 
@@ -940,7 +940,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 
 	hs.masterSecret = masterFromPreMasterSecret(c.vers, hs.suite, hs.preMasterSecret, hs.hello.random, hs.serverHello.random)
 	if err := c.config.writeKeyLog(keyLogLabelTLS12, hs.hello.random, hs.masterSecret); err != nil {
-		c.sendAlert(alertInternalError)
+		c.sendAlert(AlertInternalError)
 		return errors.New("tls: failed to write to key log: " + err.Error())
 	}
 
@@ -986,14 +986,14 @@ func (hs *clientHandshakeState) processServerHello() (bool, error) {
 	}
 
 	if hs.serverHello.compressionMethod != compressionNone {
-		c.sendAlert(alertUnexpectedMessage)
+		c.sendAlert(AlertUnexpectedMessage)
 		return false, errors.New("tls: server selected unsupported compression format")
 	}
 
 	if c.handshakes == 0 && hs.serverHello.secureRenegotiationSupported {
 		c.secureRenegotiation = true
 		if len(hs.serverHello.secureRenegotiation) != 0 {
-			c.sendAlert(alertHandshakeFailure)
+			c.sendAlert(AlertHandshakeFailure)
 			return false, errors.New("tls: initial handshake had non-empty renegotiation extension")
 		}
 	}
@@ -1003,18 +1003,18 @@ func (hs *clientHandshakeState) processServerHello() (bool, error) {
 		copy(expectedSecureRenegotiation[:], c.clientFinished[:])
 		copy(expectedSecureRenegotiation[12:], c.serverFinished[:])
 		if !bytes.Equal(hs.serverHello.secureRenegotiation, expectedSecureRenegotiation[:]) {
-			c.sendAlert(alertHandshakeFailure)
+			c.sendAlert(AlertHandshakeFailure)
 			return false, errors.New("tls: incorrect renegotiation extension contents")
 		}
 	}
 
 	if hs.serverHello.alpnProtocol != "" {
 		if len(hs.hello.alpnProtocols) == 0 {
-			c.sendAlert(alertUnsupportedExtension)
+			c.sendAlert(AlertUnsupportedExtension)
 			return false, errors.New("tls: server advertised unrequested ALPN extension")
 		}
 		if mutualProtocol([]string{hs.serverHello.alpnProtocol}, hs.hello.alpnProtocols) == "" {
-			c.sendAlert(alertUnsupportedExtension)
+			c.sendAlert(AlertUnsupportedExtension)
 			return false, errors.New("tls: server selected unadvertised ALPN protocol")
 		}
 		c.clientProtocol = hs.serverHello.alpnProtocol
@@ -1027,12 +1027,12 @@ func (hs *clientHandshakeState) processServerHello() (bool, error) {
 	}
 
 	if hs.session.vers != c.vers {
-		c.sendAlert(alertHandshakeFailure)
+		c.sendAlert(AlertHandshakeFailure)
 		return false, errors.New("tls: server resumed a session with a different version")
 	}
 
 	if hs.session.cipherSuite != hs.suite.id {
-		c.sendAlert(alertHandshakeFailure)
+		c.sendAlert(AlertHandshakeFailure)
 		return false, errors.New("tls: server resumed a session with a different cipher suite")
 	}
 
@@ -1063,7 +1063,7 @@ func (hs *clientHandshakeState) readFinished(out []byte) error {
 	}
 	serverFinished, ok := msg.(*finishedMsg)
 	if !ok {
-		c.sendAlert(alertUnexpectedMessage)
+		c.sendAlert(AlertUnexpectedMessage)
 		return unexpectedMessageError(serverFinished, msg)
 	}
 	c.handshakeLog.ServerFinished = serverFinished.MakeLog()
@@ -1071,7 +1071,7 @@ func (hs *clientHandshakeState) readFinished(out []byte) error {
 	verify := hs.finishedHash.serverSum(hs.masterSecret)
 	if len(verify) != len(serverFinished.verifyData) ||
 		subtle.ConstantTimeCompare(verify, serverFinished.verifyData) != 1 {
-		c.sendAlert(alertHandshakeFailure)
+		c.sendAlert(AlertHandshakeFailure)
 		return errors.New("tls: server's Finished message was incorrect")
 	}
 	hs.finishedHash.Write(serverFinished.marshal())
@@ -1091,7 +1091,7 @@ func (hs *clientHandshakeState) readSessionTicket() error {
 	}
 	sessionTicketMsg, ok := msg.(*newSessionTicketMsg)
 	if !ok {
-		c.sendAlert(alertUnexpectedMessage)
+		c.sendAlert(AlertUnexpectedMessage)
 		return unexpectedMessageError(sessionTicketMsg, msg)
 	}
 	hs.finishedHash.Write(sessionTicketMsg.marshal())
@@ -1138,7 +1138,7 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 	for i, asn1Data := range certificates {
 		cert, err := x509.ParseCertificate(asn1Data)
 		if err != nil {
-			c.sendAlert(alertBadCertificate)
+			c.sendAlert(AlertBadCertificate)
 			return errors.New("tls: failed to parse certificate from server: " + err.Error())
 		}
 		certs[i] = cert
@@ -1159,7 +1159,7 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 	c.handshakeLog.ServerCertificates.addParsed(certs, validation)
 	if !c.config.InsecureSkipVerify {
 		if err != nil {
-			c.sendAlert(alertBadCertificate)
+			c.sendAlert(AlertBadCertificate)
 			return err
 		}
 	}
@@ -1168,7 +1168,7 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 	case *rsa.PublicKey, *x509.AugmentedECDSA, *ecdsa.PublicKey, ed25519.PublicKey:
 		break
 	default:
-		c.sendAlert(alertUnsupportedCertificate)
+		c.sendAlert(AlertUnsupportedCertificate)
 		return fmt.Errorf("tls: server's certificate contains an unsupported type of public key: %T", certs[0].PublicKey)
 	}
 
@@ -1176,14 +1176,14 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 
 	if c.config.VerifyPeerCertificate != nil {
 		if err := c.config.VerifyPeerCertificate(certificates, c.verifiedChains); err != nil {
-			c.sendAlert(alertBadCertificate)
+			c.sendAlert(AlertBadCertificate)
 			return err
 		}
 	}
 
 	if c.config.VerifyConnection != nil {
 		if err := c.config.VerifyConnection(c.connectionStateLocked()); err != nil {
-			c.sendAlert(alertBadCertificate)
+			c.sendAlert(AlertBadCertificate)
 			return err
 		}
 	}
