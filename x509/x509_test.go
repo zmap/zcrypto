@@ -265,7 +265,6 @@ var certBytes = "308203223082028ba00302010202106edf0d9499fd4533dd1297fc42a93be13
 	"36dcd585d6ace53f546f961e05af"
 
 func TestCreateSelfSignedCertificate(t *testing.T) {
-	t.Setenv("GODEBUG", "rsa1024min=0")
 	random := rand.Reader
 
 	block, _ := pem.Decode([]byte(pemPrivateKey))
@@ -838,7 +837,6 @@ YW1wbGUuY29tMAsGCSqGSIb3DQEBBQNBAHKZKoS1wEQOGhgklx4+/yFYQlnqwKXvar/ZecQvJwui
 -----END CERTIFICATE-----`
 
 func TestCRLCreation(t *testing.T) {
-	t.Setenv("GODEBUG", "rsa1024min=0")
 	block, _ := pem.Decode([]byte(pemPrivateKey))
 	priv, _ := ParsePKCS1PrivateKey(block.Bytes)
 	block, _ = pem.Decode([]byte(pemCertificate))
@@ -945,7 +943,6 @@ const derCRLBase64 = "MIINqzCCDJMCAQEwDQYJKoZIhvcNAQEFBQAwVjEZMBcGA1UEAxMQUEtJIE
 const pemCRLBase64 = "LS0tLS1CRUdJTiBYNTA5IENSTC0tLS0tDQpNSUlCOWpDQ0FWOENBUUV3RFFZSktvWklodmNOQVFFRkJRQXdiREVhTUJnR0ExVUVDaE1SVWxOQklGTmxZM1Z5DQphWFI1SUVsdVl5NHhIakFjQmdOVkJBTVRGVkpUUVNCUWRXSnNhV01nVW05dmRDQkRRU0IyTVRFdU1Dd0dDU3FHDQpTSWIzRFFFSkFSWWZjbk5oYTJWdmJuSnZiM1J6YVdkdVFISnpZWE5sWTNWeWFYUjVMbU52YlJjTk1URXdNakl6DQpNVGt5T0RNd1doY05NVEV3T0RJeU1Ua3lPRE13V2pDQmpEQktBaEVBckRxb2g5RkhKSFhUN09QZ3V1bjQrQmNODQpNRGt4TVRBeU1UUXlOekE1V2pBbU1Bb0dBMVVkRlFRRENnRUpNQmdHQTFVZEdBUVJHQTh5TURBNU1URXdNakUwDQpNalExTlZvd1BnSVJBTEd6blowOTVQQjVhQU9MUGc1N2ZNTVhEVEF5TVRBeU16RTBOVEF4TkZvd0dqQVlCZ05WDQpIUmdFRVJnUE1qQXdNakV3TWpNeE5EVXdNVFJhb0RBd0xqQWZCZ05WSFNNRUdEQVdnQlQxVERGNlVRTS9MTmVMDQpsNWx2cUhHUXEzZzltekFMQmdOVkhSUUVCQUlDQUlRd0RRWUpLb1pJaHZjTkFRRUZCUUFEZ1lFQUZVNUFzNk16DQpxNVBSc2lmYW9iUVBHaDFhSkx5QytNczVBZ2MwYld5QTNHQWR4dXI1U3BQWmVSV0NCamlQL01FSEJXSkNsQkhQDQpHUmNxNXlJZDNFakRrYUV5eFJhK2k2N0x6dmhJNmMyOUVlNks5cFNZd2ppLzdSVWhtbW5Qclh0VHhsTDBsckxyDQptUVFKNnhoRFJhNUczUUE0Q21VZHNITnZicnpnbUNZcHZWRT0NCi0tLS0tRU5EIFg1MDkgQ1JMLS0tLS0NCg0K"
 
 func TestCreateCertificateRequest(t *testing.T) {
-	t.Setenv("GODEBUG", "rsa1024min=0")
 	random := rand.Reader
 
 	block, _ := pem.Decode([]byte(pemPrivateKey))
@@ -1039,7 +1036,6 @@ func marshalAndParseCSR(t *testing.T, template *CertificateRequest) *Certificate
 }
 
 func TestCertificateRequestOverrides(t *testing.T) {
-	t.Setenv("GODEBUG", "rsa1024min=0")
 	sanContents, err := marshalSANs([]string{"foo.example.com"}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -1147,7 +1143,6 @@ func TestParseCertificateRequest(t *testing.T) {
 }
 
 func TestMaxPathLen(t *testing.T) {
-	t.Setenv("GODEBUG", "rsa1024min=0")
 	block, _ := pem.Decode([]byte(pemPrivateKey))
 	rsaPriv, err := ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
