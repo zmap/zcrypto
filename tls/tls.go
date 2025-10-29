@@ -29,6 +29,18 @@ import (
 	"github.com/zmap/zcrypto/x509"
 )
 
+func init() {
+	// Go's crypto/rsa package by default rejects RSA keys smaller than 1024, we'll disable this check to allow
+	// handshakes with servers using 512-bit RSA keys.
+	if !strings.Contains(os.Getenv("GODEBUG"), "rsa1024min=0") {
+		if os.Getenv("GODEBUG") == "" {
+			os.Setenv("GODEBUG", "rsa1024min=0")
+		} else {
+			os.Setenv("GODEBUG", os.Getenv("GODEBUG")+",rsa1024min=0")
+		}
+	}
+}
+
 // Server returns a new TLS server side connection
 // using conn as the underlying transport.
 // The configuration config must be non-nil and must include
