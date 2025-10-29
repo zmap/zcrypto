@@ -253,6 +253,7 @@ func (nc *NameConstraints) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
+	nc.Critical = ncJson.Critical
 	for _, dns := range ncJson.PermittedDNSNames {
 		nc.PermittedDNSNames = append(nc.PermittedDNSNames, GeneralSubtreeString{Data: dns})
 	}
@@ -321,6 +322,7 @@ func (nc *NameConstraints) UnmarshalJSON(b []byte) error {
 
 func (nc NameConstraints) MarshalJSON() ([]byte, error) {
 	var out NameConstraintsJSON
+	out.Critical = nc.Critical
 	for _, dns := range nc.PermittedDNSNames {
 		out.PermittedDNSNames = append(out.PermittedDNSNames, dns.Data)
 	}
@@ -772,7 +774,6 @@ func (c *Certificate) JsonifyExtensions() (*CertificateExtensions, UnknownCertif
 			exts.NameConstraints.PermittedDirectoryNames = c.PermittedDirectoryNames
 			exts.NameConstraints.PermittedEdiPartyNames = c.PermittedEdiPartyNames
 			exts.NameConstraints.PermittedRegisteredIDs = c.PermittedRegisteredIDs
-
 			exts.NameConstraints.ExcludedEmailAddresses = c.ExcludedEmailAddresses
 			exts.NameConstraints.ExcludedDNSNames = c.ExcludedDNSNames
 			exts.NameConstraints.ExcludedURIs = c.ExcludedURIs
