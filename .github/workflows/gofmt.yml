@@ -2,6 +2,7 @@ name: Gofmt
 on:
   push:
   pull_request:
+  workflow_dispatch:
   schedule:
     # Run every 12 hours, at the 15 minute mark. E.g.
     # 2020-11-29 00:15:00 UTC, 2020-11-29 12:15:00 UTC, 2020-11-30 00:15:00 UTC
@@ -14,7 +15,7 @@ jobs:
     steps:
 
     - name: Check out code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Check gofmt
       uses: Jerome1337/gofmt-action@v1.0.5
