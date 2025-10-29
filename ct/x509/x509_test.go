@@ -301,6 +301,7 @@ var certBytes = "308203223082028ba00302010202106edf0d9499fd4533dd1297fc42a93be13
 	"36dcd585d6ace53f546f961e05af"
 
 func TestCreateSelfSignedCertificate(t *testing.T) {
+	t.Setenv("GODEBUG", "rsa1024min=0")
 	random := rand.Reader
 
 	block, _ := pem.Decode([]byte(pemPrivateKey))
@@ -652,6 +653,7 @@ YW1wbGUuY29tMAsGCSqGSIb3DQEBBQNBAHKZKoS1wEQOGhgklx4+/yFYQlnqwKXvar/ZecQvJwui
 -----END CERTIFICATE-----`
 
 func TestCRLCreation(t *testing.T) {
+	t.Setenv("GODEBUG", "rsa1024min=0")
 	block, _ := pem.Decode([]byte(pemPrivateKey))
 	priv, _ := ParsePKCS1PrivateKey(block.Bytes)
 	block, _ = pem.Decode([]byte(pemCertificate))
