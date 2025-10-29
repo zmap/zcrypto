@@ -24,7 +24,7 @@ func TestSystemRoots(t *testing.T) {
 
 	// There are 174 system roots on Catalina, and 163 on iOS right now, require
 	// at least 100 to make sure this is not completely broken.
-	if want, have := 100, sysRoots.len(); have < want {
+	if want, have := 100, sysRoots.Size(); have < want {
 		t.Errorf("want at least %d system roots, have %d", want, have)
 	}
 

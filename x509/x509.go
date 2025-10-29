@@ -17,6 +17,7 @@ import (
 	"crypto/sha256"
 	_ "crypto/sha512"
 	"io"
+	"os"
 	"strings"
 	"unicode"
 
@@ -36,12 +37,25 @@ import (
 	"time"
 
 	"github.com/weppos/publicsuffix-go/publicsuffix"
+	"golang.org/x/crypto/ed25519"
+
 	"github.com/zmap/zcrypto/dsa"
 	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/x509/ct"
 	"github.com/zmap/zcrypto/x509/pkix"
-	"golang.org/x/crypto/ed25519"
 )
+
+func init() {
+	// Go's crypto/rsa package by default rejects RSA keys smaller than 1024, we'll disable this check to allow
+	// handshakes with servers using 512-bit RSA keys.
+	if !strings.Contains(os.Getenv("GODEBUG"), "rsa1024min=0") {
+		if os.Getenv("GODEBUG") == "" {
+			os.Setenv("GODEBUG", "rsa1024min=0")
+		} else {
+			os.Setenv("GODEBUG", os.Getenv("GODEBUG")+",rsa1024min=0")
+		}
+	}
+}
 
 // pkixPublicKey reflects a PKIX public key structure. See SubjectPublicKeyInfo
 // in RFC 3280.
