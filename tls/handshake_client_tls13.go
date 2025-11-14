@@ -98,6 +98,11 @@ func (hs *clientHandshakeStateTLS13) handshake() error {
 
 	atomic.StoreUint32(&hs.c.handshakeStatus, 1)
 
+	// Copy ALPN from EncryptedExtensions to ServerHello log for TLS 1.3
+	if hs.c.clientProtocol != "" && hs.c.handshakeLog.ServerHello != nil {
+		hs.c.handshakeLog.ServerHello.AlpnProtocol = hs.c.clientProtocol
+	}
+
 	return nil
 }
 
