@@ -534,7 +534,11 @@ TLSVersion = SubRecordType({
 })
 
 ServerSupportedVersions = SubRecordType({
-    "selected_version": TLSVersion(doc="The version of the TLS protocol selected by the server."),
+    "selected_version": SubRecordType({
+        "name": TLSVersionName(),
+        "value": Unsigned16BitInteger(doc="The TLS version identifier."),
+        "key_exchange": CurveID(doc="Negotiated TLS 1.3 key exchange group (NamedGroup/CurveID)."),
+    }, doc="The version of the TLS protocol selected by the server (TLS 1.3 may include negotiated key exchange group)."),
 })
 
 # tls/tls_handshake.go: type SessionTicket
