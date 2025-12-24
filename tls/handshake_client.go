@@ -454,7 +454,7 @@ func (c *Conn) clientHandshake() (err error) {
 		hello.sctEnabled = true
 	}
 
-	if _, err := c.writeRecord(recordTypeHandshake, hello.marshal()); err != nil {
+	if _, err := c.WriteRecord(recordTypeHandshake, hello.marshal()); err != nil {
 		return err
 	}
 
@@ -869,7 +869,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		certMsg = new(certificateMsg)
 		certMsg.certificates = chainToSend.Certificate
 		hs.finishedHash.Write(certMsg.marshal())
-		if _, err := c.writeRecord(recordTypeHandshake, certMsg.marshal()); err != nil {
+		if _, err := c.WriteRecord(recordTypeHandshake, certMsg.marshal()); err != nil {
 			return err
 		}
 	}
@@ -885,7 +885,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 
 	if ckx != nil {
 		hs.finishedHash.Write(ckx.marshal())
-		if _, err := c.writeRecord(recordTypeHandshake, ckx.marshal()); err != nil {
+		if _, err := c.WriteRecord(recordTypeHandshake, ckx.marshal()); err != nil {
 			return err
 		}
 	}
@@ -933,7 +933,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 
 		hs.finishedHash.Write(certVerify.marshal())
-		if _, err := c.writeRecord(recordTypeHandshake, certVerify.marshal()); err != nil {
+		if _, err := c.WriteRecord(recordTypeHandshake, certVerify.marshal()); err != nil {
 			return err
 		}
 	}
@@ -1115,7 +1115,7 @@ func (hs *clientHandshakeState) readSessionTicket() error {
 func (hs *clientHandshakeState) sendFinished(out []byte) error {
 	c := hs.c
 
-	if _, err := c.writeRecord(recordTypeChangeCipherSpec, []byte{1}); err != nil {
+	if _, err := c.WriteRecord(recordTypeChangeCipherSpec, []byte{1}); err != nil {
 		return err
 	}
 
@@ -1124,7 +1124,7 @@ func (hs *clientHandshakeState) sendFinished(out []byte) error {
 	hs.finishedHash.Write(finished.marshal())
 	c.handshakeLog.ClientFinished = finished.MakeLog()
 
-	if _, err := c.writeRecord(recordTypeHandshake, finished.marshal()); err != nil {
+	if _, err := c.WriteRecord(recordTypeHandshake, finished.marshal()); err != nil {
 		return err
 	}
 	copy(out, finished.verifyData)

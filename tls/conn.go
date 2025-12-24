@@ -1006,9 +1006,9 @@ func (c *Conn) writeRecordLocked(typ recordType, data []byte) (int, error) {
 	return n, nil
 }
 
-// writeRecord writes a TLS record with the given type and payload to the
+// WriteRecord writes a TLS record with the given type and payload to the
 // connection and updates the record layer state.
-func (c *Conn) writeRecord(typ recordType, data []byte) (int, error) {
+func (c *Conn) WriteRecord(typ recordType, data []byte) (int, error) {
 	c.out.Lock()
 	defer c.out.Unlock()
 
