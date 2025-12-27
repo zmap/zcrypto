@@ -35,7 +35,7 @@ func testClientHelloFailure(t *testing.T, serverConfig *Config, m handshakeMessa
 		if ch, ok := m.(*clientHelloMsg); ok {
 			cli.vers = ch.vers
 		}
-		cli.writeRecord(recordTypeHandshake, m.marshal())
+		cli.WriteRecord(recordTypeHandshake, m.marshal())
 		c.Close()
 	}()
 	conn := Server(s, serverConfig)
@@ -190,7 +190,7 @@ func TestRenegotiationExtension(t *testing.T) {
 	go func() {
 		cli := Client(c, testConfig)
 		cli.vers = clientHello.vers
-		cli.writeRecord(recordTypeHandshake, clientHello.marshal())
+		cli.WriteRecord(recordTypeHandshake, clientHello.marshal())
 
 		buf := make([]byte, 1024)
 		n, err := c.Read(buf)
@@ -249,7 +249,7 @@ func TestTLS12OnlyCipherSuites(t *testing.T) {
 	go func() {
 		cli := Client(c, testConfig)
 		cli.vers = clientHello.vers
-		cli.writeRecord(recordTypeHandshake, clientHello.marshal())
+		cli.WriteRecord(recordTypeHandshake, clientHello.marshal())
 		reply, err := cli.readHandshake()
 		c.Close()
 		if err != nil {
@@ -304,7 +304,7 @@ func TestTLSPointFormats(t *testing.T) {
 			go func() {
 				cli := Client(c, testConfig)
 				cli.vers = clientHello.vers
-				cli.writeRecord(recordTypeHandshake, clientHello.marshal())
+				cli.WriteRecord(recordTypeHandshake, clientHello.marshal())
 				reply, err := cli.readHandshake()
 				c.Close()
 				if err != nil {
@@ -1419,7 +1419,7 @@ func TestSNIGivenOnFailure(t *testing.T) {
 	go func() {
 		cli := Client(c, testConfig)
 		cli.vers = clientHello.vers
-		cli.writeRecord(recordTypeHandshake, clientHello.marshal())
+		cli.WriteRecord(recordTypeHandshake, clientHello.marshal())
 		c.Close()
 	}()
 	conn := Server(s, serverConfig)

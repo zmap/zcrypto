@@ -450,7 +450,7 @@ func (hs *serverHandshakeState) doResumeHandshake() error {
 	hs.finishedHash.discardHandshakeBuffer()
 	hs.finishedHash.Write(hs.clientHello.marshal())
 	hs.finishedHash.Write(hs.hello.marshal())
-	if _, err := c.writeRecord(recordTypeHandshake, hs.hello.marshal()); err != nil {
+	if _, err := c.WriteRecord(recordTypeHandshake, hs.hello.marshal()); err != nil {
 		return err
 	}
 	c.handshakeLog.ServerHello = hs.hello.MakeLog()
@@ -491,7 +491,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 	}
 	hs.finishedHash.Write(hs.clientHello.marshal())
 	hs.finishedHash.Write(hs.hello.marshal())
-	_, err := c.writeRecord(recordTypeHandshake, hs.hello.marshal())
+	_, err := c.WriteRecord(recordTypeHandshake, hs.hello.marshal())
 	c.handshakeLog.ServerHello = hs.hello.MakeLog()
 	if err != nil {
 		return err
@@ -500,7 +500,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 	certMsg := new(certificateMsg)
 	certMsg.certificates = hs.cert.Certificate
 	hs.finishedHash.Write(certMsg.marshal())
-	_, err = c.writeRecord(recordTypeHandshake, certMsg.marshal())
+	_, err = c.WriteRecord(recordTypeHandshake, certMsg.marshal())
 	c.handshakeLog.ServerCertificates = certMsg.MakeLog()
 	if err != nil {
 		return err
@@ -510,7 +510,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 		certStatus := new(certificateStatusMsg)
 		certStatus.response = hs.cert.OCSPStaple
 		hs.finishedHash.Write(certStatus.marshal())
-		if _, err := c.writeRecord(recordTypeHandshake, certStatus.marshal()); err != nil {
+		if _, err := c.WriteRecord(recordTypeHandshake, certStatus.marshal()); err != nil {
 			return err
 		}
 	}
@@ -523,7 +523,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 	}
 	if skx != nil {
 		hs.finishedHash.Write(skx.marshal())
-		_, err := c.writeRecord(recordTypeHandshake, skx.marshal())
+		_, err := c.WriteRecord(recordTypeHandshake, skx.marshal())
 
 		c.handshakeLog.ServerKeyExchange = skx.MakeLog(keyAgreement)
 		if err != nil {
@@ -553,14 +553,14 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 			certReq.certificateAuthorities = c.config.ClientCAs.Subjects()
 		}
 		hs.finishedHash.Write(certReq.marshal())
-		if _, err := c.writeRecord(recordTypeHandshake, certReq.marshal()); err != nil {
+		if _, err := c.WriteRecord(recordTypeHandshake, certReq.marshal()); err != nil {
 			return err
 		}
 	}
 
 	helloDone := new(serverHelloDoneMsg)
 	hs.finishedHash.Write(helloDone.marshal())
-	if _, err := c.writeRecord(recordTypeHandshake, helloDone.marshal()); err != nil {
+	if _, err := c.WriteRecord(recordTypeHandshake, helloDone.marshal()); err != nil {
 		return err
 	}
 
@@ -768,7 +768,7 @@ func (hs *serverHandshakeState) sendSessionTicket() error {
 	}
 
 	hs.finishedHash.Write(m.marshal())
-	if _, err := c.writeRecord(recordTypeHandshake, m.marshal()); err != nil {
+	if _, err := c.WriteRecord(recordTypeHandshake, m.marshal()); err != nil {
 		return err
 	}
 
@@ -778,14 +778,14 @@ func (hs *serverHandshakeState) sendSessionTicket() error {
 func (hs *serverHandshakeState) sendFinished(out []byte) error {
 	c := hs.c
 
-	if _, err := c.writeRecord(recordTypeChangeCipherSpec, []byte{1}); err != nil {
+	if _, err := c.WriteRecord(recordTypeChangeCipherSpec, []byte{1}); err != nil {
 		return err
 	}
 
 	finished := new(finishedMsg)
 	finished.verifyData = hs.finishedHash.serverSum(hs.masterSecret)
 	hs.finishedHash.Write(finished.marshal())
-	_, err := c.writeRecord(recordTypeHandshake, finished.marshal())
+	_, err := c.WriteRecord(recordTypeHandshake, finished.marshal())
 	c.handshakeLog.ServerFinished = finished.MakeLog()
 
 	if err != nil {
