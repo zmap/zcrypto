@@ -11,7 +11,7 @@ jobs:
     steps:
 
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -36,7 +36,7 @@ jobs:
 
       - name: Create pull-request
         id: cpr
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "deps: update publicsuffix-go for ${{ steps.get-date.outputs.now }}"
           title: "deps: update weppos/publicsuffix-go for ${{ steps.get-date.outputs.now }}"
