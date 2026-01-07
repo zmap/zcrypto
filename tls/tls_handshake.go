@@ -65,18 +65,18 @@ type ServerHello struct {
 	SignedCertificateTimestamps []ParsedAndRawSCT     `json:"scts,omitempty"`
 	AlpnProtocol                string                `json:"alpn_protocol,omitempty"`
 	SupportedVersions           *SupportedVersionsExt `json:"supported_versions,omitempty"`
+	KeyShare                    *KeyShareExtension    `json:"key_share,omitempty"`
 	ExtensionIdentifiers        []uint16              `json:"extension_identifiers,omitempty"`
 	UnknownExtensions           [][]byte              `json:"unknown_extensions,omitempty"`
 }
 
 type SupportedVersionsExt struct {
-    SelectedVersion SelectedVersionExt `json:"selected_version"`
+	SelectedVersion TLSVersion `json:"selected_version"`
 }
 
-// SelectedVersionExt holds the TLSVersion and KeyExchange for TLSv1.3
-type SelectedVersionExt struct {
-    Version     TLSVersion `json:"-"`
-    KeyExchange *CurveID   `json:"-"`
+// KeyShareExtension represents the key share extension in TLS 1.3
+type KeyShareExtension struct {
+	KeyExchange *CurveID `json:"-"`
 }
 
 // SimpleCertificate holds a *x509.Certificate and a []byte for the certificate
@@ -185,34 +185,26 @@ func (v *TLSVersion) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalJSON implements the json.Marshler interface
-func (s SelectedVersionExt) MarshalJSON() ([]byte, error) {
-    aux := struct {
-        Name        string   `json:"name"`
-        Value       int      `json:"value"`
-        KeyExchange *CurveID `json:"key_exchange,omitempty"`
-    }{
-        Name:        s.Version.String(),
-        Value:       int(s.Version),
-        KeyExchange: s.KeyExchange,
-    }
-    return json.Marshal(&aux)
+func (s *KeyShareExtension) MarshalJSON() ([]byte, error) {
+	aux := struct {
+		KeyExchange *CurveID `json:"key_share,omitempty"`
+	}{
+		KeyExchange: s.KeyExchange,
+	}
+	return json.Marshal(&aux)
 }
 
-//UnmarshalJSON implements the json.Unmarshaler interface
-func (s *SelectedVersionExt) UnmarshalJSON(data []byte) error {
-    aux := struct {
-        Name        string   `json:"name"`
-        Value       int      `json:"value"`
-        KeyExchange *CurveID `json:"key_exchange,omitempty"`
-    }{}
-    if err := json.Unmarshal(data, &aux); err != nil {
-        return err
-    }
-    s.Version = TLSVersion(aux.Value)
-    s.KeyExchange = aux.KeyExchange
-    return nil
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (s *KeyShareExtension) UnmarshalJSON(data []byte) error {
+	aux := struct {
+		KeyExchange *CurveID `json:"key_share,omitempty"`
+	}{}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	s.KeyExchange = aux.KeyExchange
+	return nil
 }
-
 
 // MarshalJSON implements the json.Marshler interface
 func (cs *CipherSuiteID) MarshalJSON() ([]byte, error) {
@@ -400,23 +392,25 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	sh.AlpnProtocol = m.alpnProtocol
 
 	if m.supportedVersion != 0 {
-		sv := SelectedVersionExt{
-			Version: TLSVersion(m.supportedVersion),
-		}
-	
+		ks := KeyShareExtension{}
+
 		// TLS 1.3: negotiated key exchange group (supported group / CurveID).
 		// Preferred source: key_share in ServerHello (serverShare.group).
 		if m.serverShare.group != 0 {
 			g := m.serverShare.group
-			sv.KeyExchange = &g
+			ks.KeyExchange = &g
 		} else if m.selectedGroup != 0 {
 			// HelloRetryRequest path: server selects a group but doesn't send a share yet.
 			g := m.selectedGroup
-			sv.KeyExchange = &g
+			ks.KeyExchange = &g
 		}
-	
+
+		if ks.KeyExchange != nil {
+			sh.KeyShare = &ks
+		}
+
 		sh.SupportedVersions = &SupportedVersionsExt{
-			SelectedVersion: sv,
+			SelectedVersion: TLSVersion(m.supportedVersion),
 		}
 	}
 
