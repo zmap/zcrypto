@@ -186,23 +186,19 @@ func (v *TLSVersion) UnmarshalJSON(b []byte) error {
 
 // MarshalJSON implements the json.Marshler interface
 func (s *KeyShareExtension) MarshalJSON() ([]byte, error) {
-	aux := struct {
-		KeyExchange *CurveID `json:"key_share,omitempty"`
-	}{
-		KeyExchange: s.KeyExchange,
+	if s == nil || s.KeyExchange == nil {
+		return []byte("null"), nil
 	}
-	return json.Marshal(&aux)
+	return json.Marshal(s.KeyExchange)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface
 func (s *KeyShareExtension) UnmarshalJSON(data []byte) error {
-	aux := struct {
-		KeyExchange *CurveID `json:"key_share,omitempty"`
-	}{}
-	if err := json.Unmarshal(data, &aux); err != nil {
+	var cid CurveID
+	if err := json.Unmarshal(data, &cid); err != nil {
 		return err
 	}
-	s.KeyExchange = aux.KeyExchange
+	s.KeyExchange = &cid
 	return nil
 }
 
