@@ -534,11 +534,7 @@ TLSVersion = SubRecordType({
 })
 
 ServerSupportedVersions = SubRecordType({
-    "selected_version": SubRecordType({
-        "name": TLSVersionName(),
-        "value": Unsigned16BitInteger(doc="The TLS version identifier."),
-        "key_exchange": CurveID(doc="Negotiated TLS 1.3 key exchange group (NamedGroup/CurveID)."),
-    }, doc="The version of the TLS protocol selected by the server (TLS 1.3 may include negotiated key exchange group)."),
+    "selected_version": TLSVersion(doc="The version of the TLS protocol selected by the server."),
 })
 
 # tls/tls_handshake.go: type SessionTicket
@@ -665,6 +661,8 @@ ServerHello = SubRecordType({
         "raw": Binary(),
     }), doc="The values in the SignedCertificateTimestampList of the Signed Certificate Timestamp, if present."),
     "supported_versions": ServerSupportedVersions(doc="The list of supported versions in the Supported Versions extension, if present (see https://tools.ietf.org/html/draft-ietf-tls-tls13-18#section-4.2.1)."),
+    "key_share": SubRecord({
+        CurveID(doc="Negotiated TLS 1.3 key exchange group (NamedGroup/CurveID)."),}),
     "alpn_protocol": String(doc="This contains the selected protocol from the Application-Layer Protocol Negotiation extension, if present (see https://tools.ietf.org/html/rfc7301)."),
     "extension_identifiers": ListOf(Unsigned16BitInteger(), category="Extension Identifiers", doc="The list of unparsed TLS extension identifiers in handshake."),
     "unknown_extensions": ListOf(Binary(), doc="A list of any unrecognized extensions in raw form."),
