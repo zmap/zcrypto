@@ -65,12 +65,18 @@ type ServerHello struct {
 	SignedCertificateTimestamps []ParsedAndRawSCT     `json:"scts,omitempty"`
 	AlpnProtocol                string                `json:"alpn_protocol,omitempty"`
 	SupportedVersions           *SupportedVersionsExt `json:"supported_versions,omitempty"`
+	KeyShare                    *KeyShareExtension    `json:"key_share,omitempty"`
 	ExtensionIdentifiers        []uint16              `json:"extension_identifiers,omitempty"`
 	UnknownExtensions           [][]byte              `json:"unknown_extensions,omitempty"`
 }
 
 type SupportedVersionsExt struct {
 	SelectedVersion TLSVersion `json:"selected_version"`
+}
+
+// KeyShareExtension represents the key share extension in TLS 1.3
+type KeyShareExtension struct {
+	KeyExchange *CurveID `json:"-"`
 }
 
 // SimpleCertificate holds a *x509.Certificate and a []byte for the certificate
@@ -175,6 +181,24 @@ func (v *TLSVersion) UnmarshalJSON(b []byte) error {
 	if expectedName := v.String(); expectedName != aux.Name {
 		return fmt.Errorf("mismatched tls version and name: version: %d, name: %s, expected name: %s", aux.Value, aux.Name, expectedName)
 	}
+	return nil
+}
+
+// MarshalJSON implements the json.Marshler interface
+func (s *KeyShareExtension) MarshalJSON() ([]byte, error) {
+	if s == nil || s.KeyExchange == nil {
+		return []byte("null"), nil
+	}
+	return json.Marshal(s.KeyExchange)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (s *KeyShareExtension) UnmarshalJSON(data []byte) error {
+	var cid CurveID
+	if err := json.Unmarshal(data, &cid); err != nil {
+		return err
+	}
+	s.KeyExchange = &cid
 	return nil
 }
 
@@ -364,6 +388,23 @@ func (m *serverHelloMsg) MakeLog() *ServerHello {
 	sh.AlpnProtocol = m.alpnProtocol
 
 	if m.supportedVersion != 0 {
+		ks := KeyShareExtension{}
+
+		// TLS 1.3: negotiated key exchange group (supported group / CurveID).
+		// Preferred source: key_share in ServerHello (serverShare.group).
+		if m.serverShare.group != 0 {
+			g := m.serverShare.group
+			ks.KeyExchange = &g
+		} else if m.selectedGroup != 0 {
+			// HelloRetryRequest path: server selects a group but doesn't send a share yet.
+			g := m.selectedGroup
+			ks.KeyExchange = &g
+		}
+
+		if ks.KeyExchange != nil {
+			sh.KeyShare = &ks
+		}
+
 		sh.SupportedVersions = &SupportedVersionsExt{
 			SelectedVersion: TLSVersion(m.supportedVersion),
 		}
