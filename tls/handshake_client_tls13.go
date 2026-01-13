@@ -169,7 +169,7 @@ func (hs *clientHandshakeStateTLS13) sendDummyChangeCipherSpec() error {
 	}
 	hs.sentDummyCCS = true
 
-	_, err := hs.c.writeRecord(recordTypeChangeCipherSpec, []byte{1})
+	_, err := hs.c.WriteRecord(recordTypeChangeCipherSpec, []byte{1})
 	return err
 }
 
@@ -262,7 +262,7 @@ func (hs *clientHandshakeStateTLS13) processHelloRetryRequest() error {
 	}
 
 	hs.transcript.Write(hs.hello.marshal())
-	if _, err := c.writeRecord(recordTypeHandshake, hs.hello.marshal()); err != nil {
+	if _, err := c.WriteRecord(recordTypeHandshake, hs.hello.marshal()); err != nil {
 		return err
 	}
 
@@ -571,7 +571,7 @@ func (hs *clientHandshakeStateTLS13) sendClientCertificate() error {
 	certMsg.ocspStapling = hs.certReq.ocspStapling && len(cert.OCSPStaple) > 0
 
 	hs.transcript.Write(certMsg.marshal())
-	if _, err := c.writeRecord(recordTypeHandshake, certMsg.marshal()); err != nil {
+	if _, err := c.WriteRecord(recordTypeHandshake, certMsg.marshal()); err != nil {
 		return err
 	}
 
@@ -609,7 +609,7 @@ func (hs *clientHandshakeStateTLS13) sendClientCertificate() error {
 	certVerifyMsg.signature = sig
 
 	hs.transcript.Write(certVerifyMsg.marshal())
-	if _, err := c.writeRecord(recordTypeHandshake, certVerifyMsg.marshal()); err != nil {
+	if _, err := c.WriteRecord(recordTypeHandshake, certVerifyMsg.marshal()); err != nil {
 		return err
 	}
 
@@ -624,7 +624,7 @@ func (hs *clientHandshakeStateTLS13) sendClientFinished() error {
 	}
 
 	hs.transcript.Write(finished.marshal())
-	if _, err := c.writeRecord(recordTypeHandshake, finished.marshal()); err != nil {
+	if _, err := c.WriteRecord(recordTypeHandshake, finished.marshal()); err != nil {
 		return err
 	}
 
