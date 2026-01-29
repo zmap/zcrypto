@@ -222,7 +222,7 @@ func (c *ClientFingerprintConfiguration) marshal(config *Config) ([]byte, error)
 	return hello, nil
 }
 
-func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]ecdheParameters, error) {
+func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, error) {
 	config := c.config
 	if len(config.ServerName) == 0 && !config.InsecureSkipVerify {
 		return nil, nil, errors.New("tls: either ServerName or InsecureSkipVerify must be specified in the tls.Config")
@@ -306,36 +306,31 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]ecdheParameters, 
 		hello.supportedSignatureAlgorithms = supportedSignatureAlgorithms
 	}
 
-	var paramsByGroup map[CurveID]ecdheParameters
+	var keySharesByGroup map[CurveID]tls13KeyShare
 	if hello.supportedVersions[0] == VersionTLS13 {
 		hello.cipherSuites = append(hello.cipherSuites, defaultCipherSuitesTLS13()...)
 
 		// Send preferred + fallback (avoid HRR and keep compatibility)
 		const maxKeyShares = 2
 		hello.keyShares = make([]keyShare, 0, maxKeyShares)
-		paramsByGroup = make(map[CurveID]ecdheParameters, maxKeyShares)
+		keySharesByGroup = make(map[CurveID]tls13KeyShare, maxKeyShares)
 
-		for _, curveID := range config.curvePreferences() {
+		for _, group := range config.curvePreferences() {
 			if len(hello.keyShares) >= maxKeyShares {
 				break
 			}
 
-			// Allow only ECDHE-capable groups at this stage.
-			if _, ok := curveForCurveID(curveID); curveID != X25519 && !ok {
-				// Not an ECDHE curve (e.g. ML-KEM/hybrid group) -> skip for now.
+			ks, genErr := generateTLS13KeyShare(config.rand(), group)
+			if genErr != nil {
+				// Tolerant: if a group is not supported/implemented, skip it.
 				continue
 			}
 
-			p, genErr := generateECDHEParameters(config.rand(), curveID)
-			if genErr != nil {
-				return nil, nil, genErr
-			}
-
 			hello.keyShares = append(hello.keyShares, keyShare{
-				group: curveID,
-				data:  p.PublicKey(),
+				group: group,
+				data:  ks.PublicKey(),
 			})
-			paramsByGroup[curveID] = p
+			keySharesByGroup[group] = ks
 		}
 
 		if len(hello.keyShares) == 0 {
@@ -343,7 +338,8 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]ecdheParameters, 
 		}
 	}
 
-	return hello, paramsByGroup, nil
+
+	return hello, keySharesByGroup, nil
 }
 
 func (c *Conn) clientHandshake() (err error) {
@@ -355,7 +351,7 @@ func (c *Conn) clientHandshake() (err error) {
 	var session *ClientSessionState
 	var sessionCache ClientSessionCache
 	var cacheKey string
-	var ecdheParamsByGroup map[CurveID]ecdheParameters
+	var keySharesByGroup map[CurveID]tls13KeyShare
 
 	// This may be a renegotiation handshake, in which case some fields
 	// need to be reset.
@@ -444,7 +440,7 @@ func (c *Conn) clientHandshake() (err error) {
 		sessionCache = nil
 	} else {
 
-		hello, ecdheParamsByGroup, err = c.makeClientHello()
+		hello, keySharesByGroup, err = c.makeClientHello()
 		if err != nil {
 			return err
 		}
@@ -514,7 +510,7 @@ func (c *Conn) clientHandshake() (err error) {
 			c:           c,
 			serverHello: serverHello,
 			hello:       hello,
-			ecdheParamsByGroup: ecdheParamsByGroup,
+			keySharesByGroup: keySharesByGroup,
 			session:     session,
 			earlySecret: earlySecret,
 			binderKey:   binderKey,

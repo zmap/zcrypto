@@ -19,7 +19,7 @@ type clientHandshakeStateTLS13 struct {
 	c                  *Conn
 	serverHello        *serverHelloMsg
 	hello              *clientHelloMsg
-	ecdheParamsByGroup map[CurveID]ecdheParameters
+	keySharesByGroup   map[CurveID]tls13KeyShare
 
 	session     *ClientSessionState
 	earlySecret []byte
@@ -34,7 +34,7 @@ type clientHandshakeStateTLS13 struct {
 	trafficSecret []byte // client_application_traffic_secret_0
 }
 
-// handshake requires hs.c, hs.hello, hs.serverHello, hs.ecdheParamsByGroup, and,
+// handshake requires hs.c, hs.hello, hs.serverHello, hs.keySharesByGroup, and,
 // optionally, hs.session, hs.earlySecret and hs.binderKey to be set.
 func (hs *clientHandshakeStateTLS13) handshake() error {
 	// The server must not select TLS 1.3 in a renegotiation. See RFC 8446,
@@ -45,7 +45,7 @@ func (hs *clientHandshakeStateTLS13) handshake() error {
 	}
 
 	// Consistency check on the presence of a keyShare and its parameters.
-	if len(hs.hello.keyShares) == 0 || hs.ecdheParamsByGroup == nil {
+	if len(hs.hello.keyShares) == 0 || hs.keySharesByGroup == nil {
 		return hs.c.sendAlert(AlertInternalError)
 	}
 
@@ -219,25 +219,20 @@ func (hs *clientHandshakeStateTLS13) processHelloRetryRequest() error {
 			c.sendAlert(AlertIllegalParameter)
 			return errors.New("tls: server selected unsupported group")
 		}
-		if _, ok := hs.ecdheParamsByGroup[curveID]; ok {
+		if _, ok := hs.keySharesByGroup[curveID]; ok {
 			c.sendAlert(AlertIllegalParameter)
 			return errors.New("tls: server sent an unnecessary HelloRetryRequest key_share")
-		}		
-		if _, ok := curveForCurveID(curveID); curveID != X25519 && !ok {
-			c.sendAlert(AlertInternalError)
-			return errors.New("tls: CurvePreferences includes unsupported curve")
 		}
-		params, err := generateECDHEParameters(c.config.rand(), curveID)
+		ks, err := generateTLS13KeyShare(c.config.rand(), curveID)
 		if err != nil {
 			c.sendAlert(AlertInternalError)
 			return err
 		}
-		if hs.ecdheParamsByGroup == nil {
-			hs.ecdheParamsByGroup = make(map[CurveID]ecdheParameters)
+		if hs.keySharesByGroup == nil {
+			hs.keySharesByGroup = make(map[CurveID]tls13KeyShare)
 		}
-		hs.ecdheParamsByGroup[curveID] = params
-		hs.hello.keyShares = []keyShare{{group: curveID, data: params.PublicKey()}}
-
+		hs.keySharesByGroup[curveID] = ks
+		hs.hello.keyShares = []keyShare{{group: curveID, data: ks.PublicKey()}}
 	}
 
 	hs.hello.raw = nil
@@ -311,8 +306,9 @@ func (hs *clientHandshakeStateTLS13) processServerHello() error {
 		c.sendAlert(AlertIllegalParameter)
 		return errors.New("tls: server did not send a key share")
 	}
-	params, ok := hs.ecdheParamsByGroup[hs.serverHello.serverShare.group]
-	if !ok || params == nil {
+
+	ks, ok := hs.keySharesByGroup[hs.serverHello.serverShare.group]
+	if !ok || ks == nil {
 		c.sendAlert(AlertIllegalParameter)
 		return errors.New("tls: server selected unsupported group")
 	}
@@ -350,16 +346,16 @@ func (hs *clientHandshakeStateTLS13) processServerHello() error {
 func (hs *clientHandshakeStateTLS13) establishHandshakeKeys() error {
 	c := hs.c
 
-	params, ok := hs.ecdheParamsByGroup[hs.serverHello.serverShare.group]
-	if !ok || params == nil {
+	ks, ok := hs.keySharesByGroup[hs.serverHello.serverShare.group]
+	if !ok || ks == nil {
 		c.sendAlert(AlertIllegalParameter)
 		return errors.New("tls: server selected unsupported group")
 	}
 
-	sharedKey := params.SharedKey(hs.serverHello.serverShare.data)
-	if sharedKey == nil {
+	sharedKey, err := ks.SharedKey(hs.serverHello.serverShare.data)
+	if err != nil {
 		c.sendAlert(AlertIllegalParameter)
-		return errors.New("tls: invalid server key share")
+		return err
 	}
 
 	earlySecret := hs.earlySecret
@@ -376,7 +372,7 @@ func (hs *clientHandshakeStateTLS13) establishHandshakeKeys() error {
 		serverHandshakeTrafficLabel, hs.transcript)
 	c.in.setTrafficSecret(hs.suite, serverSecret)
 
-	err := c.config.writeKeyLog(keyLogLabelClientHandshake, hs.hello.random, clientSecret)
+	err = c.config.writeKeyLog(keyLogLabelClientHandshake, hs.hello.random, clientSecret)
 	if err != nil {
 		c.sendAlert(AlertInternalError)
 		return err
