@@ -338,7 +338,6 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, er
 		}
 	}
 
-
 	return hello, keySharesByGroup, nil
 }
 
@@ -507,13 +506,13 @@ func (c *Conn) clientHandshake() (err error) {
 
 	if c.vers == VersionTLS13 {
 		hs := &clientHandshakeStateTLS13{
-			c:           c,
-			serverHello: serverHello,
-			hello:       hello,
+			c:                c,
+			serverHello:      serverHello,
+			hello:            hello,
 			keySharesByGroup: keySharesByGroup,
-			session:     session,
-			earlySecret: earlySecret,
-			binderKey:   binderKey,
+			session:          session,
+			earlySecret:      earlySecret,
+			binderKey:        binderKey,
 		}
 
 		// In TLS 1.3, session tickets are delivered after the handshake.

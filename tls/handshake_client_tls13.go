@@ -16,10 +16,10 @@ import (
 )
 
 type clientHandshakeStateTLS13 struct {
-	c                  *Conn
-	serverHello        *serverHelloMsg
-	hello              *clientHelloMsg
-	keySharesByGroup   map[CurveID]tls13KeyShare
+	c                *Conn
+	serverHello      *serverHelloMsg
+	hello            *clientHelloMsg
+	keySharesByGroup map[CurveID]tls13KeyShare
 
 	session     *ClientSessionState
 	earlySecret []byte
