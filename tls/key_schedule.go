@@ -421,6 +421,21 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 		return serverShare, shared, nil
 
 	default:
-		return nil, nil, errors.New("tls: unsupported hybrid group")
+		// Classical TLS 1.3 ECDHE (X25519, P-256, P-384, P-521, etc.)
+		if _, ok := curveForCurveID(group); group != X25519 && !ok {
+			return nil, nil, errors.New("tls: unsupported selected group")
+		}
+
+		params, err := generateECDHEParameters(rand, group)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		sharedKey := params.SharedKey(clientShare)
+		if sharedKey == nil {
+			return nil, nil, errors.New("tls: invalid client key share")
+		}
+
+		return params.PublicKey(), sharedKey, nil
 	}
 }
