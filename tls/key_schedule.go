@@ -7,6 +7,7 @@ package tls
 import (
 	"crypto/elliptic"
 	"crypto/hmac"
+	"crypto/mlkem"
 	"errors"
 	"hash"
 	"io"
@@ -30,6 +31,13 @@ const (
 	exporterLabel                 = "exp master"
 	resumptionLabel               = "res master"
 	trafficUpdateLabel            = "traffic upd"
+)
+
+const (
+	x25519ShareSize = 32
+	mlkem768EKSize  = mlkem.EncapsulationKeySize768 // 1184
+	mlkem768CTSize  = mlkem.CiphertextSize768       // 1088
+	mlkemSSSize     = 32                            // ML-KEM shared secret size
 )
 
 // expandLabel implements HKDF-Expand-Label from RFC 8446, Section 7.1.
@@ -111,6 +119,12 @@ type ecdheParameters interface {
 
 	Clone() ecdheParameters
 	MakeLog() (*jsonKeys.ECPoint, *jsonKeys.ECDHPrivateParams)
+}
+
+type tls13KeyShare interface {
+	Group() CurveID
+	PublicKey() []byte
+	SharedKey(serverShare []byte) ([]byte, error)
 }
 
 func generateECDHEParameters(rand io.Reader, curveID CurveID) (ecdheParameters, error) {
@@ -278,4 +292,150 @@ func (p *x25519Parameters) MakeLog() (*jsonKeys.ECPoint, *jsonKeys.ECDHPrivatePa
 	}
 
 	return public, private
+}
+
+type tls13ECDHEKeyShare struct {
+	group  CurveID
+	params ecdheParameters
+}
+
+func (k *tls13ECDHEKeyShare) Group() CurveID    { return k.group }
+func (k *tls13ECDHEKeyShare) PublicKey() []byte { return k.params.PublicKey() }
+
+func (k *tls13ECDHEKeyShare) SharedKey(serverShare []byte) ([]byte, error) {
+	sk := k.params.SharedKey(serverShare)
+	if sk == nil {
+		return nil, errors.New("tls: invalid server key share")
+	}
+	return sk, nil
+}
+
+type tls13X25519MLKEM768KeyShare struct {
+	dk      *mlkem.DecapsulationKey768
+	xparams ecdheParameters
+}
+
+func (k *tls13X25519MLKEM768KeyShare) Group() CurveID { return X25519MLKEM768 }
+
+// ClientHello.key_share.data = EK(1184) || X25519(32)
+func (k *tls13X25519MLKEM768KeyShare) PublicKey() []byte {
+	ek := k.dk.EncapsulationKey().Bytes()
+	x := k.xparams.PublicKey()
+	out := make([]byte, 0, len(ek)+len(x))
+	out = append(out, ek...)
+	out = append(out, x...)
+	return out
+}
+
+// ServerHello.key_share.data = CT(1088) || X25519(32)
+// SharedKey = KEM_ss || ECDHE_ss
+func (k *tls13X25519MLKEM768KeyShare) SharedKey(serverShare []byte) ([]byte, error) {
+	if len(serverShare) != mlkem768CTSize+x25519ShareSize {
+		return nil, errors.New("tls: invalid server share length for X25519MLKEM768")
+	}
+	ct := serverShare[:mlkem768CTSize]
+	sx := serverShare[mlkem768CTSize:]
+
+	kemSS, err := k.dk.Decapsulate(ct)
+	if err != nil {
+		return nil, err
+	}
+	if len(kemSS) != mlkemSSSize {
+		return nil, errors.New("tls: invalid ML-KEM shared secret size")
+	}
+
+	ecdheSS := k.xparams.SharedKey(sx)
+	if ecdheSS == nil {
+		return nil, errors.New("tls: invalid server x25519 share")
+	}
+
+	shared := make([]byte, 0, len(kemSS)+len(ecdheSS))
+	shared = append(shared, kemSS...)
+	shared = append(shared, ecdheSS...)
+	return shared, nil
+}
+
+func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error) {
+	switch group {
+	case X25519MLKEM768:
+		dk, err := mlkem.GenerateKey768()
+		if err != nil {
+			return nil, err
+		}
+		xp, err := generateECDHEParameters(rand, X25519)
+		if err != nil {
+			return nil, err
+		}
+		return &tls13X25519MLKEM768KeyShare{dk: dk, xparams: xp}, nil
+
+	default:
+		if _, ok := curveForCurveID(group); group != X25519 && !ok {
+			return nil, errors.New("tls: unsupported group")
+		}
+		p, err := generateECDHEParameters(rand, group)
+		if err != nil {
+			return nil, err
+		}
+		return &tls13ECDHEKeyShare{group: group, params: p}, nil
+	}
+}
+
+func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientShare []byte) ([]byte, []byte, error) {
+	switch group {
+	case X25519MLKEM768:
+		// ClientHello.share = EK(1184) || X25519(32)
+		if len(clientShare) != mlkem768EKSize+x25519ShareSize {
+			return nil, nil, errors.New("tls: invalid client share length for X25519MLKEM768")
+		}
+		ekBytes := clientShare[:mlkem768EKSize]
+		cx := clientShare[mlkem768EKSize:]
+
+		ek, err := mlkem.NewEncapsulationKey768(ekBytes)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		kemSS, ct := ek.Encapsulate()
+		if len(ct) != mlkem768CTSize || len(kemSS) != mlkemSSSize {
+			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		}
+
+		sp, err := generateECDHEParameters(rand, X25519)
+		if err != nil {
+			return nil, nil, err
+		}
+		ecdheSS := sp.SharedKey(cx)
+		if ecdheSS == nil {
+			return nil, nil, errors.New("tls: invalid client x25519 share")
+		}
+
+		// ServerHello.share = CT(1088) || X25519(32)
+		serverShare := make([]byte, 0, len(ct)+len(sp.PublicKey()))
+		serverShare = append(serverShare, ct...)
+		serverShare = append(serverShare, sp.PublicKey()...)
+
+		// shared = KEM_ss || ECDHE_ss
+		shared := make([]byte, 0, len(kemSS)+len(ecdheSS))
+		shared = append(shared, kemSS...)
+		shared = append(shared, ecdheSS...)
+		return serverShare, shared, nil
+
+	default:
+		// Classical TLS 1.3 ECDHE (X25519, P-256, P-384, P-521, etc.)
+		if _, ok := curveForCurveID(group); group != X25519 && !ok {
+			return nil, nil, errors.New("tls: unsupported selected group")
+		}
+
+		params, err := generateECDHEParameters(rand, group)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		sharedKey := params.SharedKey(clientShare)
+		if sharedKey == nil {
+			return nil, nil, errors.New("tls: invalid client key share")
+		}
+
+		return params.PublicKey(), sharedKey, nil
+	}
 }

@@ -222,7 +222,7 @@ func (c *ClientFingerprintConfiguration) marshal(config *Config) ([]byte, error)
 	return hello, nil
 }
 
-func (c *Conn) makeClientHello() (*clientHelloMsg, ecdheParameters, error) {
+func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, error) {
 	config := c.config
 	if len(config.ServerName) == 0 && !config.InsecureSkipVerify {
 		return nil, nil, errors.New("tls: either ServerName or InsecureSkipVerify must be specified in the tls.Config")
@@ -306,22 +306,54 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, ecdheParameters, error) {
 		hello.supportedSignatureAlgorithms = supportedSignatureAlgorithms
 	}
 
-	var params ecdheParameters
+	var keySharesByGroup map[CurveID]tls13KeyShare
 	if hello.supportedVersions[0] == VersionTLS13 {
 		hello.cipherSuites = append(hello.cipherSuites, defaultCipherSuitesTLS13()...)
 
-		curveID := config.curvePreferences()[0]
-		if _, ok := curveForCurveID(curveID); curveID != X25519 && !ok {
-			return nil, nil, errors.New("tls: CurvePreferences includes unsupported curve")
+		prefs := config.curvePreferences()
+		if len(prefs) == 0 {
+			return nil, nil, errors.New("tls: no supported key exchange mechanisms (no curve preferences)")
 		}
-		params, err = generateECDHEParameters(config.rand(), curveID)
-		if err != nil {
-			return nil, nil, err
+
+		// By default, send a single key_share.
+		// If ML-KEM hybrid is explicitly enabled as the top preference, also send X25519 as fallback.
+		shareGroups := []CurveID{prefs[0]}
+		if prefs[0] == X25519MLKEM768 {
+			// Ensure compatibility with servers that don't support the hybrid group.
+			if prefs[0] != X25519 {
+				shareGroups = append(shareGroups, X25519)
+			}
 		}
-		hello.keyShares = []keyShare{{group: curveID, data: params.PublicKey()}}
+
+		hello.keyShares = make([]keyShare, 0, len(shareGroups))
+		keySharesByGroup = make(map[CurveID]tls13KeyShare, len(shareGroups))
+
+		seen := make(map[CurveID]struct{}, len(shareGroups))
+		for _, group := range shareGroups {
+			if _, ok := seen[group]; ok {
+				continue
+			}
+			seen[group] = struct{}{}
+
+			ks, genErr := generateTLS13KeyShare(config.rand(), group)
+			if genErr != nil {
+				// If a group is not supported/implemented, skip it.
+				continue
+			}
+
+			hello.keyShares = append(hello.keyShares, keyShare{
+				group: group,
+				data:  ks.PublicKey(),
+			})
+			keySharesByGroup[group] = ks
+		}
+
+		if len(hello.keyShares) == 0 {
+			return nil, nil, errors.New("tls: no supported key exchange mechanisms (no key shares)")
+		}
 	}
 
-	return hello, params, nil
+	return hello, keySharesByGroup, nil
 }
 
 func (c *Conn) clientHandshake() (err error) {
@@ -333,7 +365,7 @@ func (c *Conn) clientHandshake() (err error) {
 	var session *ClientSessionState
 	var sessionCache ClientSessionCache
 	var cacheKey string
-	var ecdheParams ecdheParameters
+	var keySharesByGroup map[CurveID]tls13KeyShare
 
 	// This may be a renegotiation handshake, in which case some fields
 	// need to be reset.
@@ -422,7 +454,7 @@ func (c *Conn) clientHandshake() (err error) {
 		sessionCache = nil
 	} else {
 
-		hello, ecdheParams, err = c.makeClientHello()
+		hello, keySharesByGroup, err = c.makeClientHello()
 		if err != nil {
 			return err
 		}
@@ -489,13 +521,13 @@ func (c *Conn) clientHandshake() (err error) {
 
 	if c.vers == VersionTLS13 {
 		hs := &clientHandshakeStateTLS13{
-			c:           c,
-			serverHello: serverHello,
-			hello:       hello,
-			ecdheParams: ecdheParams,
-			session:     session,
-			earlySecret: earlySecret,
-			binderKey:   binderKey,
+			c:                c,
+			serverHello:      serverHello,
+			hello:            hello,
+			keySharesByGroup: keySharesByGroup,
+			session:          session,
+			earlySecret:      earlySecret,
+			binderKey:        binderKey,
 		}
 
 		// In TLS 1.3, session tickets are delivered after the handshake.
