@@ -123,8 +123,8 @@ const (
 // CurveID is the type of a TLS identifier for an elliptic curve. See
 // https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8.
 //
-// In TLS 1.3, this type is called NamedGroup, but at this time this library
-// only supports Elliptic Curve based groups. See RFC 8446, Section 4.2.7.
+// In TLS 1.3, this type is called NamedGroup. This library historically used it
+// for elliptic curves, but it can represent any TLS 1.3 (EC / hybrid / PQ) group.
 type CurveID uint16
 
 const (
@@ -132,6 +132,10 @@ const (
 	CurveP384 CurveID = 24
 	CurveP521 CurveID = 25
 	X25519    CurveID = 29
+
+	// Hybrid PQ key exchange groups (TLS 1.3 NamedGroup)
+	SecP256r1MLKEM768 CurveID = 4587
+	X25519MLKEM768    CurveID = 4588
 )
 
 func (curveID *CurveID) MarshalJSON() ([]byte, error) {
