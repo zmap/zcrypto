@@ -439,8 +439,8 @@ func init() {
 	curveNames[26] = "brainpoolP256r1"
 	curveNames[27] = "brainpoolP384r1"
 	curveNames[28] = "brainpoolP512r1"
-	curveNames[29] = "ecdh_x25519" // TEMPORARY -- expires 1Mar2018
-	curveNames[30] = "ecdh_x448"   // TEMPORARY -- expires 1Mar2018
+	curveNames[29] = "x25519"
+	curveNames[30] = "x448"
 	curveNames[256] = "ffdhe2048"
 	curveNames[257] = "ffdhe3072"
 	curveNames[258] = "ffdhe4096"
