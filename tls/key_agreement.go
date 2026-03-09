@@ -388,6 +388,9 @@ type ecdheKeyAgreement struct {
 func (ka *ecdheKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {
 	var curveID CurveID
 	for _, c := range clientHello.supportedCurves {
+		if c == X25519MLKEM768 {
+			continue // ML-KEM hybrid group is TLS 1.3 (key_share) only.
+		}
 		if config.supportsCurve(c) {
 			curveID = c
 			break

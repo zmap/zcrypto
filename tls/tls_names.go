@@ -439,15 +439,15 @@ func init() {
 	curveNames[26] = "brainpoolP256r1"
 	curveNames[27] = "brainpoolP384r1"
 	curveNames[28] = "brainpoolP512r1"
-	curveNames[29] = "ecdh_x25519" // TEMPORARY -- expires 1Mar2018
-	curveNames[30] = "ecdh_x448"   // TEMPORARY -- expires 1Mar2018
+	curveNames[29] = "x25519"
+	curveNames[30] = "x448"
 	curveNames[256] = "ffdhe2048"
 	curveNames[257] = "ffdhe3072"
 	curveNames[258] = "ffdhe4096"
 	curveNames[259] = "ffdhe6144"
 	curveNames[260] = "ffdhe8192"
-	curveNames[4587] = "secp256r1mlkem768" // draft-kwiatkowski-tls-ecdhe-mlkem
-	curveNames[4588] = "x25519mlkem768"    // draft-kwiatkowski-tls-ecdhe-mlkem
+	curveNames[4587] = "secp256r1mlkem768"
+	curveNames[4588] = "x25519mlkem768"
 	curveNames[65281] = "arbitrary_explicit_prime_curves"
 	curveNames[65282] = "arbitrary_explicit_char2_curves"
 

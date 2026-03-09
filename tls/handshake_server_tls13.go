@@ -216,21 +216,13 @@ GroupSelection:
 		clientKeyShare = &hs.clientHello.keyShares[0]
 	}
 
-	if _, ok := curveForCurveID(selectedGroup); selectedGroup != X25519 && !ok {
-		c.sendAlert(AlertInternalError)
-		return errors.New("tls: CurvePreferences includes unsupported curve")
-	}
-	params, err := generateECDHEParameters(c.config.rand(), selectedGroup)
+	serverShareData, sharedKey, err := generateTLS13ServerShareAndSharedKey(c.config.rand(), selectedGroup, clientKeyShare.data)
 	if err != nil {
-		c.sendAlert(AlertInternalError)
+		c.sendAlert(AlertIllegalParameter)
 		return err
 	}
-	hs.hello.serverShare = keyShare{group: selectedGroup, data: params.PublicKey()}
-	hs.sharedKey = params.SharedKey(clientKeyShare.data)
-	if hs.sharedKey == nil {
-		c.sendAlert(AlertIllegalParameter)
-		return errors.New("tls: invalid client key share")
-	}
+	hs.hello.serverShare = keyShare{group: selectedGroup, data: serverShareData}
+	hs.sharedKey = sharedKey
 
 	c.serverName = hs.clientHello.serverName
 	return nil
