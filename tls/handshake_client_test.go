@@ -2534,3 +2534,46 @@ func testResumptionKeepsOCSPAndSCT(t *testing.T, ver uint16) {
 			serverConfig.Certificates[0].SignedCertificateTimestamps, ccs.SignedCertificateTimestamps)
 	}
 }
+
+func TestForceSuitesCipherSuiteOrdering(t *testing.T) {
+	c, s := localPipe(t)
+	defer s.Close()
+
+	expectedSuites := []uint16{
+		TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+		TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+		0x0A0A, // a GREASE cipher suite
+		0x00FF, // renegotiation
+	}
+
+	go func() {
+		client := Client(c, &Config{
+			InsecureSkipVerify: true,
+			CipherSuites:       expectedSuites,
+			ForceSuites:        true,
+			MaxVersion:         VersionTLS12,
+		})
+		client.Handshake()
+		c.Close()
+	}()
+
+	var header [5]byte
+	if _, err := io.ReadFull(s, header[:]); err != nil {
+		t.Fatal(err)
+	}
+	recordLen := int(header[3])<<8 | int(header[4])
+
+	record := make([]byte, recordLen)
+	if _, err := io.ReadFull(s, record); err != nil {
+		t.Fatal(err)
+	}
+
+	var m clientHelloMsg
+	if !m.unmarshal(record) {
+		t.Fatal("failed to unmarshal ClientHello")
+	}
+
+	if !reflect.DeepEqual(m.cipherSuites, expectedSuites) {
+		t.Fatalf("cipher suites in ClientHello = %#v, want %#v", m.cipherSuites, expectedSuites)
+	}
+}
