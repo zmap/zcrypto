@@ -516,7 +516,19 @@ func runClientTestForVersion(t *testing.T, template *clientTest, version, option
 }
 
 func runClientTestTLS10(t *testing.T, template *clientTest) {
-	runClientTestForVersion(t, template, "TLSv10", "-tls1")
+	// The TLSv10 golden flows in testdata were recorded with the BEAST
+	// mitigation off (see commit 4f0ea0e). Force the mitigation off here
+	// so the client's write shape matches what's on disk. New tests that
+	// want to verify the default split path should use an in-process
+	// handshake instead (see TestTLS10BEASTMitigation).
+	clone := *template
+	if clone.config != nil {
+		clone.config = clone.config.Clone()
+	} else {
+		clone.config = testConfig.Clone()
+	}
+	clone.config.DisableTLS10BEASTMitigation = true
+	runClientTestForVersion(t, &clone, "TLSv10", "-tls1")
 }
 
 func runClientTestTLS11(t *testing.T, template *clientTest) {
