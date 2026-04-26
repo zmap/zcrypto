@@ -255,6 +255,122 @@ func TestDynamicRecordSizingWithTLSv13(t *testing.T) {
 	runDynamicRecordSizingTest(t, config)
 }
 
+// TestTLS10BEASTMitigation exercises the CBC record-splitting mitigation
+// restored under Config.DisableTLS10BEASTMitigation. By default Write splits
+// into a 1-byte record followed by the remainder; setting the opt-out flag
+// reverts to a single application_data record.
+func TestTLS10BEASTMitigation(t *testing.T) {
+	payload := []byte("hello BEAST")
+
+	for _, tc := range []struct {
+		name           string
+		disable        bool
+		wantAppRecords int
+		wantFirstLen   int // plaintext length carried by the first app_data record
+	}{
+		{"default_on", false, 2, 1},
+		{"opt_out", true, 1, len(payload)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			serverConfig := testConfig.Clone()
+			serverConfig.MinVersion = VersionTLS10
+			serverConfig.MaxVersion = VersionTLS10
+			serverConfig.CipherSuites = []uint16{TLS_RSA_WITH_AES_128_CBC_SHA}
+			serverConfig.DisableTLS10BEASTMitigation = tc.disable
+
+			clientConfig := testConfig.Clone()
+			clientConfig.MinVersion = VersionTLS10
+			clientConfig.MaxVersion = VersionTLS10
+			clientConfig.CipherSuites = []uint16{TLS_RSA_WITH_AES_128_CBC_SHA}
+
+			clientConn, serverConn := localPipe(t)
+			tlsServer := Server(serverConn, serverConfig)
+
+			handshakeDone := make(chan struct{})
+			recordsChan := make(chan []recordObservation, 1)
+			defer func() { <-recordsChan }()
+
+			go func() {
+				defer close(recordsChan)
+				defer clientConn.Close()
+
+				tlsClient := Client(clientConn, clientConfig)
+				if err := tlsClient.Handshake(); err != nil {
+					t.Errorf("client handshake: %v", err)
+					return
+				}
+				close(handshakeDone)
+
+				// Read raw TLS records off the wire so we can count
+				// application_data records independently of what the
+				// tls.Conn.Read loop would coalesce.
+				var header [recordHeaderLen]byte
+				var observed []recordObservation
+				for {
+					_, err := io.ReadFull(clientConn, header[:])
+					if err == io.EOF || err == io.ErrUnexpectedEOF {
+						break
+					}
+					if err != nil {
+						t.Errorf("read header: %v", err)
+						return
+					}
+					length := int(header[3])<<8 | int(header[4])
+					body := make([]byte, length)
+					if _, err := io.ReadFull(clientConn, body); err != nil {
+						t.Errorf("read body: %v", err)
+						return
+					}
+					observed = append(observed, recordObservation{
+						typ:    recordType(header[0]),
+						cipher: length,
+					})
+				}
+				recordsChan <- observed
+			}()
+
+			if err := tlsServer.Handshake(); err != nil {
+				t.Fatalf("server handshake: %v", err)
+			}
+			<-handshakeDone
+
+			if _, err := tlsServer.Write(payload); err != nil {
+				t.Fatalf("server write: %v", err)
+			}
+			if err := tlsServer.Close(); err != nil {
+				t.Fatalf("server close: %v", err)
+			}
+
+			observed := <-recordsChan
+			if observed == nil {
+				t.Fatalf("client read loop failed")
+			}
+			var appRecords []recordObservation
+			for _, r := range observed {
+				if r.typ == recordTypeApplicationData {
+					appRecords = append(appRecords, r)
+				}
+			}
+			if len(appRecords) != tc.wantAppRecords {
+				t.Fatalf("got %d application_data records, want %d (all records: %+v)",
+					len(appRecords), tc.wantAppRecords, observed)
+			}
+			// For AES-128-CBC-SHA1 the ciphertext length is
+			// roundUp(plaintext + 20-byte MAC + 1 pad-length byte, 16).
+			wantFirstCipher := roundUp(tc.wantFirstLen+20+1, 16)
+			if appRecords[0].cipher != wantFirstCipher {
+				t.Fatalf("first app_data ciphertext length = %d, want %d (plaintext %d bytes)",
+					appRecords[0].cipher, wantFirstCipher, tc.wantFirstLen)
+			}
+		})
+	}
+}
+
+type recordObservation struct {
+	typ    recordType
+	cipher int // length field from the record header
+}
+
 // hairpinConn is a net.Conn that makes a “hairpin” call when closed, back into
 // the tls.Conn which is calling it.
 type hairpinConn struct {

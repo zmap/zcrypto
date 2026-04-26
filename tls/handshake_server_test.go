@@ -752,7 +752,16 @@ func runServerTestForVersion(t *testing.T, template *serverTest, version, option
 }
 
 func runServerTestTLS10(t *testing.T, template *serverTest) {
-	runServerTestForVersion(t, template, "TLSv10", "-tls1")
+	// See runClientTestTLS10: the TLSv10 goldens were recorded without
+	// the BEAST mitigation, so force it off on the server side too.
+	clone := *template
+	if clone.config != nil {
+		clone.config = clone.config.Clone()
+	} else {
+		clone.config = testConfig.Clone()
+	}
+	clone.config.DisableTLS10BEASTMitigation = true
+	runServerTestForVersion(t, &clone, "TLSv10", "-tls1")
 }
 
 func runServerTestTLS11(t *testing.T, template *serverTest) {
