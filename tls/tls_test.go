@@ -828,7 +828,8 @@ func TestCloneNonFuncFields(t *testing.T) {
 			f.Set(reflect.ValueOf(RenegotiateOnceAsClient))
 		case "ExplicitCurvePreferences", "ForceSuites", "HeartbeatEnabled",
 			"ClientDSAEnabled", "ExtendedRandom", "ForceSessionTicketExt",
-			"ExtendedMasterSecret", "SignedCertificateTimestampExt", "CertsOnly", "DontBufferHandshakes":
+			"ExtendedMasterSecret", "SignedCertificateTimestampExt", "CertsOnly", "DontBufferHandshakes",
+			"DisableTLS10BEASTMitigation":
 			f.Set(reflect.ValueOf(true))
 		case "ClientRandom", "ExternalClientHello":
 			f.Set(reflect.ValueOf([]byte{}))
