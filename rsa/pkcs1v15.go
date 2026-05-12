@@ -7,7 +7,8 @@ package rsa
 import (
 	"bytes"
 	"crypto"
-	"crypto/internal/randutil"
+	// ZCrypto - crypto/internal/randutil removed; MaybeReadByte call removed below
+	// "crypto/internal/randutil"
 	"crypto/subtle"
 	"errors"
 	"io"
@@ -39,7 +40,8 @@ type PKCS1v15DecryptOptions struct {
 // WARNING: use of this function to encrypt plaintexts other than
 // session keys is dangerous. Use RSA OAEP in new protocols.
 func EncryptPKCS1v15(random io.Reader, pub *PublicKey, msg []byte) ([]byte, error) {
-	randutil.MaybeReadByte(random)
+	// ZCrypto - randutil.MaybeReadByte removed (crypto/internal dependency)
+	// randutil.MaybeReadByte(random)
 
 	if err := checkPub(pub); err != nil {
 		return nil, err
@@ -49,14 +51,15 @@ func EncryptPKCS1v15(random io.Reader, pub *PublicKey, msg []byte) ([]byte, erro
 		return nil, ErrMessageTooLong
 	}
 
-	if boring.Enabled && random == boring.RandReader {
-		bkey, err := boringPublicKey(pub)
-		if err != nil {
-			return nil, err
-		}
-		return boring.EncryptRSAPKCS1(bkey, msg)
-	}
-	boring.UnreachableExceptTests()
+	// ZCrypto - boring removed
+	// if boring.Enabled && random == boring.RandReader {
+	// 	bkey, err := boringPublicKey(pub)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	return boring.EncryptRSAPKCS1(bkey, msg)
+	// }
+	// boring.UnreachableExceptTests()
 
 	// EM = 0x00 || 0x02 || PS || 0x00 || M
 	em := make([]byte, k)
@@ -69,14 +72,15 @@ func EncryptPKCS1v15(random io.Reader, pub *PublicKey, msg []byte) ([]byte, erro
 	em[len(em)-len(msg)-1] = 0
 	copy(mm, msg)
 
-	if boring.Enabled {
-		var bkey *boring.PublicKeyRSA
-		bkey, err = boringPublicKey(pub)
-		if err != nil {
-			return nil, err
-		}
-		return boring.EncryptRSANoPadding(bkey, em)
-	}
+	// ZCrypto - boring removed
+	// if boring.Enabled {
+	// 	var bkey *boring.PublicKeyRSA
+	// 	bkey, err = boringPublicKey(pub)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	return boring.EncryptRSANoPadding(bkey, em)
+	// }
 
 	return encrypt(pub, em)
 }
@@ -94,17 +98,18 @@ func DecryptPKCS1v15(random io.Reader, priv *PrivateKey, ciphertext []byte) ([]b
 		return nil, err
 	}
 
-	if boring.Enabled {
-		bkey, err := boringPrivateKey(priv)
-		if err != nil {
-			return nil, err
-		}
-		out, err := boring.DecryptRSAPKCS1(bkey, ciphertext)
-		if err != nil {
-			return nil, ErrDecryption
-		}
-		return out, nil
-	}
+	// ZCrypto - boring removed
+	// if boring.Enabled {
+	// 	bkey, err := boringPrivateKey(priv)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	out, err := boring.DecryptRSAPKCS1(bkey, ciphertext)
+	// 	if err != nil {
+	// 		return nil, ErrDecryption
+	// 	}
+	// 	return out, nil
+	// }
 
 	valid, out, index, err := decryptPKCS1v15(priv, ciphertext)
 	if err != nil {
@@ -188,22 +193,18 @@ func decryptPKCS1v15(priv *PrivateKey, ciphertext []byte) (valid int, em []byte,
 		return
 	}
 
-	if boring.Enabled {
-		var bkey *boring.PrivateKeyRSA
-		bkey, err = boringPrivateKey(priv)
-		if err != nil {
-			return
-		}
-		em, err = boring.DecryptRSANoPadding(bkey, ciphertext)
-		if err != nil {
-			return
-		}
-	} else {
-		em, err = decrypt(priv, ciphertext, noCheck)
-		if err != nil {
-			return
-		}
+	// ZCrypto - boring removed
+	// if boring.Enabled {
+	// 	var bkey *boring.PrivateKeyRSA
+	// 	bkey, err = boringPrivateKey(priv)
+	// 	...
+	// 	em, err = boring.DecryptRSANoPadding(bkey, ciphertext)
+	// } else {
+	em, err = decrypt(priv, ciphertext, noCheck)
+	if err != nil {
+		return
 	}
+	// }
 
 	firstByteIsZero := subtle.ConstantTimeByteEq(em[0], 0)
 	secondByteIsTwo := subtle.ConstantTimeByteEq(em[1], 2)
@@ -292,13 +293,12 @@ func SignPKCS1v15(random io.Reader, priv *PrivateKey, hash crypto.Hash, hashed [
 		return nil, err
 	}
 
-	if boring.Enabled {
-		bkey, err := boringPrivateKey(priv)
-		if err != nil {
-			return nil, err
-		}
-		return boring.SignRSAPKCS1v15(bkey, hash, hashed)
-	}
+	// ZCrypto - boring removed
+	// if boring.Enabled {
+	// 	bkey, err := boringPrivateKey(priv)
+	// 	...
+	// 	return boring.SignRSAPKCS1v15(bkey, hash, hashed)
+	// }
 
 	return decrypt(priv, em, withCheck)
 }
@@ -342,16 +342,12 @@ func pkcs1v15ConstructEM(pub *PublicKey, hash crypto.Hash, hashed []byte) ([]byt
 // The inputs are not considered confidential, and may leak through timing side
 // channels, or if an attacker has control of part of the inputs.
 func VerifyPKCS1v15(pub *PublicKey, hash crypto.Hash, hashed []byte, sig []byte) error {
-	if boring.Enabled {
-		bkey, err := boringPublicKey(pub)
-		if err != nil {
-			return err
-		}
-		if err := boring.VerifyRSAPKCS1v15(bkey, hash, hashed, sig); err != nil {
-			return ErrVerification
-		}
-		return nil
-	}
+	// ZCrypto - boring removed
+	// if boring.Enabled {
+	// 	bkey, err := boringPublicKey(pub)
+	// 	...
+	// 	return boring.VerifyRSAPKCS1v15(bkey, hash, hashed, sig)
+	// }
 
 	// RFC 8017 Section 8.2.2: If the length of the signature S is not k
 	// octets (where k is the length in octets of the RSA modulus n), output

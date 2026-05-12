@@ -9,7 +9,8 @@ package rsa
 import (
 	"bytes"
 	"crypto"
-	"crypto/internal/boring"
+	// ZCrypto - crypto/internal/boring removed
+	// "crypto/internal/boring"
 	"errors"
 	"hash"
 	"io"
@@ -214,19 +215,13 @@ func signPSSWithSalt(priv *PrivateKey, hash crypto.Hash, hashed, salt []byte) ([
 		return nil, err
 	}
 
-	if boring.Enabled {
-		bkey, err := boringPrivateKey(priv)
-		if err != nil {
-			return nil, err
-		}
-		// Note: BoringCrypto always does decrypt "withCheck".
-		// (It's not just decrypt.)
-		s, err := boring.DecryptRSANoPadding(bkey, em)
-		if err != nil {
-			return nil, err
-		}
-		return s, nil
-	}
+	// ZCrypto - boring removed
+	// if boring.Enabled {
+	// 	bkey, err := boringPrivateKey(priv)
+	// 	...
+	// 	s, err := boring.DecryptRSANoPadding(bkey, em)
+	// 	return s, nil
+	// }
 
 	// RFC 8017: "Note that the octet length of EM will be one less than k if
 	// modBits - 1 is divisible by 8 and equal to k otherwise, where k is the
@@ -296,14 +291,13 @@ func SignPSS(rand io.Reader, priv *PrivateKey, hash crypto.Hash, digest []byte, 
 	// well-specified number of random bytes is included in the signature, in a
 	// well-specified way.
 
-	if boring.Enabled && rand == boring.RandReader {
-		bkey, err := boringPrivateKey(priv)
-		if err != nil {
-			return nil, err
-		}
-		return boring.SignRSAPSS(bkey, hash, digest, opts.saltLength())
-	}
-	boring.UnreachableExceptTests()
+	// ZCrypto - boring removed
+	// if boring.Enabled && rand == boring.RandReader {
+	// 	bkey, err := boringPrivateKey(priv)
+	// 	...
+	// 	return boring.SignRSAPSS(bkey, hash, digest, opts.saltLength())
+	// }
+	// boring.UnreachableExceptTests()
 
 	if opts != nil && opts.Hash != 0 {
 		hash = opts.Hash
@@ -342,16 +336,12 @@ func SignPSS(rand io.Reader, priv *PrivateKey, hash crypto.Hash, digest []byte, 
 // The inputs are not considered confidential, and may leak through timing side
 // channels, or if an attacker has control of part of the inputs.
 func VerifyPSS(pub *PublicKey, hash crypto.Hash, digest []byte, sig []byte, opts *PSSOptions) error {
-	if boring.Enabled {
-		bkey, err := boringPublicKey(pub)
-		if err != nil {
-			return err
-		}
-		if err := boring.VerifyRSAPSS(bkey, hash, digest, sig, opts.saltLength()); err != nil {
-			return ErrVerification
-		}
-		return nil
-	}
+	// ZCrypto - boring removed
+	// if boring.Enabled {
+	// 	bkey, err := boringPublicKey(pub)
+	// 	...
+	// 	return boring.VerifyRSAPSS(bkey, hash, digest, sig, opts.saltLength())
+	// }
 	if len(sig) != pub.Size() {
 		return ErrVerification
 	}

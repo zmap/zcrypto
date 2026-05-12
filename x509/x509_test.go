@@ -32,6 +32,7 @@ import (
 
 	"github.com/zmap/zcrypto/dsa"
 	"github.com/zmap/zcrypto/encoding/asn1"
+	zrsa "github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
 
@@ -58,7 +59,8 @@ func TestParsePKIXPublicKey(t *testing.T) {
 		t.Errorf("Failed to parse RSA public key: %s", err)
 		return
 	}
-	rsaPub, ok := pub.(*rsa.PublicKey)
+	// ZCrypto - parsePublicKey now returns *zrsa.PublicKey
+	rsaPub, ok := pub.(*zrsa.PublicKey)
 	if !ok {
 		t.Errorf("Value returned from ParsePKIXPublicKey was not an RSA public key")
 		return

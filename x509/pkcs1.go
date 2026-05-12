@@ -37,9 +37,12 @@ type pkcs1AdditionalRSAPrime struct {
 }
 
 // pkcs1PublicKey reflects the ASN.1 structure of a PKCS#1 public key.
+// ZCrypto - E changed from int to *big.Int to allow parsing certificates with
+// public exponents too large to fit in a Go int (e.g. > 2^63).
+// Original: E int
 type pkcs1PublicKey struct {
 	N *big.Int
-	E int
+	E *big.Int
 }
 
 // ParsePKCS1PrivateKey returns an RSA private key from its ASN.1 PKCS#1 DER encoded form.

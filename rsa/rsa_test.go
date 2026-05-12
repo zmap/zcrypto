@@ -8,7 +8,6 @@ import (
 	"bufio"
 	"bytes"
 	"crypto"
-	"crypto/internal/boring"
 	"crypto/rand"
 	. "crypto/rsa"
 	"crypto/sha1"
@@ -17,7 +16,6 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"internal/testenv"
 	"math/big"
 	"strings"
 	"testing"
@@ -132,10 +130,12 @@ func testKeyBasics(t *testing.T, priv *PrivateKey) {
 }
 
 func TestAllocations(t *testing.T) {
-	if boring.Enabled {
-		t.Skip("skipping allocations test with BoringCrypto")
-	}
-	testenv.SkipIfOptimizationOff(t)
+	// ZCrypto - boring is always disabled
+	//if boring.Enabled {
+	//	t.Skip("skipping allocations test with BoringCrypto")
+	//}
+	// ZCrypto - Can't use the internal testenv pkg
+	//testenv.SkipIfOptimizationOff(t)
 
 	m := []byte("Hello Gophers")
 	c, err := EncryptPKCS1v15(rand.Reader, &test2048Key.PublicKey, m)

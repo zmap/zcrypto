@@ -21,6 +21,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	zrsa "github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
 
@@ -1201,7 +1202,8 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 	}
 
 	switch certs[0].PublicKey.(type) {
-	case *rsa.PublicKey, *x509.AugmentedECDSA, *ecdsa.PublicKey, ed25519.PublicKey:
+	// ZCrypto - cert-derived RSA keys are *zrsa.PublicKey
+	case *zrsa.PublicKey, *rsa.PublicKey, *x509.AugmentedECDSA, *ecdsa.PublicKey, ed25519.PublicKey:
 		break
 	default:
 		c.sendAlert(AlertUnsupportedCertificate)

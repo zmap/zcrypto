@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	zrsa "github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
 
@@ -843,7 +844,8 @@ func (c *Conn) processCertsFromClient(certificate Certificate) error {
 
 	if len(certs) > 0 {
 		switch certs[0].PublicKey.(type) {
-		case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *x509.AugmentedECDSA:
+		// ZCrypto - cert-derived RSA keys are *zrsa.PublicKey
+		case *ecdsa.PublicKey, *zrsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *x509.AugmentedECDSA:
 		default:
 			c.sendAlert(AlertUnsupportedCertificate)
 			return fmt.Errorf("tls: client certificate contains an unsupported public key of type %T", certs[0].PublicKey)

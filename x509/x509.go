@@ -26,6 +26,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rsa"
+	zrsa "github.com/zmap/zcrypto/rsa" // ZCrypto - zcrypto's rsa with *big.Int exponent
 	_ "crypto/sha1"
 	_ "crypto/sha256"
 	"encoding/pem"
@@ -88,10 +89,22 @@ func ParsePKIXPublicKey(derBytes []byte) (pub interface{}, err error) {
 
 func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorithm pkix.AlgorithmIdentifier, err error) {
 	switch pub := pub.(type) {
-	case *rsa.PublicKey:
+	// ZCrypto - handle zcrypto's *zrsa.PublicKey (E is *big.Int) alongside standard *rsa.PublicKey
+	case *zrsa.PublicKey:
 		publicKeyBytes, err = asn1.Marshal(pkcs1PublicKey{
 			N: pub.N,
 			E: pub.E,
+		})
+		if err != nil {
+			return nil, pkix.AlgorithmIdentifier{}, err
+		}
+		publicKeyAlgorithm.Algorithm = oidPublicKeyRSA
+		publicKeyAlgorithm.Parameters = asn1.NullRawValue
+	case *rsa.PublicKey:
+		publicKeyBytes, err = asn1.Marshal(pkcs1PublicKey{
+			N: pub.N,
+			// ZCrypto - pkcs1PublicKey.E is *big.Int; convert from rsa.PublicKey.E int
+			E: big.NewInt(int64(pub.E)),
 		})
 		if err != nil {
 			return nil, pkix.AlgorithmIdentifier{}, err
@@ -1098,6 +1111,13 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 	digest := hash(hashType, signed)
 
 	switch pub := publicKey.(type) {
+	// ZCrypto - *zrsa.PublicKey (E is *big.Int) returned by parsePublicKey for cert-derived keys
+	case *zrsa.PublicKey:
+		if algo.isRSAPSS() {
+			return zrsa.VerifyPSS(pub, hashType, digest, signature, &zrsa.PSSOptions{SaltLength: zrsa.PSSSaltLengthEqualsHash})
+		} else {
+			return zrsa.VerifyPKCS1v15(pub, hashType, digest, signature)
+		}
 	case *rsa.PublicKey:
 		if algo.isRSAPSS() {
 			return rsa.VerifyPSS(pub, hashType, digest, signature, &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash})
@@ -1338,16 +1358,19 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 			if p.N.Sign() <= 0 {
 				return nil, errors.New("x509: RSA modulus is not a positive number")
 			}
-			if p.E <= 0 {
+			// ZCrypto - p.E is now *big.Int; use Sign() instead of <= 0
+			// Original: if p.E <= 0 {
+			if p.E.Sign() <= 0 {
 				return nil, errors.New("x509: RSA public exponent is not a positive number")
 			}
 		}
 
-		pub := &rsa.PublicKey{
+		// ZCrypto - return *zrsa.PublicKey so E *big.Int is fully preserved for all exponent sizes.
+		// Original: &rsa.PublicKey{E: int(p.E), N: p.N}
+		return &zrsa.PublicKey{
 			E: p.E,
 			N: p.N,
-		}
-		return pub, nil
+		}, nil
 	case DSA:
 		var p *big.Int
 		rest, err := asn1.Unmarshal(asn1Data, &p)
@@ -2588,7 +2611,16 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo SignatureAlgori
 	shouldHash := true
 
 	switch pub := pub.(type) {
+	// ZCrypto - *zrsa.PublicKey (E is *big.Int) from cert-derived keys
+	case *zrsa.PublicKey:
+		_ = pub
+		pubType = RSA
+		hashFunc = crypto.SHA256
+		sigAlgo.Algorithm = oidSignatureSHA256WithRSA
+		sigAlgo.Parameters = asn1.NullRawValue
+
 	case *rsa.PublicKey:
+		_ = pub
 		pubType = RSA
 		hashFunc = crypto.SHA256
 		sigAlgo.Algorithm = oidSignatureSHA256WithRSA

@@ -17,6 +17,7 @@ import (
 	"github.com/zmap/zcrypto/dsa"
 	"github.com/zmap/zcrypto/encoding/asn1"
 	jsonKeys "github.com/zmap/zcrypto/json"
+	zrsa "github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/util"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
@@ -281,6 +282,12 @@ func GetRSAPublicKeyJSON(key *rsa.PublicKey) *jsonKeys.RSAPublicKey {
 	return rsaKey
 }
 
+// GetZRSAPublicKeyJSON - get the jsonKeys.RSAPublicKey for zcrypto's RSA PublicKey.
+// ZCrypto - preserves the full *big.Int exponent in the JSON output.
+func GetZRSAPublicKeyJSON(key *zrsa.PublicKey) *jsonKeys.RSAPublicKey {
+	return jsonKeys.NewZRSAPublicKey(key.N, key.E)
+}
+
 // GetECDSAPublicKeyJSON - get the GetECDSAPublicKeyJSON for the given standard ECDSA PublicKey.
 func GetECDSAPublicKeyJSON(key *ecdsa.PublicKey) *ECDSAPublicKeyJSON {
 	params := key.Params()
@@ -324,6 +331,10 @@ func (c *Certificate) jsonifySubjectKey() JSONSubjectKeyInfo {
 	}
 
 	switch key := c.PublicKey.(type) {
+	// ZCrypto - cert-derived RSA keys are *zrsa.PublicKey (E is *big.Int).
+	// NewZRSAPublicKey preserves the full exponent for JSON serialization.
+	case *zrsa.PublicKey:
+		j.RSAPublicKey = jsonKeys.NewZRSAPublicKey(key.N, key.E)
 	case *rsa.PublicKey:
 		rsaKey := new(jsonKeys.RSAPublicKey)
 		rsaKey.PublicKey = key

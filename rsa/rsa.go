@@ -26,7 +26,7 @@ package rsa
 
 import (
 	"crypto"
-
+	cryptorand "crypto/rand" // ZCrypto - added for GenerateKey; avoids conflict with io.Reader param named "random"
 	"crypto/subtle"
 	"errors"
 	"hash"
@@ -62,7 +62,9 @@ func (pub *PublicKey) Equal(x crypto.PublicKey) bool {
 	if !ok {
 		return false
 	}
-	return bigIntEqual(pub.N, xx.N) && pub.E == xx.E
+	// ZCrypto - E changed from int to *big.Int; == replaced with Cmp
+	// return bigIntEqual(pub.N, xx.N) && pub.E == xx.E
+	return bigIntEqual(pub.N, xx.N) && pub.E.Cmp(xx.E) == 0
 }
 
 // OAEPOptions is an interface for passing options to OAEP decryption using the
@@ -87,20 +89,25 @@ var (
 )
 
 // checkPub sanity checks the public key before we use it.
-// We require pub.E to fit into a 32-bit integer so that we
-// do not have different behavior depending on whether
-// int is 32 or 64 bits. See also
-// https://www.imperialviolet.org/2012/03/16/rsae.html.
+// ZCrypto - original comment: "We require pub.E to fit into a 32-bit integer so that we
+// do not have different behavior depending on whether int is 32 or 64 bits."
+// That constraint is removed here to allow arbitrarily large public exponents.
+// See https://www.imperialviolet.org/2012/03/16/rsae.html.
 func checkPub(pub *PublicKey) error {
 	if pub.N == nil {
 		return errPublicModulus
 	}
-	if pub.E < 2 {
+	// ZCrypto - E is now *big.Int; nil check added, int comparisons replaced with Cmp
+	// if pub.E < 2 {
+	// 	return errPublicExponentSmall
+	// }
+	// if pub.E > 1<<31-1 {
+	// 	return errPublicExponentLarge
+	// }
+	if pub.E == nil || pub.E.Cmp(big.NewInt(2)) < 0 {
 		return errPublicExponentSmall
 	}
-	if pub.E > 1<<31-1 {
-		return errPublicExponentLarge
-	}
+	// ZCrypto - upper bound check removed; zcrypto supports arbitrarily large public exponents
 	return nil
 }
 
@@ -214,7 +221,8 @@ type PrecomputedValues struct {
 	// complexity.
 	CRTValues []CRTValue
 
-	n, p, q *bigmod.Modulus // moduli for CRT with Montgomery precomputed constants
+	// ZCrypto - bigmod moduli removed; math/big is used directly in decrypt
+	// n, p, q *bigmod.Modulus
 }
 
 // CRTValue contains the precomputed Chinese remainder theorem values.
@@ -250,7 +258,9 @@ func (priv *PrivateKey) Validate() error {
 	// exponent(ℤ/nℤ). It also implies that a^de ≡ a mod p as a^(p-1) ≡ 1
 	// mod p. Thus a^de ≡ a mod n for all a coprime to n, as required.
 	congruence := new(big.Int)
-	de := new(big.Int).SetInt64(int64(priv.E))
+	// ZCrypto - E is now *big.Int; use Set instead of SetInt64
+	// de := new(big.Int).SetInt64(int64(priv.E))
+	de := new(big.Int).Set(priv.E)
 	de.Mul(de, priv.D)
 	for _, prime := range priv.Primes {
 		pminus1 := new(big.Int).Sub(prime, bigOne)
@@ -267,9 +277,63 @@ func (priv *PrivateKey) Validate() error {
 // Most applications should use [crypto/rand.Reader] as rand. Note that the
 // returned key does not depend deterministically on the bytes read from rand,
 // and may change between calls and/or between versions.
-// ZCrypto - the following was changed from the deprecated "GenerateMultiPrimeKey" -> GenerateKey
+//
+// ZCrypto - original body was `return GenerateMultiPrimeKey(random, 2, bits)`.
+// GenerateMultiPrimeKey is commented out (boring/randutil deps); 2-prime case
+// inlined here using math/big with no external crypto/internal dependencies.
+// E is initialised as *big.Int to match the updated PublicKey field type.
 func GenerateKey(random io.Reader, bits int) (*PrivateKey, error) {
-	return GenerateKey(random, bits)
+	priv := new(PrivateKey)
+	// ZCrypto - was: priv.E = 65537
+	priv.E = big.NewInt(65537)
+
+	if bits < 64 {
+		return nil, errors.New("crypto/rsa: too few bits to generate a key")
+	}
+
+	primes := make([]*big.Int, 2)
+NextSetOfPrimes:
+	for {
+		todo := bits
+		for i := 0; i < 2; i++ {
+			var err error
+			primes[i], err = cryptorand.Prime(random, todo/(2-i))
+			if err != nil {
+				return nil, err
+			}
+			todo -= primes[i].BitLen()
+		}
+
+		for i, prime := range primes {
+			for j := 0; j < i; j++ {
+				if prime.Cmp(primes[j]) == 0 {
+					continue NextSetOfPrimes
+				}
+			}
+		}
+
+		n := new(big.Int).Mul(primes[0], primes[1])
+		if n.BitLen() != bits {
+			continue NextSetOfPrimes
+		}
+
+		totient := new(big.Int).Set(bigOne)
+		pminus1 := new(big.Int)
+		for _, prime := range primes {
+			pminus1.Sub(prime, bigOne)
+			totient.Mul(totient, pminus1)
+		}
+
+		priv.D = new(big.Int)
+		if priv.D.ModInverse(priv.E, totient) != nil {
+			priv.Primes = primes
+			priv.N = n
+			break
+		}
+	}
+
+	priv.Precompute()
+	return priv, nil
 }
 
 // GenerateMultiPrimeKey generates a multi-prime RSA keypair of the given bit
@@ -475,20 +539,24 @@ func mgf1XOR(out []byte, hash hash.Hash, seed []byte) {
 // be returned if the size of the salt is too large.
 var ErrMessageTooLong = errors.New("crypto/rsa: message too long for RSA key size")
 
+// ZCrypto - replaced bigmod with math/big to remove crypto/internal dependency;
+// E is now *big.Int so the uint cast is gone. Constant-time guarantees are not
+// required here — zcrypto is used for scanning/research, not production crypto.
+// Original:
+//   N, err := bigmod.NewModulusFromBig(pub.N)
+//   m, err := bigmod.NewNat().SetBytes(plaintext, N)
+//   e := uint(pub.E)
+//   return bigmod.NewNat().ExpShortVarTime(m, e, N).Bytes(N), nil
 func encrypt(pub *PublicKey, plaintext []byte) ([]byte, error) {
-	//boring.Unreachable()
-
-	N, err := bigmod.NewModulusFromBig(pub.N)
-	if err != nil {
-		return nil, err
+	m := new(big.Int).SetBytes(plaintext)
+	if m.Cmp(pub.N) >= 0 {
+		return nil, errors.New("crypto/rsa: message too large for modulus")
 	}
-	m, err := bigmod.NewNat().SetBytes(plaintext, N)
-	if err != nil {
-		return nil, err
-	}
-	e := uint(pub.E)
-
-	return bigmod.NewNat().ExpShortVarTime(m, e, N).Bytes(N), nil
+	c := new(big.Int).Exp(m, pub.E, pub.N)
+	em := make([]byte, pub.Size())
+	cBytes := c.Bytes()
+	copy(em[len(em)-len(cBytes):], cBytes)
+	return em, nil
 }
 
 // EncryptOAEP encrypts the given message with RSA-OAEP.
@@ -525,14 +593,15 @@ func EncryptOAEP(hash hash.Hash, random io.Reader, pub *PublicKey, msg []byte, l
 		return nil, ErrMessageTooLong
 	}
 
-	if boring.Enabled && random == boring.RandReader {
-		bkey, err := boringPublicKey(pub)
-		if err != nil {
-			return nil, err
-		}
-		return boring.EncryptRSAOAEP(hash, hash, bkey, msg, label)
-	}
-	boring.UnreachableExceptTests()
+	// ZCrypto - boring removed
+	// if boring.Enabled && random == boring.RandReader {
+	// 	bkey, err := boringPublicKey(pub)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	return boring.EncryptRSAOAEP(hash, hash, bkey, msg, label)
+	// }
+	// boring.UnreachableExceptTests()
 
 	hash.Write(label)
 	lHash := hash.Sum(nil)
@@ -578,27 +647,12 @@ var ErrVerification = errors.New("crypto/rsa: verification error")
 // Precompute performs some calculations that speed up private key operations
 // in the future.
 func (priv *PrivateKey) Precompute() {
-	if priv.Precomputed.n == nil && len(priv.Primes) == 2 {
-		// Precomputed values _should_ always be valid, but if they aren't
-		// just return. We could also panic.
-		var err error
-		priv.Precomputed.n, err = bigmod.NewModulusFromBig(priv.N)
-		if err != nil {
-			return
-		}
-		priv.Precomputed.p, err = bigmod.NewModulusFromBig(priv.Primes[0])
-		if err != nil {
-			// Unset previous values, so we either have everything or nothing
-			priv.Precomputed.n = nil
-			return
-		}
-		priv.Precomputed.q, err = bigmod.NewModulusFromBig(priv.Primes[1])
-		if err != nil {
-			// Unset previous values, so we either have everything or nothing
-			priv.Precomputed.n, priv.Precomputed.p = nil, nil
-			return
-		}
-	}
+	// ZCrypto - bigmod modulus precomputation removed; decrypt uses math/big directly
+	// if priv.Precomputed.n == nil && len(priv.Primes) == 2 {
+	// 	priv.Precomputed.n, err = bigmod.NewModulusFromBig(priv.N)
+	// 	priv.Precomputed.p, err = bigmod.NewModulusFromBig(priv.Primes[0])
+	// 	priv.Precomputed.q, err = bigmod.NewModulusFromBig(priv.Primes[1])
+	// }
 
 	// Fill in the backwards-compatibility *big.Int values.
 	if priv.Precomputed.Dp != nil {
@@ -635,62 +689,69 @@ const noCheck = false
 // decrypt performs an RSA decryption of ciphertext into out. If check is true,
 // m^e is calculated and compared with ciphertext, in order to defend against
 // errors in the CRT computation.
+//
+// ZCrypto - replaced bigmod with math/big throughout. The bigmod implementation
+// provided constant-time guarantees for private key operations; math/big does
+// not. This is acceptable for zcrypto's scanning/research use case.
+// Original bigmod-based implementation preserved in comments below.
 func decrypt(priv *PrivateKey, ciphertext []byte, check bool) ([]byte, error) {
-	if len(priv.Primes) <= 2 {
-		//boring.Unreachable() ZCrypto - boring disabled
+	c := new(big.Int).SetBytes(ciphertext)
+	if c.Cmp(priv.N) >= 0 {
+		return nil, ErrDecryption
 	}
 
-	var (
-		err  error
-		m, c *bigmod.Nat
-		N    *bigmod.Modulus
-		t0   = bigmod.NewNat()
-	)
-	if priv.Precomputed.n == nil {
-		N, err = bigmod.NewModulusFromBig(priv.N)
-		if err != nil {
-			return nil, ErrDecryption
+	var m *big.Int
+	if len(priv.Primes) == 2 && priv.Precomputed.Dp != nil {
+		// ZCrypto - CRT path using math/big
+		p := priv.Primes[0]
+		q := priv.Primes[1]
+		// m1 = c^Dp mod p
+		m1 := new(big.Int).Exp(c, priv.Precomputed.Dp, p)
+		// m2 = c^Dq mod q
+		m2 := new(big.Int).Exp(c, priv.Precomputed.Dq, q)
+		// h = Qinv * (m1 - m2) mod p
+		h := new(big.Int).Sub(m1, m2)
+		if h.Sign() < 0 {
+			h.Add(h, p)
 		}
-		c, err = bigmod.NewNat().SetBytes(ciphertext, N)
-		if err != nil {
-			return nil, ErrDecryption
-		}
-		m = bigmod.NewNat().Exp(c, priv.D.Bytes(), N)
+		h.Mul(h, priv.Precomputed.Qinv)
+		h.Mod(h, p)
+		// m = m2 + h*q
+		m = new(big.Int).Mul(h, q)
+		m.Add(m, m2)
 	} else {
-		N = priv.Precomputed.n
-		P, Q := priv.Precomputed.p, priv.Precomputed.q
-		Qinv, err := bigmod.NewNat().SetBytes(priv.Precomputed.Qinv.Bytes(), P)
-		if err != nil {
-			return nil, ErrDecryption
-		}
-		c, err = bigmod.NewNat().SetBytes(ciphertext, N)
-		if err != nil {
-			return nil, ErrDecryption
-		}
-
-		// m = c ^ Dp mod p
-		m = bigmod.NewNat().Exp(t0.Mod(c, P), priv.Precomputed.Dp.Bytes(), P)
-		// m2 = c ^ Dq mod q
-		m2 := bigmod.NewNat().Exp(t0.Mod(c, Q), priv.Precomputed.Dq.Bytes(), Q)
-		// m = m - m2 mod p
-		m.Sub(t0.Mod(m2, P), P)
-		// m = m * Qinv mod p
-		m.Mul(Qinv, P)
-		// m = m * q mod N
-		m.ExpandFor(N).Mul(t0.Mod(Q.Nat(), N), N)
-		// m = m + m2 mod N
-		m.Add(m2.ExpandFor(N), N)
+		m = new(big.Int).Exp(c, priv.D, priv.N)
 	}
 
 	if check {
-		c1 := bigmod.NewNat().ExpShortVarTime(m, uint(priv.E), N)
-		if c1.Equal(c) != 1 {
+		// ZCrypto - E is now *big.Int; uint cast removed
+		// Original: c1 := bigmod.NewNat().ExpShortVarTime(m, uint(priv.E), N)
+		c1 := new(big.Int).Exp(m, priv.E, priv.N)
+		if c1.Cmp(c) != 0 {
 			return nil, ErrDecryption
 		}
 	}
 
-	return m.Bytes(N), nil
+	em := make([]byte, priv.Size())
+	mBytes := m.Bytes()
+	copy(em[len(em)-len(mBytes):], mBytes)
+	return em, nil
 }
+
+// ZCrypto - original bigmod-based decrypt preserved for reference:
+// func decrypt(priv *PrivateKey, ciphertext []byte, check bool) ([]byte, error) {
+// 	if len(priv.Primes) <= 2 { boring.Unreachable() }
+// 	var (err error; m, c *bigmod.Nat; N *bigmod.Modulus; t0 = bigmod.NewNat())
+// 	if priv.Precomputed.n == nil {
+// 		N, err = bigmod.NewModulusFromBig(priv.N) ...
+// 		m = bigmod.NewNat().Exp(c, priv.D.Bytes(), N)
+// 	} else {
+// 		N = priv.Precomputed.n; P, Q := priv.Precomputed.p, priv.Precomputed.q
+// 		... CRT using bigmod.Nat operations ...
+// 	}
+// 	if check { c1 := bigmod.NewNat().ExpShortVarTime(m, uint(priv.E), N) ... }
+// 	return m.Bytes(N), nil
+// }
 
 // DecryptOAEP decrypts ciphertext using RSA-OAEP.
 //
