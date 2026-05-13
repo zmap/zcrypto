@@ -6,7 +6,6 @@ package tls
 
 import (
 	"bytes"
-	"crypto/rsa"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/pem"
@@ -24,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
 

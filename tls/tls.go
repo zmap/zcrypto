@@ -17,7 +17,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
-	"crypto/rsa"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -26,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	zrsa "github.com/zmap/zcrypto/rsa"
+	rsa "github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
 
@@ -347,15 +346,6 @@ func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (Certificate, error) {
 	}
 
 	switch pub := x509Cert.PublicKey.(type) {
-	// ZCrypto - parsePublicKey now returns *zrsa.PublicKey for cert-derived RSA keys
-	case *zrsa.PublicKey:
-		priv, ok := cert.PrivateKey.(*rsa.PrivateKey)
-		if !ok {
-			return fail(errors.New("tls: private key type does not match public key type"))
-		}
-		if pub.N.Cmp(priv.N) != 0 {
-			return fail(errors.New("tls: private key does not match public key"))
-		}
 	case *rsa.PublicKey:
 		priv, ok := cert.PrivateKey.(*rsa.PrivateKey)
 		if !ok {

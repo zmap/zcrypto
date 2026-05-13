@@ -31,7 +31,10 @@ import (
 	"errors"
 	"hash"
 	"io"
+	"math"
 	"math/big"
+
+	"github.com/zmap/zcrypto/internal/randutil"
 )
 
 var bigOne = big.NewInt(1)
@@ -277,63 +280,8 @@ func (priv *PrivateKey) Validate() error {
 // Most applications should use [crypto/rand.Reader] as rand. Note that the
 // returned key does not depend deterministically on the bytes read from rand,
 // and may change between calls and/or between versions.
-//
-// ZCrypto - original body was `return GenerateMultiPrimeKey(random, 2, bits)`.
-// GenerateMultiPrimeKey is commented out (boring/randutil deps); 2-prime case
-// inlined here using math/big with no external crypto/internal dependencies.
-// E is initialised as *big.Int to match the updated PublicKey field type.
 func GenerateKey(random io.Reader, bits int) (*PrivateKey, error) {
-	priv := new(PrivateKey)
-	// ZCrypto - was: priv.E = 65537
-	priv.E = big.NewInt(65537)
-
-	if bits < 64 {
-		return nil, errors.New("crypto/rsa: too few bits to generate a key")
-	}
-
-	primes := make([]*big.Int, 2)
-NextSetOfPrimes:
-	for {
-		todo := bits
-		for i := 0; i < 2; i++ {
-			var err error
-			primes[i], err = cryptorand.Prime(random, todo/(2-i))
-			if err != nil {
-				return nil, err
-			}
-			todo -= primes[i].BitLen()
-		}
-
-		for i, prime := range primes {
-			for j := 0; j < i; j++ {
-				if prime.Cmp(primes[j]) == 0 {
-					continue NextSetOfPrimes
-				}
-			}
-		}
-
-		n := new(big.Int).Mul(primes[0], primes[1])
-		if n.BitLen() != bits {
-			continue NextSetOfPrimes
-		}
-
-		totient := new(big.Int).Set(bigOne)
-		pminus1 := new(big.Int)
-		for _, prime := range primes {
-			pminus1.Sub(prime, bigOne)
-			totient.Mul(totient, pminus1)
-		}
-
-		priv.D = new(big.Int)
-		if priv.D.ModInverse(priv.E, totient) != nil {
-			priv.Primes = primes
-			priv.N = n
-			break
-		}
-	}
-
-	priv.Precompute()
-	return priv, nil
+	return GenerateMultiPrimeKey(random, 2, bits)
 }
 
 // GenerateMultiPrimeKey generates a multi-prime RSA keypair of the given bit
@@ -355,149 +303,151 @@ NextSetOfPrimes:
 // reasons. Use [GenerateKey] instead.
 //
 // [On the Security of Multi-prime RSA]: http://www.cacr.math.uwaterloo.ca/techreports/2006/cacr2006-16.pdf
-//func GenerateMultiPrimeKey(random io.Reader, nprimes int, bits int) (*PrivateKey, error) {
-//	randutil.MaybeReadByte(random)
-//
-//	if boring.Enabled && random == boring.RandReader && nprimes == 2 &&
-//		(bits == 2048 || bits == 3072 || bits == 4096) {
-//		bN, bE, bD, bP, bQ, bDp, bDq, bQinv, err := boring.GenerateKeyRSA(bits)
-//		if err != nil {
-//			return nil, err
-//		}
-//		N := bbig.Dec(bN)
-//		E := bbig.Dec(bE)
-//		D := bbig.Dec(bD)
-//		P := bbig.Dec(bP)
-//		Q := bbig.Dec(bQ)
-//		Dp := bbig.Dec(bDp)
-//		Dq := bbig.Dec(bDq)
-//		Qinv := bbig.Dec(bQinv)
-//		e64 := E.Int64()
-//		if !E.IsInt64() || int64(int(e64)) != e64 {
-//			return nil, errors.New("crypto/rsa: generated key exponent too large")
-//		}
-//
-//		mn, err := bigmod.NewModulusFromBig(N)
-//		if err != nil {
-//			return nil, err
-//		}
-//		mp, err := bigmod.NewModulusFromBig(P)
-//		if err != nil {
-//			return nil, err
-//		}
-//		mq, err := bigmod.NewModulusFromBig(Q)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		key := &PrivateKey{
-//			PublicKey: PublicKey{
-//				N: N,
-//				E: int(e64),
-//			},
-//			D:      D,
-//			Primes: []*big.Int{P, Q},
-//			Precomputed: PrecomputedValues{
-//				Dp:        Dp,
-//				Dq:        Dq,
-//				Qinv:      Qinv,
-//				CRTValues: make([]CRTValue, 0), // non-nil, to match Precompute
-//				n:         mn,
-//				p:         mp,
-//				q:         mq,
-//			},
-//		}
-//		return key, nil
-//	}
-//
-//	priv := new(PrivateKey)
-//	priv.E = 65537
-//
-//	if nprimes < 2 {
-//		return nil, errors.New("crypto/rsa: GenerateMultiPrimeKey: nprimes must be >= 2")
-//	}
-//
-//	if bits < 64 {
-//		primeLimit := float64(uint64(1) << uint(bits/nprimes))
-//		// pi approximates the number of primes less than primeLimit
-//		pi := primeLimit / (math.Log(primeLimit) - 1)
-//		// Generated primes start with 11 (in binary) so we can only
-//		// use a quarter of them.
-//		pi /= 4
-//		// Use a factor of two to ensure that key generation terminates
-//		// in a reasonable amount of time.
-//		pi /= 2
-//		if pi <= float64(nprimes) {
-//			return nil, errors.New("crypto/rsa: too few primes of given length to generate an RSA key")
-//		}
-//	}
-//
-//	primes := make([]*big.Int, nprimes)
-//
-//NextSetOfPrimes:
-//	for {
-//		todo := bits
-//		// crypto/rand should set the top two bits in each prime.
-//		// Thus each prime has the form
-//		//   p_i = 2^bitlen(p_i) × 0.11... (in base 2).
-//		// And the product is:
-//		//   P = 2^todo × α
-//		// where α is the product of nprimes numbers of the form 0.11...
-//		//
-//		// If α < 1/2 (which can happen for nprimes > 2), we need to
-//		// shift todo to compensate for lost bits: the mean value of 0.11...
-//		// is 7/8, so todo + shift - nprimes * log2(7/8) ~= bits - 1/2
-//		// will give good results.
-//		if nprimes >= 7 {
-//			todo += (nprimes - 2) / 5
-//		}
-//		for i := 0; i < nprimes; i++ {
-//			var err error
-//			primes[i], err = rand.Prime(random, todo/(nprimes-i))
-//			if err != nil {
-//				return nil, err
-//			}
-//			todo -= primes[i].BitLen()
-//		}
-//
-//		// Make sure that primes is pairwise unequal.
-//		for i, prime := range primes {
-//			for j := 0; j < i; j++ {
-//				if prime.Cmp(primes[j]) == 0 {
-//					continue NextSetOfPrimes
-//				}
-//			}
-//		}
-//
-//		n := new(big.Int).Set(bigOne)
-//		totient := new(big.Int).Set(bigOne)
-//		pminus1 := new(big.Int)
-//		for _, prime := range primes {
-//			n.Mul(n, prime)
-//			pminus1.Sub(prime, bigOne)
-//			totient.Mul(totient, pminus1)
-//		}
-//		if n.BitLen() != bits {
-//			// This should never happen for nprimes == 2 because
-//			// crypto/rand should set the top two bits in each prime.
-//			// For nprimes > 2 we hope it does not happen often.
-//			continue NextSetOfPrimes
-//		}
-//
-//		priv.D = new(big.Int)
-//		e := big.NewInt(int64(priv.E))
-//		ok := priv.D.ModInverse(e, totient)
-//
-//		if ok != nil {
-//			priv.Primes = primes
-//			priv.N = n
-//			break
-//		}
-//	}
-//
-//	priv.Precompute()
-//	return priv, nil
-//}
+func GenerateMultiPrimeKey(random io.Reader, nprimes int, bits int) (*PrivateKey, error) {
+	randutil.MaybeReadByte(random)
+
+	// ZCrypto - commented out since boring is never enabled
+	//if boring.Enabled && random == boring.RandReader && nprimes == 2 &&
+	//	(bits == 2048 || bits == 3072 || bits == 4096) {
+	//	bN, bE, bD, bP, bQ, bDp, bDq, bQinv, err := boring.GenerateKeyRSA(bits)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	N := bbig.Dec(bN)
+	//	E := bbig.Dec(bE)
+	//	D := bbig.Dec(bD)
+	//	P := bbig.Dec(bP)
+	//	Q := bbig.Dec(bQ)
+	//	Dp := bbig.Dec(bDp)
+	//	Dq := bbig.Dec(bDq)
+	//	Qinv := bbig.Dec(bQinv)
+	//	e64 := E.Int64()
+	//	if !E.IsInt64() || int64(int(e64)) != e64 {
+	//		return nil, errors.New("crypto/rsa: generated key exponent too large")
+	//	}
+	//
+	//	mn, err := bigmod.NewModulusFromBig(N)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	mp, err := bigmod.NewModulusFromBig(P)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	mq, err := bigmod.NewModulusFromBig(Q)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	key := &PrivateKey{
+	//		PublicKey: PublicKey{
+	//			N: N,
+	//			E: int(e64),
+	//		},
+	//		D:      D,
+	//		Primes: []*big.Int{P, Q},
+	//		Precomputed: PrecomputedValues{
+	//			Dp:        Dp,
+	//			Dq:        Dq,
+	//			Qinv:      Qinv,
+	//			CRTValues: make([]CRTValue, 0), // non-nil, to match Precompute
+	//			n:         mn,
+	//			p:         mp,
+	//			q:         mq,
+	//		},
+	//	}
+	//	return key, nil
+	//}
+
+	priv := new(PrivateKey)
+	priv.E = big.NewInt(65537) // ZCrypto - modified to use BigInt
+
+	if nprimes < 2 {
+		return nil, errors.New("crypto/rsa: GenerateMultiPrimeKey: nprimes must be >= 2")
+	}
+
+	if bits < 64 {
+		primeLimit := float64(uint64(1) << uint(bits/nprimes))
+		// pi approximates the number of primes less than primeLimit
+		pi := primeLimit / (math.Log(primeLimit) - 1)
+		// Generated primes start with 11 (in binary) so we can only
+		// use a quarter of them.
+		pi /= 4
+		// Use a factor of two to ensure that key generation terminates
+		// in a reasonable amount of time.
+		pi /= 2
+		if pi <= float64(nprimes) {
+			return nil, errors.New("crypto/rsa: too few primes of given length to generate an RSA key")
+		}
+	}
+
+	primes := make([]*big.Int, nprimes)
+
+NextSetOfPrimes:
+	for {
+		todo := bits
+		// crypto/rand should set the top two bits in each prime.
+		// Thus each prime has the form
+		//   p_i = 2^bitlen(p_i) × 0.11... (in base 2).
+		// And the product is:
+		//   P = 2^todo × α
+		// where α is the product of nprimes numbers of the form 0.11...
+		//
+		// If α < 1/2 (which can happen for nprimes > 2), we need to
+		// shift todo to compensate for lost bits: the mean value of 0.11...
+		// is 7/8, so todo + shift - nprimes * log2(7/8) ~= bits - 1/2
+		// will give good results.
+		if nprimes >= 7 {
+			todo += (nprimes - 2) / 5
+		}
+		for i := 0; i < nprimes; i++ {
+			var err error
+			// ZCrypto - swapped rand. for cryptorand
+			primes[i], err = cryptorand.Prime(random, todo/(nprimes-i))
+			if err != nil {
+				return nil, err
+			}
+			todo -= primes[i].BitLen()
+		}
+
+		// Make sure that primes is pairwise unequal.
+		for i, prime := range primes {
+			for j := 0; j < i; j++ {
+				if prime.Cmp(primes[j]) == 0 {
+					continue NextSetOfPrimes
+				}
+			}
+		}
+
+		n := new(big.Int).Set(bigOne)
+		totient := new(big.Int).Set(bigOne)
+		pminus1 := new(big.Int)
+		for _, prime := range primes {
+			n.Mul(n, prime)
+			pminus1.Sub(prime, bigOne)
+			totient.Mul(totient, pminus1)
+		}
+		if n.BitLen() != bits {
+			// This should never happen for nprimes == 2 because
+			// crypto/rand should set the top two bits in each prime.
+			// For nprimes > 2 we hope it does not happen often.
+			continue NextSetOfPrimes
+		}
+
+		priv.D = new(big.Int)
+		e := priv.E
+		ok := priv.D.ModInverse(e, totient)
+
+		if ok != nil {
+			priv.Primes = primes
+			priv.N = n
+			break
+		}
+	}
+
+	priv.Precompute()
+	return priv, nil
+}
 
 // incCounter increments a four byte, big-endian counter.
 func incCounter(c *[4]byte) {
@@ -543,10 +493,11 @@ var ErrMessageTooLong = errors.New("crypto/rsa: message too long for RSA key siz
 // E is now *big.Int so the uint cast is gone. Constant-time guarantees are not
 // required here — zcrypto is used for scanning/research, not production crypto.
 // Original:
-//   N, err := bigmod.NewModulusFromBig(pub.N)
-//   m, err := bigmod.NewNat().SetBytes(plaintext, N)
-//   e := uint(pub.E)
-//   return bigmod.NewNat().ExpShortVarTime(m, e, N).Bytes(N), nil
+//
+//	N, err := bigmod.NewModulusFromBig(pub.N)
+//	m, err := bigmod.NewNat().SetBytes(plaintext, N)
+//	e := uint(pub.E)
+//	return bigmod.NewNat().ExpShortVarTime(m, e, N).Bytes(N), nil
 func encrypt(pub *PublicKey, plaintext []byte) ([]byte, error) {
 	m := new(big.Int).SetBytes(plaintext)
 	if m.Cmp(pub.N) >= 0 {

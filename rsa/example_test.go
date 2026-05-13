@@ -9,11 +9,12 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"os"
+
+	"github.com/zmap/zcrypto/rsa"
 )
 
 // RSA is able to encrypt only a very limited amount of data. In order

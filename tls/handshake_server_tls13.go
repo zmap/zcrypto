@@ -8,12 +8,13 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/hmac"
-	"crypto/rsa"
 	"errors"
 	"hash"
 	"io"
 	"sync/atomic"
 	"time"
+
+	"github.com/zmap/zcrypto/rsa"
 )
 
 // maxClientPSKIdentities is the number of client PSK identities the server will

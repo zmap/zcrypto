@@ -10,13 +10,12 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
-	"crypto/rsa"
 	"errors"
 	"fmt"
 	"hash"
 	"io"
 
-	zrsa "github.com/zmap/zcrypto/rsa"
+	rsa "github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
 
@@ -45,9 +44,8 @@ func verifyHandshakeSignature(sigType uint8, pubkey crypto.PublicKey, hashFunc c
 			return errors.New("Ed25519 verification failure")
 		}
 	case signaturePKCS1v15:
-		// ZCrypto - cert-derived keys are *zrsa.PublicKey; user-provided remain *rsa.PublicKey
-		if zPub, ok := pubkey.(*zrsa.PublicKey); ok {
-			if err := zrsa.VerifyPKCS1v15(zPub, hashFunc, signed, sig); err != nil {
+		if zPub, ok := pubkey.(*rsa.PublicKey); ok {
+			if err := rsa.VerifyPKCS1v15(zPub, hashFunc, signed, sig); err != nil {
 				return err
 			}
 		} else if pubKey, ok := pubkey.(*rsa.PublicKey); ok {
@@ -58,10 +56,9 @@ func verifyHandshakeSignature(sigType uint8, pubkey crypto.PublicKey, hashFunc c
 			return fmt.Errorf("expected an RSA public key, got %T", pubkey)
 		}
 	case signatureRSAPSS:
-		// ZCrypto - cert-derived keys are *zrsa.PublicKey; user-provided remain *rsa.PublicKey
-		if zPub, ok := pubkey.(*zrsa.PublicKey); ok {
-			signOpts := &zrsa.PSSOptions{SaltLength: zrsa.PSSSaltLengthEqualsHash}
-			if err := zrsa.VerifyPSS(zPub, hashFunc, signed, sig, signOpts); err != nil {
+		if zPub, ok := pubkey.(*rsa.PublicKey); ok {
+			signOpts := &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash}
+			if err := rsa.VerifyPSS(zPub, hashFunc, signed, sig, signOpts); err != nil {
 				return err
 			}
 		} else if pubKey, ok := pubkey.(*rsa.PublicKey); ok {
@@ -148,8 +145,7 @@ func typeAndHashFromSignatureScheme(signatureAlgorithm SignatureScheme) (sigType
 // signature algorithm negotiation.
 func legacyTypeAndHashFromPublicKey(pub crypto.PublicKey) (sigType uint8, hash crypto.Hash, err error) {
 	switch pub.(type) {
-	// ZCrypto - cert-derived RSA keys are *zrsa.PublicKey
-	case *zrsa.PublicKey, *rsa.PublicKey:
+	case *rsa.PublicKey:
 		return signaturePKCS1v15, crypto.MD5SHA1, nil
 	case *ecdsa.PublicKey, *x509.AugmentedECDSA:
 		return signatureECDSA, crypto.SHA1, nil
@@ -293,8 +289,7 @@ func unsupportedCertificateError(cert *Certificate) error {
 		default:
 			return fmt.Errorf("tls: unsupported certificate curve (%s)", pub.Curve.Params().Name)
 		}
-	// ZCrypto - cert-derived RSA keys are *zrsa.PublicKey
-	case *zrsa.PublicKey, *rsa.PublicKey:
+	case *rsa.PublicKey:
 		return fmt.Errorf("tls: certificate RSA key size too small for supported signature algorithms")
 	case ed25519.PublicKey:
 	default:

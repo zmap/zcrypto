@@ -12,7 +12,6 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
@@ -28,6 +27,7 @@ import (
 	"time"
 
 	"github.com/zmap/zcrypto/internal/cpu"
+	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
 

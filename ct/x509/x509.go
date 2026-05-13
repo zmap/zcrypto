@@ -16,7 +16,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rsa"
 	"crypto/sha1"
 	"os"
 	"strings"
@@ -26,6 +25,7 @@ import (
 	// START CT CHANGES
 	"github.com/zmap/zcrypto/ct/asn1"
 	"github.com/zmap/zcrypto/ct/x509/pkix"
+	"github.com/zmap/zcrypto/rsa"
 
 	// END CT CHANGES
 	"encoding/pem"
@@ -776,7 +776,7 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 		if p.N.Sign() <= 0 {
 			return nil, errors.New("x509: RSA modulus is not a positive number")
 		}
-		if p.E <= 0 {
+		if p.E.Sign() <= 0 {
 			return nil, errors.New("x509: RSA public exponent is not a positive number")
 		}
 

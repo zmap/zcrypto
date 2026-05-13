@@ -10,7 +10,6 @@ import (
 	"compress/bzip2"
 	"crypto"
 	"crypto/rand"
-	. "crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
@@ -19,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	. "github.com/zmap/zcrypto/rsa"
 )
 
 func TestEMSAPSS(t *testing.T) {
@@ -142,7 +143,7 @@ func TestPSSGolden(t *testing.T) {
 				continue
 			}
 			key.N = bigFromHex(nHex)
-			key.E = intFromHex(<-values)
+			key.E = bigFromHex(<-values) // ZCrypto - use bigFromHex
 			// We don't care for d, p, q, dP, dQ or qInv.
 			for i := 0; i < 6; i++ {
 				<-values

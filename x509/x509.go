@@ -25,8 +25,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rsa"
-	zrsa "github.com/zmap/zcrypto/rsa" // ZCrypto - zcrypto's rsa with *big.Int exponent
 	_ "crypto/sha1"
 	_ "crypto/sha256"
 	"encoding/pem"
@@ -42,6 +40,7 @@ import (
 
 	"github.com/zmap/zcrypto/dsa"
 	"github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509/ct"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
@@ -89,22 +88,10 @@ func ParsePKIXPublicKey(derBytes []byte) (pub interface{}, err error) {
 
 func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorithm pkix.AlgorithmIdentifier, err error) {
 	switch pub := pub.(type) {
-	// ZCrypto - handle zcrypto's *zrsa.PublicKey (E is *big.Int) alongside standard *rsa.PublicKey
-	case *zrsa.PublicKey:
-		publicKeyBytes, err = asn1.Marshal(pkcs1PublicKey{
-			N: pub.N,
-			E: pub.E,
-		})
-		if err != nil {
-			return nil, pkix.AlgorithmIdentifier{}, err
-		}
-		publicKeyAlgorithm.Algorithm = oidPublicKeyRSA
-		publicKeyAlgorithm.Parameters = asn1.NullRawValue
 	case *rsa.PublicKey:
 		publicKeyBytes, err = asn1.Marshal(pkcs1PublicKey{
 			N: pub.N,
-			// ZCrypto - pkcs1PublicKey.E is *big.Int; convert from rsa.PublicKey.E int
-			E: big.NewInt(int64(pub.E)),
+			E: pub.E,
 		})
 		if err != nil {
 			return nil, pkix.AlgorithmIdentifier{}, err
@@ -1111,13 +1098,6 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 	digest := hash(hashType, signed)
 
 	switch pub := publicKey.(type) {
-	// ZCrypto - *zrsa.PublicKey (E is *big.Int) returned by parsePublicKey for cert-derived keys
-	case *zrsa.PublicKey:
-		if algo.isRSAPSS() {
-			return zrsa.VerifyPSS(pub, hashType, digest, signature, &zrsa.PSSOptions{SaltLength: zrsa.PSSSaltLengthEqualsHash})
-		} else {
-			return zrsa.VerifyPKCS1v15(pub, hashType, digest, signature)
-		}
 	case *rsa.PublicKey:
 		if algo.isRSAPSS() {
 			return rsa.VerifyPSS(pub, hashType, digest, signature, &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash})
@@ -1365,9 +1345,7 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 			}
 		}
 
-		// ZCrypto - return *zrsa.PublicKey so E *big.Int is fully preserved for all exponent sizes.
-		// Original: &rsa.PublicKey{E: int(p.E), N: p.N}
-		return &zrsa.PublicKey{
+		return &rsa.PublicKey{
 			E: p.E,
 			N: p.N,
 		}, nil
@@ -2611,14 +2589,6 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo SignatureAlgori
 	shouldHash := true
 
 	switch pub := pub.(type) {
-	// ZCrypto - *zrsa.PublicKey (E is *big.Int) from cert-derived keys
-	case *zrsa.PublicKey:
-		_ = pub
-		pubType = RSA
-		hashFunc = crypto.SHA256
-		sigAlgo.Algorithm = oidSignatureSHA256WithRSA
-		sigAlgo.Parameters = asn1.NullRawValue
-
 	case *rsa.PublicKey:
 		_ = pub
 		pubType = RSA

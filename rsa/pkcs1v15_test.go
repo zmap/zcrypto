@@ -8,16 +8,17 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/rand"
-	. "crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
 	"io"
 	"testing"
 	"testing/quick"
+
+	. "github.com/zmap/zcrypto/rsa"
+	"github.com/zmap/zcrypto/x509"
 )
 
 func decodeBase64(in string) []byte {
