@@ -843,7 +843,6 @@ func (c *Conn) processCertsFromClient(certificate Certificate) error {
 
 	if len(certs) > 0 {
 		switch certs[0].PublicKey.(type) {
-		// ZCrypto - cert-derived RSA keys are *zrsa.PublicKey
 		case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *x509.AugmentedECDSA:
 		default:
 			c.sendAlert(AlertUnsupportedCertificate)

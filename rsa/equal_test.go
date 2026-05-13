@@ -7,9 +7,10 @@ package rsa_test
 import (
 	"crypto"
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"testing"
+
+	"github.com/zmap/zcrypto/rsa"
+	"github.com/zmap/zcrypto/x509"
 )
 
 func TestEqual(t *testing.T) {

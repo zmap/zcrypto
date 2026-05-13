@@ -65,9 +65,7 @@ func (pub *PublicKey) Equal(x crypto.PublicKey) bool {
 	if !ok {
 		return false
 	}
-	// ZCrypto - E changed from int to *big.Int; == replaced with Cmp
-	// return bigIntEqual(pub.N, xx.N) && pub.E == xx.E
-	return bigIntEqual(pub.N, xx.N) && pub.E.Cmp(xx.E) == 0
+	return bigIntEqual(pub.N, xx.N) && bigIntEqual(pub.E, xx.E)
 }
 
 // OAEPOptions is an interface for passing options to OAEP decryption using the
