@@ -15,7 +15,6 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	"encoding/pem"
 	"flag"
 	"log"
@@ -25,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 	"github.com/zmap/zcrypto/x509/pkix"
 )

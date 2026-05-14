@@ -25,7 +25,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rsa"
 	_ "crypto/sha1"
 	_ "crypto/sha256"
 	"encoding/pem"
@@ -41,6 +40,7 @@ import (
 
 	"github.com/zmap/zcrypto/dsa"
 	"github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509/ct"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
@@ -1338,16 +1338,17 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 			if p.N.Sign() <= 0 {
 				return nil, errors.New("x509: RSA modulus is not a positive number")
 			}
-			if p.E <= 0 {
+			// ZCrypto - p.E is now *big.Int; use Sign() instead of <= 0
+			// Original: if p.E <= 0 {
+			if p.E.Sign() <= 0 {
 				return nil, errors.New("x509: RSA public exponent is not a positive number")
 			}
 		}
 
-		pub := &rsa.PublicKey{
+		return &rsa.PublicKey{
 			E: p.E,
 			N: p.N,
-		}
-		return pub, nil
+		}, nil
 	case DSA:
 		var p *big.Int
 		rest, err := asn1.Unmarshal(asn1Data, &p)
@@ -2589,6 +2590,7 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo SignatureAlgori
 
 	switch pub := pub.(type) {
 	case *rsa.PublicKey:
+		_ = pub
 		pubType = RSA
 		hashFunc = crypto.SHA256
 		sigAlgo.Algorithm = oidSignatureSHA256WithRSA

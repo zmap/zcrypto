@@ -12,7 +12,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	_ "crypto/sha1"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
@@ -23,6 +22,7 @@ import (
 	"time"
 
 	"github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 	"github.com/zmap/zcrypto/x509/pkix"
 	"github.com/zmap/zcrypto/x509/revocation/crl"

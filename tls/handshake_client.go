@@ -9,7 +9,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
-	"crypto/rsa"
 	"crypto/subtle"
 	"encoding/binary"
 	"errors"
@@ -21,6 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
 

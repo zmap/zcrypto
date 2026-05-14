@@ -11,7 +11,6 @@ import (
 	"crypto/elliptic"
 	"crypto/md5"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
@@ -21,6 +20,7 @@ import (
 	"io"
 	"math/big"
 
+	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
 
@@ -160,12 +160,16 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 			return digest, errors.New("ECDSA verification failure")
 		}
 	case signatureRSA:
-		pubKey, ok := cert.PublicKey.(*rsa.PublicKey)
-		if !ok {
+		if zPub, ok := cert.PublicKey.(*rsa.PublicKey); ok {
+			if err := rsa.VerifyPKCS1v15(zPub, hashFunc, digest, sig); err != nil {
+				return digest, err
+			}
+		} else if pubKey, ok := cert.PublicKey.(*rsa.PublicKey); ok {
+			if err := rsa.VerifyPKCS1v15(pubKey, hashFunc, digest, sig); err != nil {
+				return digest, err
+			}
+		} else {
 			return digest, errors.New("ECDHE RSA requires a RSA server public key")
-		}
-		if err := rsa.VerifyPKCS1v15(pubKey, hashFunc, digest, sig); err != nil {
-			return digest, err
 		}
 	case signatureDSA:
 		pubKey, ok := cert.PublicKey.(*dsa.PublicKey)
@@ -242,11 +246,12 @@ func (ka *rsaKeyAgreement) generateClientKeyExchange(config *Config, clientHello
 		return nil, nil, err
 	}
 
-	publicKey, ok := cert.PublicKey.(*rsa.PublicKey)
-	if !ok {
+	var encrypted []byte
+	if publicKey, ok := cert.PublicKey.(*rsa.PublicKey); ok {
+		encrypted, err = rsa.EncryptPKCS1v15(config.rand(), publicKey, preMasterSecret)
+	} else {
 		return nil, nil, errClientKeyExchange
 	}
-	encrypted, err := rsa.EncryptPKCS1v15(config.rand(), publicKey, preMasterSecret)
 	if err != nil {
 		return nil, nil, err
 	}

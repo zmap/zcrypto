@@ -7,11 +7,11 @@ package x509
 import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
-	"crypto/rsa"
 	"errors"
 	"fmt"
 
 	"github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509/pkix"
 )
 

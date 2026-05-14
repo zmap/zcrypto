@@ -8,11 +8,12 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/hmac"
-	"crypto/rsa"
 	"errors"
 	"hash"
 	"sync/atomic"
 	"time"
+
+	"github.com/zmap/zcrypto/rsa"
 )
 
 type clientHandshakeStateTLS13 struct {

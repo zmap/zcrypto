@@ -10,12 +10,12 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
-	"crypto/rsa"
 	"errors"
 	"fmt"
 	"hash"
 	"io"
 
+	rsa "github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
 
@@ -44,21 +44,30 @@ func verifyHandshakeSignature(sigType uint8, pubkey crypto.PublicKey, hashFunc c
 			return errors.New("Ed25519 verification failure")
 		}
 	case signaturePKCS1v15:
-		pubKey, ok := pubkey.(*rsa.PublicKey)
-		if !ok {
+		if zPub, ok := pubkey.(*rsa.PublicKey); ok {
+			if err := rsa.VerifyPKCS1v15(zPub, hashFunc, signed, sig); err != nil {
+				return err
+			}
+		} else if pubKey, ok := pubkey.(*rsa.PublicKey); ok {
+			if err := rsa.VerifyPKCS1v15(pubKey, hashFunc, signed, sig); err != nil {
+				return err
+			}
+		} else {
 			return fmt.Errorf("expected an RSA public key, got %T", pubkey)
-		}
-		if err := rsa.VerifyPKCS1v15(pubKey, hashFunc, signed, sig); err != nil {
-			return err
 		}
 	case signatureRSAPSS:
-		pubKey, ok := pubkey.(*rsa.PublicKey)
-		if !ok {
+		if zPub, ok := pubkey.(*rsa.PublicKey); ok {
+			signOpts := &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash}
+			if err := rsa.VerifyPSS(zPub, hashFunc, signed, sig, signOpts); err != nil {
+				return err
+			}
+		} else if pubKey, ok := pubkey.(*rsa.PublicKey); ok {
+			signOpts := &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash}
+			if err := rsa.VerifyPSS(pubKey, hashFunc, signed, sig, signOpts); err != nil {
+				return err
+			}
+		} else {
 			return fmt.Errorf("expected an RSA public key, got %T", pubkey)
-		}
-		signOpts := &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash}
-		if err := rsa.VerifyPSS(pubKey, hashFunc, signed, sig, signOpts); err != nil {
-			return err
 		}
 	default:
 		return errors.New("internal error: unknown signature type")

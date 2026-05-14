@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"crypto/x509"
+	"github.com/zmap/zcrypto/x509"
 )
 
 // TLS reference tests run a connection against a reference implementation
