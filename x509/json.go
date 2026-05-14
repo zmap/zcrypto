@@ -6,7 +6,6 @@ package x509
 
 import (
 	"crypto/ecdsa"
-	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"net"
@@ -17,6 +16,7 @@ import (
 	"github.com/zmap/zcrypto/dsa"
 	"github.com/zmap/zcrypto/encoding/asn1"
 	jsonKeys "github.com/zmap/zcrypto/json"
+	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/util"
 	"github.com/zmap/zcrypto/x509/pkix"
 )

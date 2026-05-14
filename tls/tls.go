@@ -17,7 +17,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
-	"crypto/rsa"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -26,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	rsa "github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
 
