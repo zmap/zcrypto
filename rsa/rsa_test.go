@@ -895,3 +895,32 @@ var testEncryptOAEPData = []testEncryptOAEPStruct{
 		},
 	},
 }
+
+// TestPublicKeyDefensiveCopy verifies that mutating the caller's PublicKey
+// after performing an operation does not affect subsequent operations on the
+// same key via the precomputed FIPS state.
+func TestPublicKeyDefensiveCopy(t *testing.T) {
+	priv, err := GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg := []byte("hello")
+	ct, err := EncryptPKCS1v15(rand.Reader, &priv.PublicKey, msg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pt, err := DecryptPKCS1v15(rand.Reader, priv, ct)
+	if err != nil || !bytes.Equal(pt, msg) {
+		t.Fatalf("decrypt mismatch: %v / %x", err, pt)
+	}
+	// Mutate the caller's E in place. A correctly defensively-copied internal
+	// state must continue to function.
+	originalE := new(big.Int).Set(priv.PublicKey.E)
+	priv.PublicKey.E.SetInt64(7)
+	pt2, err := DecryptPKCS1v15(rand.Reader, priv, ct)
+	// Restore E so subsequent tests aren't affected.
+	priv.PublicKey.E.Set(originalE)
+	if err != nil || !bytes.Equal(pt2, msg) {
+		t.Fatalf("decrypt after caller-side E mutation failed (defensive copy missing?): %v / %x", err, pt2)
+	}
+}
