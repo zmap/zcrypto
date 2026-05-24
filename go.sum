@@ -34,6 +34,8 @@ github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD
 github.com/weppos/publicsuffix-go v0.13.0/go.mod h1:z3LCPQ38eedDQSwmsSRW4Y7t2L8Ln16JPQ02lHAdn5k=
 github.com/weppos/publicsuffix-go v0.50.4-0.20260507075217-1bd47f85b3da h1:fvG9axse5NWVonGRSWkjrIBP5v6jXxJE2yZxcPILBX4=
 github.com/weppos/publicsuffix-go v0.50.4-0.20260507075217-1bd47f85b3da/go.mod h1:/rOa781xBykZhHK/I3QeHo92qdDKVmKZKF7s8qAEM/4=
+github.com/weppos/publicsuffix-go v0.50.4-0.20260514081422-6efa9030e80b h1:T43RrpXBdOx9bsj3zprMW5Nrdols4SPGjoH+rmBlFMc=
+github.com/weppos/publicsuffix-go v0.50.4-0.20260514081422-6efa9030e80b/go.mod h1:/rOa781xBykZhHK/I3QeHo92qdDKVmKZKF7s8qAEM/4=
 github.com/zmap/rc2 v0.0.0-20131011165748-24b9757f5521/go.mod h1:3YZ9o3WnatTIZhuOtot4IcUfzoKVjUHqu6WALIyI0nE=
 github.com/zmap/zcertificate v0.0.0-20180516150559-0e3d58b1bac4/go.mod h1:5iU54tB79AMBcySS0R2XIyZBAVmeHranShAFELYx7is=
 github.com/zmap/zcertificate v0.0.1 h1:2X15TRx4Fr6qzKItfwUdww294OeRSmHILLa+Xn2Uv+s=
