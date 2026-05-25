@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/weppos/publicsuffix-go v0.50.4-0.20260514081422-6efa9030e80b
 	github.com/zmap/zcertificate v0.0.1
-	golang.org/x/crypto v0.51.0
+	golang.org/x/crypto v0.52.0
 	golang.org/x/net v0.55.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 )
