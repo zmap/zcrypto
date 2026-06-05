@@ -1238,11 +1238,20 @@ func (c *Config) cipherSuites() []uint16 {
 }
 
 func (c *Config) cipherSuitesTLS13() []uint16 {
-	s := c.CipherSuites
-	if s == nil {
-		s = defaultCipherSuitesTLS13()
+	if c == nil || len(c.CipherSuites) == 0 {
+		return defaultCipherSuitesTLS13()
 	}
-	return s
+	var tls13Suites []uint16
+	for _, id := range c.CipherSuites {
+		switch id {
+		case TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256:
+			tls13Suites = append(tls13Suites, id)
+		}
+	}
+	if len(tls13Suites) == 0 {
+		return defaultCipherSuitesTLS13()
+	}
+	return tls13Suites
 }
 
 var supportedVersions = []uint16{
