@@ -833,11 +833,10 @@ type Config struct {
 	// testing or in combination with VerifyConnection or VerifyPeerCertificate.
 	InsecureSkipVerify bool
 
-	// CipherSuites is a list of supported cipher suites for TLS versions up to
-	// TLS 1.2. If CipherSuites is nil, a default list of secure cipher suites
-	// is used, with a preference order based on hardware performance. The
-	// default cipher suites might change over Go versions. Note that TLS 1.3
-	// ciphersuites are not configurable.
+	// CipherSuites is a list of supported cipher suites. For TLS 1.2 and
+	// below, the order determines preference. For TLS 1.3, any TLS 1.3 suite
+	// IDs present in the list are used; if none are present (or the list is
+	// nil), a default list of secure suites is used.
 	CipherSuites []uint16
 
 	// PreferServerCipherSuites controls whether the server selects the
@@ -1236,6 +1235,23 @@ func (c *Config) cipherSuites() []uint16 {
 		s = defaultCipherSuites()
 	}
 	return s
+}
+
+func (c *Config) cipherSuitesTLS13() []uint16 {
+	if c == nil || len(c.CipherSuites) == 0 {
+		return defaultCipherSuitesTLS13()
+	}
+	var tls13Suites []uint16
+	for _, id := range c.CipherSuites {
+		switch id {
+		case TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256:
+			tls13Suites = append(tls13Suites, id)
+		}
+	}
+	if len(tls13Suites) == 0 {
+		return defaultCipherSuitesTLS13()
+	}
+	return tls13Suites
 }
 
 var supportedVersions = []uint16{
