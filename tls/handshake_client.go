@@ -312,7 +312,10 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, er
 
 	var keySharesByGroup map[CurveID]tls13KeyShare
 	if hello.supportedVersions[0] == VersionTLS13 {
-		hello.cipherSuites = append(hello.cipherSuites, config.cipherSuitesTLS13()...)
+		if !config.ForceSuites {
+			// If ForceSuites == true, we've already appended the user's ciphers above
+			hello.cipherSuites = append(hello.cipherSuites, config.cipherSuitesTLS13()...)
+		}
 
 		prefs := config.curvePreferences()
 		if len(prefs) == 0 {
