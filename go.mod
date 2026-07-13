@@ -8,7 +8,7 @@ require (
 	github.com/weppos/publicsuffix-go v0.50.4-0.20260529064242-164fc2a0e798
 	github.com/zmap/zcertificate v0.0.1
 	golang.org/x/crypto v0.54.0
-	golang.org/x/net v0.56.0
+	golang.org/x/net v0.57.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 )
 
