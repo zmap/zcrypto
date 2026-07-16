@@ -448,6 +448,7 @@ func init() {
 	curveNames[260] = "ffdhe8192"
 	curveNames[4587] = "secp256r1mlkem768"
 	curveNames[4588] = "x25519mlkem768"
+	curveNames[4589] = "secp384r1mlkem1024"
 	curveNames[65281] = "arbitrary_explicit_prime_curves"
 	curveNames[65282] = "arbitrary_explicit_char2_curves"
 

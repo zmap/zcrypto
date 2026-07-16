@@ -154,8 +154,9 @@ const (
 	X25519    CurveID = 29
 
 	// Hybrid PQ key exchange groups (TLS 1.3 NamedGroup)
-	SecP256r1MLKEM768 CurveID = 4587
-	X25519MLKEM768    CurveID = 4588
+	SecP256r1MLKEM768  CurveID = 4587
+	X25519MLKEM768     CurveID = 4588
+	SecP384r1MLKEM1024 CurveID = 4589
 )
 
 func (curveID *CurveID) MarshalJSON() ([]byte, error) {

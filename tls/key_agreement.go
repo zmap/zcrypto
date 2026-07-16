@@ -390,10 +390,19 @@ type ecdheKeyAgreement struct {
 	verifyError error
 }
 
+func isTLS13OnlyKeyExchange(curveID CurveID) bool {
+	switch curveID {
+	case X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024:
+		return true
+	default:
+		return false
+	}
+}
+
 func (ka *ecdheKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {
 	var curveID CurveID
 	for _, c := range clientHello.supportedCurves {
-		if c == X25519MLKEM768 {
+		if isTLS13OnlyKeyExchange(c) {
 			continue // ML-KEM hybrid group is TLS 1.3 (key_share) only.
 		}
 		if config.supportsCurve(c) {
