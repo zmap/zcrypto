@@ -12,6 +12,7 @@ import (
 	"hash"
 	"io"
 	"math/big"
+	"slices"
 
 	jsonKeys "github.com/zmap/zcrypto/json"
 	"golang.org/x/crypto/cryptobyte"
@@ -34,10 +35,16 @@ const (
 )
 
 const (
-	x25519ShareSize = 32
-	mlkem768EKSize  = mlkem.EncapsulationKeySize768 // 1184
-	mlkem768CTSize  = mlkem.CiphertextSize768       // 1088
-	mlkemSSSize     = 32                            // ML-KEM shared secret size
+	// https://github.com/golang/go/blob/1768cb40b838a36f9bdcbe5381f2e086483f22f5/src/crypto/tls/key_schedule.go#L97
+	x25519ShareSize    = 32
+	secP256r1ShareSize = 65
+	secP384r1ShareSize = 97
+
+	mlkem768EKSize  = mlkem.EncapsulationKeySize768  // 1184
+	mlkem768CTSize  = mlkem.CiphertextSize768        // 1088
+	mlkem1024EKSize = mlkem.EncapsulationKeySize1024 // 1568
+	mlkem1024CTSize = mlkem.CiphertextSize1024       // 1568
+	mlkemSSSize     = 32                             // ML-KEM shared secret size
 )
 
 // expandLabel implements HKDF-Expand-Label from RFC 8446, Section 7.1.
@@ -294,6 +301,13 @@ func (p *x25519Parameters) MakeLog() (*jsonKeys.ECPoint, *jsonKeys.ECDHPrivatePa
 	return public, private
 }
 
+func splitKeyShare(data []byte, firstHalfSize int, secondHalfSize int) ([]byte, []byte) {
+	if len(data) != firstHalfSize+secondHalfSize {
+		return nil, nil
+	}
+	return data[:firstHalfSize], data[firstHalfSize:]
+}
+
 type tls13ECDHEKeyShare struct {
 	group  CurveID
 	params ecdheParameters
@@ -319,22 +333,16 @@ func (k *tls13X25519MLKEM768KeyShare) Group() CurveID { return X25519MLKEM768 }
 
 // ClientHello.key_share.data = EK(1184) || X25519(32)
 func (k *tls13X25519MLKEM768KeyShare) PublicKey() []byte {
-	ek := k.dk.EncapsulationKey().Bytes()
-	x := k.xparams.PublicKey()
-	out := make([]byte, 0, len(ek)+len(x))
-	out = append(out, ek...)
-	out = append(out, x...)
-	return out
+	return slices.Concat(k.dk.EncapsulationKey().Bytes(), k.xparams.PublicKey())
 }
 
 // ServerHello.key_share.data = CT(1088) || X25519(32)
 // SharedKey = KEM_ss || ECDHE_ss
 func (k *tls13X25519MLKEM768KeyShare) SharedKey(serverShare []byte) ([]byte, error) {
-	if len(serverShare) != mlkem768CTSize+x25519ShareSize {
+	ct, sx := splitKeyShare(serverShare, mlkem768CTSize, x25519ShareSize)
+	if ct == nil || sx == nil {
 		return nil, errors.New("tls: invalid server share length for X25519MLKEM768")
 	}
-	ct := serverShare[:mlkem768CTSize]
-	sx := serverShare[mlkem768CTSize:]
 
 	kemSS, err := k.dk.Decapsulate(ct)
 	if err != nil {
@@ -349,10 +357,80 @@ func (k *tls13X25519MLKEM768KeyShare) SharedKey(serverShare []byte) ([]byte, err
 		return nil, errors.New("tls: invalid server x25519 share")
 	}
 
-	shared := make([]byte, 0, len(kemSS)+len(ecdheSS))
-	shared = append(shared, kemSS...)
-	shared = append(shared, ecdheSS...)
-	return shared, nil
+	return slices.Concat(kemSS, ecdheSS), nil
+}
+
+type tls13SecP256r1MLKEM768 struct {
+	dk      *mlkem.DecapsulationKey768
+	xparams ecdheParameters
+}
+
+func (k *tls13SecP256r1MLKEM768) Group() CurveID { return SecP256r1MLKEM768 }
+
+// ClientHello.key_share.data = SecP256r1(65) || EK(1184)
+func (k *tls13SecP256r1MLKEM768) PublicKey() []byte {
+	// deliberately the reverse of X25519MLKEM768
+	return slices.Concat(k.xparams.PublicKey(), k.dk.EncapsulationKey().Bytes())
+}
+
+// ServerHello.key_share.data = SecP256r1(65) || CT(1088)
+// SharedKey = ECDHE_ss || KEM_ss
+func (k *tls13SecP256r1MLKEM768) SharedKey(serverShare []byte) ([]byte, error) {
+	sx, ct := splitKeyShare(serverShare, secP256r1ShareSize, mlkem768CTSize)
+	if sx == nil || ct == nil {
+		return nil, errors.New("tls: invalid server share length for SecP256r1MLKEM768")
+	}
+
+	kemSS, err := k.dk.Decapsulate(ct)
+	if err != nil {
+		return nil, err
+	}
+	if len(kemSS) != mlkemSSSize {
+		return nil, errors.New("tls: invalid ML-KEM shared secret size")
+	}
+
+	ecdheSS := k.xparams.SharedKey(sx)
+	if ecdheSS == nil {
+		return nil, errors.New("tls: invalid server secp256r1 share")
+	}
+
+	return slices.Concat(ecdheSS, kemSS), nil
+}
+
+type tls13SecP384r1MLKEM1024 struct {
+	dk      *mlkem.DecapsulationKey1024
+	xparams ecdheParameters
+}
+
+func (k *tls13SecP384r1MLKEM1024) Group() CurveID { return SecP384r1MLKEM1024 }
+
+// ClientHello.key_share.data = SecP384r1(97) || EK(1568)
+func (k *tls13SecP384r1MLKEM1024) PublicKey() []byte {
+	return slices.Concat(k.xparams.PublicKey(), k.dk.EncapsulationKey().Bytes())
+}
+
+// ServerHello.key_share.data = SecP384r1(97) || CT(1568)
+// SharedKey = ECDHE_ss || KEM_ss
+func (k *tls13SecP384r1MLKEM1024) SharedKey(serverShare []byte) ([]byte, error) {
+	sx, ct := splitKeyShare(serverShare, secP384r1ShareSize, mlkem1024CTSize)
+	if sx == nil || ct == nil {
+		return nil, errors.New("tls: invalid server share length for SecP384r1MLKEM1024")
+	}
+
+	kemSS, err := k.dk.Decapsulate(ct)
+	if err != nil {
+		return nil, err
+	}
+	if len(kemSS) != mlkemSSSize {
+		return nil, errors.New("tls: invalid ML-KEM shared secret size")
+	}
+
+	ecdheSS := k.xparams.SharedKey(sx)
+	if ecdheSS == nil {
+		return nil, errors.New("tls: invalid server secp384r1 share")
+	}
+
+	return slices.Concat(ecdheSS, kemSS), nil
 }
 
 func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error) {
@@ -367,7 +445,26 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 			return nil, err
 		}
 		return &tls13X25519MLKEM768KeyShare{dk: dk, xparams: xp}, nil
-
+	case SecP256r1MLKEM768:
+		dk, err := mlkem.GenerateKey768()
+		if err != nil {
+			return nil, err
+		}
+		xp, err := generateECDHEParameters(rand, CurveP256)
+		if err != nil {
+			return nil, err
+		}
+		return &tls13SecP256r1MLKEM768{dk: dk, xparams: xp}, nil
+	case SecP384r1MLKEM1024:
+		dk, err := mlkem.GenerateKey1024()
+		if err != nil {
+			return nil, err
+		}
+		xp, err := generateECDHEParameters(rand, CurveP384)
+		if err != nil {
+			return nil, err
+		}
+		return &tls13SecP384r1MLKEM1024{dk: dk, xparams: xp}, nil
 	default:
 		if _, ok := curveForCurveID(group); group != X25519 && !ok {
 			return nil, errors.New("tls: unsupported group")
@@ -384,11 +481,10 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 	switch group {
 	case X25519MLKEM768:
 		// ClientHello.share = EK(1184) || X25519(32)
-		if len(clientShare) != mlkem768EKSize+x25519ShareSize {
+		ekBytes, cx := splitKeyShare(clientShare, mlkem768EKSize, x25519ShareSize)
+		if ekBytes == nil || cx == nil {
 			return nil, nil, errors.New("tls: invalid client share length for X25519MLKEM768")
 		}
-		ekBytes := clientShare[:mlkem768EKSize]
-		cx := clientShare[mlkem768EKSize:]
 
 		ek, err := mlkem.NewEncapsulationKey768(ekBytes)
 		if err != nil {
@@ -410,14 +506,76 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 		}
 
 		// ServerHello.share = CT(1088) || X25519(32)
-		serverShare := make([]byte, 0, len(ct)+len(sp.PublicKey()))
-		serverShare = append(serverShare, ct...)
-		serverShare = append(serverShare, sp.PublicKey()...)
+		serverShare := slices.Concat(ct, sp.PublicKey())
 
 		// shared = KEM_ss || ECDHE_ss
-		shared := make([]byte, 0, len(kemSS)+len(ecdheSS))
-		shared = append(shared, kemSS...)
-		shared = append(shared, ecdheSS...)
+		shared := slices.Concat(kemSS, ecdheSS)
+		return serverShare, shared, nil
+
+	case SecP256r1MLKEM768:
+		// ClientHello.share = SecP256r1(65) || EK(1184)
+		cx, ekBytes := splitKeyShare(clientShare, secP256r1ShareSize, mlkem768EKSize)
+		if cx == nil || ekBytes == nil {
+			return nil, nil, errors.New("tls: invalid client share length for SecP256r1MLKEM768")
+		}
+
+		ek, err := mlkem.NewEncapsulationKey768(ekBytes)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		kemSS, ct := ek.Encapsulate()
+		if len(ct) != mlkem768CTSize || len(kemSS) != mlkemSSSize {
+			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		}
+
+		sp, err := generateECDHEParameters(rand, CurveP256)
+		if err != nil {
+			return nil, nil, err
+		}
+		ecdheSS := sp.SharedKey(cx)
+		if ecdheSS == nil {
+			return nil, nil, errors.New("tls: invalid client secp256r1 share")
+		}
+
+		// ServerHello.share = SecP256r1(65) || CT(1088)
+		serverShare := slices.Concat(sp.PublicKey(), ct)
+
+		// shared = ECDHE_ss || KEM_ss
+		shared := slices.Concat(ecdheSS, kemSS)
+		return serverShare, shared, nil
+
+	case SecP384r1MLKEM1024:
+		// ClientHello.share = SecP384r1(97) || EK(1568)
+		cx, ekBytes := splitKeyShare(clientShare, secP384r1ShareSize, mlkem1024EKSize)
+		if cx == nil || ekBytes == nil {
+			return nil, nil, errors.New("tls: invalid client share length for SecP384r1MLKEM1024")
+		}
+
+		ek, err := mlkem.NewEncapsulationKey1024(ekBytes)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		kemSS, ct := ek.Encapsulate()
+		if len(ct) != mlkem1024CTSize || len(kemSS) != mlkemSSSize {
+			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		}
+
+		sp, err := generateECDHEParameters(rand, CurveP384)
+		if err != nil {
+			return nil, nil, err
+		}
+		ecdheSS := sp.SharedKey(cx)
+		if ecdheSS == nil {
+			return nil, nil, errors.New("tls: invalid client secp384r1 share")
+		}
+
+		// ServerHello.share = SecP384r1(97) || CT(1568)
+		serverShare := slices.Concat(sp.PublicKey(), ct)
+
+		// shared = ECDHE_ss || KEM_ss
+		shared := slices.Concat(ecdheSS, kemSS)
 		return serverShare, shared, nil
 
 	default:

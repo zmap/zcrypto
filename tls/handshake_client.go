@@ -322,14 +322,17 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, er
 			return nil, nil, errors.New("tls: no supported key exchange mechanisms (no curve preferences)")
 		}
 
-		// By default, send a single key_share.
-		// If ML-KEM hybrid is explicitly enabled as the top preference, also send X25519 as fallback.
+		// By default, send a single key_share. If one of the hybrid PQ
+		// algorithms is explicitly enabled as the top preference, also
+		// send a fallback.
 		shareGroups := []CurveID{prefs[0]}
-		if prefs[0] == X25519MLKEM768 {
-			// Ensure compatibility with servers that don't support the hybrid group.
-			if prefs[0] != X25519 {
-				shareGroups = append(shareGroups, X25519)
-			}
+		switch prefs[0] {
+		case X25519MLKEM768:
+			shareGroups = append(shareGroups, X25519)
+		case SecP256r1MLKEM768:
+			shareGroups = append(shareGroups, CurveP256)
+		case SecP384r1MLKEM1024:
+			shareGroups = append(shareGroups, CurveP384)
 		}
 
 		hello.keyShares = make([]keyShare, 0, len(shareGroups))
