@@ -26,6 +26,10 @@ import (
 	"github.com/zmap/zcrypto/x509"
 	"github.com/zmap/zcrypto/x509/pkix"
 	"github.com/zmap/zcrypto/x509/revocation/crl"
+
+	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
 )
 
 var idPKIXOCSPBasic = asn1.ObjectIdentifier([]int{1, 3, 6, 1, 5, 5, 7, 48, 1, 1})
@@ -153,6 +157,9 @@ var (
 	oidSignatureECDSAWithSHA256 = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 3, 2}
 	oidSignatureECDSAWithSHA384 = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 3, 3}
 	oidSignatureECDSAWithSHA512 = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 3, 4}
+	oidSignatureMLDSA44         = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 3, 17}
+	oidSignatureMLDSA65         = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 3, 18}
+	oidSignatureMLDSA87         = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 3, 19}
 )
 
 var hashOIDs = map[crypto.Hash]asn1.ObjectIdentifier{
@@ -181,11 +188,15 @@ var signatureAlgorithmDetails = []struct {
 	{x509.ECDSAWithSHA256, oidSignatureECDSAWithSHA256, x509.ECDSA, crypto.SHA256},
 	{x509.ECDSAWithSHA384, oidSignatureECDSAWithSHA384, x509.ECDSA, crypto.SHA384},
 	{x509.ECDSAWithSHA512, oidSignatureECDSAWithSHA512, x509.ECDSA, crypto.SHA512},
+	{x509.MLDSA44Sig, oidSignatureMLDSA44, x509.MLDSA44, crypto.Hash(0)},
+	{x509.MLDSA65Sig, oidSignatureMLDSA65, x509.MLDSA65, crypto.Hash(0)},
+	{x509.MLDSA87Sig, oidSignatureMLDSA87, x509.MLDSA87, crypto.Hash(0)},
 }
 
 // TODO(rlb): This is also from crypto/x509, so same comment as AGL's below
 func signingParamsForPublicKey(pub interface{}, requestedSigAlgo x509.SignatureAlgorithm) (hashFunc crypto.Hash, sigAlgo pkix.AlgorithmIdentifier, err error) {
 	var pubType x509.PublicKeyAlgorithm
+	shouldHash := true
 
 	switch pub := pub.(type) {
 	case *rsa.PublicKey:
@@ -212,9 +223,29 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo x509.SignatureA
 		default:
 			err = errors.New("x509: unknown elliptic curve")
 		}
+	case *mldsa44.PublicKey:
+		_ = pub
+		pubType = x509.MLDSA44
+		hashFunc = 0
+		shouldHash = false
+		sigAlgo.Algorithm = oidSignatureMLDSA44
+
+	case *mldsa65.PublicKey:
+		_ = pub
+		pubType = x509.MLDSA65
+		hashFunc = 0
+		shouldHash = false
+		sigAlgo.Algorithm = oidSignatureMLDSA65
+
+	case *mldsa87.PublicKey:
+		_ = pub
+		pubType = x509.MLDSA87
+		hashFunc = 0
+		shouldHash = false
+		sigAlgo.Algorithm = oidSignatureMLDSA87
 
 	default:
-		err = errors.New("x509: only RSA and ECDSA keys supported")
+		err = errors.New("x509: only RSA, ECDSA, and MLDSA keys supported")
 	}
 
 	if err != nil {
@@ -233,7 +264,7 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo x509.SignatureA
 				return
 			}
 			sigAlgo.Algorithm, hashFunc = details.oid, details.hash
-			if hashFunc == 0 {
+			if hashFunc == 0 && shouldHash {
 				err = errors.New("x509: cannot sign with hash function requested")
 				return
 			}
@@ -277,6 +308,16 @@ func getOIDFromHashAlgorithm(target crypto.Hash) asn1.ObjectIdentifier {
 		}
 	}
 	return nil
+}
+
+func hash(hashFunc crypto.Hash, raw []byte) []byte {
+	digest := raw
+	if hashFunc != 0 {
+		h := hashFunc.New()
+		h.Write(raw)
+		digest = h.Sum(nil)
+	}
+	return digest
 }
 
 // This is the exposed reflection of the internal OCSP structures.
@@ -760,9 +801,8 @@ func CreateResponse(issuer, responderCert *x509.Certificate, template Response, 
 		return nil, err
 	}
 
-	responseHash := hashFunc.New()
-	responseHash.Write(tbsResponseDataDER)
-	signature, err := priv.Sign(rand.Reader, responseHash.Sum(nil), hashFunc)
+	digest := hash(hashFunc, tbsResponseDataDER)
+	signature, err := priv.Sign(rand.Reader, digest, hashFunc)
 	if err != nil {
 		return nil, err
 	}

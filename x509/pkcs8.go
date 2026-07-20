@@ -13,6 +13,10 @@ import (
 	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509/pkix"
+
+	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
 )
 
 // pkcs8 reflects an ASN.1, PKCS#8 PrivateKey. See
@@ -27,7 +31,7 @@ type pkcs8 struct {
 
 // ParsePKCS8PrivateKey parses an unencrypted private key in PKCS #8, ASN.1 DER form.
 //
-// It returns a *rsa.PrivateKey, a *ecdsa.PrivateKey, or a ed25519.PrivateKey.
+// It returns a *rsa.PrivateKey, a *ecdsa.PrivateKey, *mldsa44.PrivateKey, *mldsa65.PrivateKey, *mldsa87.PrivateKey or a ed25519.PrivateKey.
 // More types might be supported in the future.
 //
 // This kind of key is commonly encoded in PEM blocks of type "PRIVATE KEY".
@@ -62,6 +66,36 @@ func ParsePKCS8PrivateKey(der []byte) (key interface{}, err error) {
 		}
 		return key, nil
 
+	case privKey.Algo.Algorithm.Equal(oidPublicKeyMLDSA44):
+		if l := len(privKey.Algo.Parameters.FullBytes); l != 0 {
+			return nil, errors.New("x509: invalid MLDSA44 private key parameters")
+		}
+		key, err = ParseMLDSA44PrivateKey(privKey.PrivateKey)
+		if err != nil {
+			return nil, errors.New("x509: failed to parse MLDSA44 private key embedded in PKCS#8: " + err.Error())
+		}
+		return key, nil
+
+	case privKey.Algo.Algorithm.Equal(oidPublicKeyMLDSA65):
+		if l := len(privKey.Algo.Parameters.FullBytes); l != 0 {
+			return nil, errors.New("x509: invalid MLDSA65 private key parameters")
+		}
+		key, err = ParseMLDSA65PrivateKey(privKey.PrivateKey)
+		if err != nil {
+			return nil, errors.New("x509: failed to parse MLDSA65 private key embedded in PKCS#8: " + err.Error())
+		}
+		return key, nil
+
+	case privKey.Algo.Algorithm.Equal(oidPublicKeyMLDSA87):
+		if l := len(privKey.Algo.Parameters.FullBytes); l != 0 {
+			return nil, errors.New("x509: invalid MLDSA87 private key parameters")
+		}
+		key, err = ParseMLDSA87PrivateKey(privKey.PrivateKey)
+		if err != nil {
+			return nil, errors.New("x509: failed to parse MLDSA87 private key embedded in PKCS#8: " + err.Error())
+		}
+		return key, nil
+
 	case privKey.Algo.Algorithm.Equal(oidPublicKeyEd25519):
 		if l := len(privKey.Algo.Parameters.FullBytes); l != 0 {
 			return nil, errors.New("x509: invalid Ed25519 private key parameters")
@@ -82,8 +116,10 @@ func ParsePKCS8PrivateKey(der []byte) (key interface{}, err error) {
 
 // MarshalPKCS8PrivateKey converts a private key to PKCS #8, ASN.1 DER form.
 //
-// The following key types are currently supported: *rsa.PrivateKey, *ecdsa.PrivateKey
+// The following key types are currently supported: *rsa.PrivateKey, *ecdsa.PrivateKey, *mldsa44.PrivateKey, *mldsa65.PrivateKey, *mldsa87.PrivateKey
 // and ed25519.PrivateKey. Unsupported key types result in an error.
+//
+// # Per RFC 9881 specifications, MLDSA private keys should be encoded in seed format when possible
 //
 // This kind of key is commonly encoded in PEM blocks of type "PRIVATE KEY".
 func MarshalPKCS8PrivateKey(key interface{}) ([]byte, error) {
@@ -118,6 +154,36 @@ func MarshalPKCS8PrivateKey(key interface{}) ([]byte, error) {
 		if privKey.PrivateKey, err = marshalECPrivateKeyWithOID(k, nil); err != nil {
 			return nil, errors.New("x509: failed to marshal EC private key while building PKCS#8: " + err.Error())
 		}
+
+	case *mldsa44.PrivateKey:
+		privKey.Algo = pkix.AlgorithmIdentifier{
+			Algorithm: oidPublicKeyMLDSA44,
+		}
+		seedDER, err := asn1.MarshalWithParams(k.Seed(), "tag:0")
+		if err != nil {
+			return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+		}
+		privKey.PrivateKey = seedDER
+
+	case *mldsa65.PrivateKey:
+		privKey.Algo = pkix.AlgorithmIdentifier{
+			Algorithm: oidPublicKeyMLDSA65,
+		}
+		seedDER, err := asn1.MarshalWithParams(k.Seed(), "tag:0")
+		if err != nil {
+			return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+		}
+		privKey.PrivateKey = seedDER
+
+	case *mldsa87.PrivateKey:
+		privKey.Algo = pkix.AlgorithmIdentifier{
+			Algorithm: oidPublicKeyMLDSA87,
+		}
+		seedDER, err := asn1.MarshalWithParams(k.Seed(), "tag:0")
+		if err != nil {
+			return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+		}
+		privKey.PrivateKey = seedDER
 
 	case ed25519.PrivateKey:
 		privKey.Algo = pkix.AlgorithmIdentifier{
