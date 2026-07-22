@@ -446,6 +446,7 @@ func init() {
 	curveNames[258] = "ffdhe4096"
 	curveNames[259] = "ffdhe6144"
 	curveNames[260] = "ffdhe8192"
+	curveNames[514] = "mlkem1024"
 	curveNames[4587] = "secp256r1mlkem768"
 	curveNames[4588] = "x25519mlkem768"
 	curveNames[4589] = "secp384r1mlkem1024"

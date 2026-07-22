@@ -433,6 +433,36 @@ func (k *tls13SecP384r1MLKEM1024) SharedKey(serverShare []byte) ([]byte, error) 
 	return slices.Concat(ecdheSS, kemSS), nil
 }
 
+type tls13MLKEM1024 struct {
+	dk *mlkem.DecapsulationKey1024
+}
+
+func (k *tls13MLKEM1024) Group() CurveID { return MLKEM1024 }
+
+// ClientHello.key_share.data = EK(1568)
+func (k *tls13MLKEM1024) PublicKey() []byte {
+	return k.dk.EncapsulationKey().Bytes()
+}
+
+// ServerHello.key_share.data = CT(1568)
+// SharedKey = KEM_ss
+func (k *tls13MLKEM1024) SharedKey(serverShare []byte) ([]byte, error) {
+	ct := serverShare
+	if ct == nil {
+		return nil, errors.New("tls: invalid server share length for MLKEM1024")
+	}
+
+	kemSS, err := k.dk.Decapsulate(ct)
+	if err != nil {
+		return nil, err
+	}
+	if len(kemSS) != mlkemSSSize {
+		return nil, errors.New("tls: invalid ML-KEM shared secret size")
+	}
+
+	return kemSS, nil
+}
+
 func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error) {
 	switch group {
 	case X25519MLKEM768:
@@ -465,6 +495,12 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 			return nil, err
 		}
 		return &tls13SecP384r1MLKEM1024{dk: dk, xparams: xp}, nil
+	case MLKEM1024:
+		dk, err := mlkem.GenerateKey1024()
+		if err != nil {
+			return nil, err
+		}
+		return &tls13MLKEM1024{dk: dk}, nil
 	default:
 		if _, ok := curveForCurveID(group); group != X25519 && !ok {
 			return nil, errors.New("tls: unsupported group")
@@ -576,6 +612,30 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 
 		// shared = ECDHE_ss || KEM_ss
 		shared := slices.Concat(ecdheSS, kemSS)
+		return serverShare, shared, nil
+
+	case MLKEM1024:
+		// ClientHello.share = EK(1568)
+		ekBytes := clientShare
+		if len(ekBytes) != mlkem1024EKSize {
+			return nil, nil, errors.New("tls: invalid client share length for MLKEM1024")
+		}
+
+		ek, err := mlkem.NewEncapsulationKey1024(ekBytes)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		kemSS, ct := ek.Encapsulate()
+		if len(ct) != mlkem1024CTSize || len(kemSS) != mlkemSSSize {
+			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		}
+
+		// ServerHello.share = CT(1568)
+		serverShare := ct
+
+		// shared = KEM_ss
+		shared := kemSS
 		return serverShare, shared, nil
 
 	default:
