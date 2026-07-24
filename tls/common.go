@@ -1308,7 +1308,13 @@ func supportedVersionsFromMax(maxVersion uint16) []uint16 {
 	return versions
 }
 
-var defaultCurvePreferences = []CurveID{X25519, CurveP256, CurveP384, CurveP521}
+var defaultCurvePreferences = []CurveID{
+	// post-quantum curves
+	X25519MLKEM768, SecP384r1MLKEM1024, SecP256r1MLKEM768,
+	MLKEM1024,
+
+	X25519, CurveP256, CurveP384, CurveP521,
+}
 
 func (c *Config) curvePreferences() []CurveID {
 	if c.ExplicitCurvePreferences {

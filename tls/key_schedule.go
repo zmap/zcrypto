@@ -463,10 +463,27 @@ func (k *tls13MLKEM1024) SharedKey(serverShare []byte) ([]byte, error) {
 	return kemSS, nil
 }
 
+// mlkem.GenerateKey{768,1024} don't let us provide a custom source of
+// randomness, so we do this instead
+func NewDecapsulationKey768(rand io.Reader) (*mlkem.DecapsulationKey768, error) {
+	seed := make([]byte, 64)
+	if _, err := io.ReadFull(rand, seed); err != nil {
+		return nil, err
+	}
+	return mlkem.NewDecapsulationKey768(seed)
+}
+func NewDecapsulationKey1024(rand io.Reader) (*mlkem.DecapsulationKey1024, error) {
+	seed := make([]byte, 64)
+	if _, err := io.ReadFull(rand, seed); err != nil {
+		return nil, err
+	}
+	return mlkem.NewDecapsulationKey1024(seed)
+}
+
 func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error) {
 	switch group {
 	case X25519MLKEM768:
-		dk, err := mlkem.GenerateKey768()
+		dk, err := NewDecapsulationKey768(rand)
 		if err != nil {
 			return nil, err
 		}
@@ -476,7 +493,7 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 		}
 		return &tls13X25519MLKEM768KeyShare{dk: dk, xparams: xp}, nil
 	case SecP256r1MLKEM768:
-		dk, err := mlkem.GenerateKey768()
+		dk, err := NewDecapsulationKey768(rand)
 		if err != nil {
 			return nil, err
 		}
@@ -486,7 +503,7 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 		}
 		return &tls13SecP256r1MLKEM768{dk: dk, xparams: xp}, nil
 	case SecP384r1MLKEM1024:
-		dk, err := mlkem.GenerateKey1024()
+		dk, err := NewDecapsulationKey1024(rand)
 		if err != nil {
 			return nil, err
 		}
@@ -496,7 +513,7 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 		}
 		return &tls13SecP384r1MLKEM1024{dk: dk, xparams: xp}, nil
 	case MLKEM1024:
-		dk, err := mlkem.GenerateKey1024()
+		dk, err := NewDecapsulationKey1024(rand)
 		if err != nil {
 			return nil, err
 		}
