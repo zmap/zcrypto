@@ -76,17 +76,17 @@ func checkOpenSSLVersion() error {
 	}
 
 	version := string(output)
-	if strings.HasPrefix(version, "OpenSSL 1.1.1") {
+	if strings.HasPrefix(version, "OpenSSL 3.6.3") {
 		return nil
 	}
 
 	println("***********************************************")
 	println("")
-	println("You need to build OpenSSL 1.1.1 from source in order")
+	println("You need to build OpenSSL 3.6.3 from source in order")
 	println("to update the test data.")
 	println("")
 	println("Configure it with:")
-	println("./Configure enable-weak-ssl-ciphers no-shared")
+	println("./Configure enable-weak-ssl-ciphers no-shared no-module")
 	println("and then add the apps/ directory at the front of your PATH.")
 	println("***********************************************")
 
@@ -217,6 +217,11 @@ func parseTestData(r io.Reader) (flows [][]byte, err error) {
 
 	if len(currentFlow) > 0 {
 		flows = append(flows, currentFlow)
+	}
+
+	// this ensures that it returns an error if the file is empty
+	if len(flows) == 0 {
+		return nil, errors.New("test data has no flows")
 	}
 
 	return flows, nil
