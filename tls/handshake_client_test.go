@@ -126,6 +126,9 @@ type clientTest struct {
 	// args, if not empty, contains a series of arguments for the
 	// command to run for the reference server.
 	args []string
+	// cipher, if not empty, is the name of the cipher suite that will be used
+	// for this test. Equivalent to adding "-cipher <cipher>@SECLEVEL=0" to args.
+	cipher string
 	// config, if not nil, contains a custom Config to use for this test.
 	config *Config
 	// cert, if not empty, contains a DER-encoded certificate for the
@@ -156,7 +159,13 @@ type clientTest struct {
 	sendKeyUpdate bool
 }
 
-var serverCommand = []string{"openssl", "s_server", "-no_ticket", "-num_tickets", "0"}
+var serverCommand = []string{
+	"openssl", "s_server",
+	"-no_ticket", "-num_tickets", "0",
+	// required for legacy ciphers like RC4-SHA
+	"-provider", "legacy",
+	"-provider", "default",
+}
 
 // connFromCommand starts the reference server process, connects to it and
 // returns a recordingConn for the connection. The stdin return value is an
@@ -188,7 +197,16 @@ func (test *clientTest) connFromCommand() (conn *recordingConn, child *exec.Cmd,
 	var command []string
 	command = append(command, serverCommand...)
 	command = append(command, test.args...)
+
 	command = append(command, "-cert", certPath, "-certform", "DER", "-key", keyPath)
+	cipher := test.cipher
+	if cipher == "" {
+		cipher = "DEFAULT"
+	}
+	// setting the SECLEVEL is necessary to make openssl not error when
+	// using insecure ciphers.
+	command = append(command, "-cipher", cipher+"@SECLEVEL=0")
+
 	// serverPort contains the port that OpenSSL will listen on. OpenSSL
 	// can't take "0" as an argument here so we have to pick a number and
 	// hope that it's not in use on the machine. Since this only occurs
@@ -545,8 +563,8 @@ func runClientTestTLS13(t *testing.T, template *clientTest) {
 
 func TestHandshakeClientRSARC4(t *testing.T) {
 	test := &clientTest{
-		name: "RSA-RC4",
-		args: []string{"-cipher", "RC4-SHA"},
+		name:   "RSA-RC4",
+		cipher: "RC4-SHA",
 	}
 	runClientTestTLS10(t, test)
 	runClientTestTLS11(t, test)
@@ -555,24 +573,24 @@ func TestHandshakeClientRSARC4(t *testing.T) {
 
 func TestHandshakeClientRSAAES128GCM(t *testing.T) {
 	test := &clientTest{
-		name: "AES128-GCM-SHA256",
-		args: []string{"-cipher", "AES128-GCM-SHA256"},
+		name:   "AES128-GCM-SHA256",
+		cipher: "AES128-GCM-SHA256",
 	}
 	runClientTestTLS12(t, test)
 }
 
 func TestHandshakeClientRSAAES256GCM(t *testing.T) {
 	test := &clientTest{
-		name: "AES256-GCM-SHA384",
-		args: []string{"-cipher", "AES256-GCM-SHA384"},
+		name:   "AES256-GCM-SHA384",
+		cipher: "AES256-GCM-SHA384",
 	}
 	runClientTestTLS12(t, test)
 }
 
 func TestHandshakeClientECDHERSAAES(t *testing.T) {
 	test := &clientTest{
-		name: "ECDHE-RSA-AES",
-		args: []string{"-cipher", "ECDHE-RSA-AES128-SHA"},
+		name:   "ECDHE-RSA-AES",
+		cipher: "ECDHE-RSA-AES128-SHA",
 	}
 	runClientTestTLS10(t, test)
 	runClientTestTLS11(t, test)
@@ -581,10 +599,10 @@ func TestHandshakeClientECDHERSAAES(t *testing.T) {
 
 func TestHandshakeClientECDHEECDSAAES(t *testing.T) {
 	test := &clientTest{
-		name: "ECDHE-ECDSA-AES",
-		args: []string{"-cipher", "ECDHE-ECDSA-AES128-SHA"},
-		cert: testECDSACertificate,
-		key:  testECDSAPrivateKey,
+		name:   "ECDHE-ECDSA-AES",
+		cipher: "ECDHE-ECDSA-AES128-SHA",
+		cert:   testECDSACertificate,
+		key:    testECDSAPrivateKey,
 	}
 	runClientTestTLS10(t, test)
 	runClientTestTLS11(t, test)
@@ -593,46 +611,46 @@ func TestHandshakeClientECDHEECDSAAES(t *testing.T) {
 
 func TestHandshakeClientECDHEECDSAAESGCM(t *testing.T) {
 	test := &clientTest{
-		name: "ECDHE-ECDSA-AES-GCM",
-		args: []string{"-cipher", "ECDHE-ECDSA-AES128-GCM-SHA256"},
-		cert: testECDSACertificate,
-		key:  testECDSAPrivateKey,
+		name:   "ECDHE-ECDSA-AES-GCM",
+		cipher: "ECDHE-ECDSA-AES128-GCM-SHA256",
+		cert:   testECDSACertificate,
+		key:    testECDSAPrivateKey,
 	}
 	runClientTestTLS12(t, test)
 }
 
 func TestHandshakeClientAES256GCMSHA384(t *testing.T) {
 	test := &clientTest{
-		name: "ECDHE-ECDSA-AES256-GCM-SHA384",
-		args: []string{"-cipher", "ECDHE-ECDSA-AES256-GCM-SHA384"},
-		cert: testECDSACertificate,
-		key:  testECDSAPrivateKey,
+		name:   "ECDHE-ECDSA-AES256-GCM-SHA384",
+		cipher: "ECDHE-ECDSA-AES256-GCM-SHA384",
+		cert:   testECDSACertificate,
+		key:    testECDSAPrivateKey,
 	}
 	runClientTestTLS12(t, test)
 }
 
 func TestHandshakeClientAES128CBCSHA256(t *testing.T) {
 	test := &clientTest{
-		name: "AES128-SHA256",
-		args: []string{"-cipher", "AES128-SHA256"},
+		name:   "AES128-SHA256",
+		cipher: "AES128-SHA256",
 	}
 	runClientTestTLS12(t, test)
 }
 
 func TestHandshakeClientECDHERSAAES128CBCSHA256(t *testing.T) {
 	test := &clientTest{
-		name: "ECDHE-RSA-AES128-SHA256",
-		args: []string{"-cipher", "ECDHE-RSA-AES128-SHA256"},
+		name:   "ECDHE-RSA-AES128-SHA256",
+		cipher: "ECDHE-RSA-AES128-SHA256",
 	}
 	runClientTestTLS12(t, test)
 }
 
 func TestHandshakeClientECDHEECDSAAES128CBCSHA256(t *testing.T) {
 	test := &clientTest{
-		name: "ECDHE-ECDSA-AES128-SHA256",
-		args: []string{"-cipher", "ECDHE-ECDSA-AES128-SHA256"},
-		cert: testECDSACertificate,
-		key:  testECDSAPrivateKey,
+		name:   "ECDHE-ECDSA-AES128-SHA256",
+		cipher: "ECDHE-ECDSA-AES128-SHA256",
+		cert:   testECDSACertificate,
+		key:    testECDSAPrivateKey,
 	}
 	runClientTestTLS12(t, test)
 }
@@ -643,7 +661,8 @@ func TestHandshakeClientX25519(t *testing.T) {
 
 	test := &clientTest{
 		name:   "X25519-ECDHE",
-		args:   []string{"-cipher", "ECDHE-RSA-AES128-GCM-SHA256", "-curves", "X25519"},
+		args:   []string{"-curves", "X25519"},
+		cipher: "ECDHE-RSA-AES128-GCM-SHA256",
 		config: config,
 	}
 
@@ -657,7 +676,8 @@ func TestHandshakeClientP256(t *testing.T) {
 
 	test := &clientTest{
 		name:   "P256-ECDHE",
-		args:   []string{"-cipher", "ECDHE-RSA-AES128-GCM-SHA256", "-curves", "P-256"},
+		args:   []string{"-curves", "P-256"},
+		cipher: "ECDHE-RSA-AES128-GCM-SHA256",
 		config: config,
 	}
 
@@ -671,7 +691,8 @@ func TestHandshakeClientHelloRetryRequest(t *testing.T) {
 
 	test := &clientTest{
 		name:   "HelloRetryRequest",
-		args:   []string{"-cipher", "ECDHE-RSA-AES128-GCM-SHA256", "-curves", "P-256"},
+		args:   []string{"-curves", "P-256"},
+		cipher: "ECDHE-RSA-AES128-GCM-SHA256",
 		config: config,
 	}
 
@@ -684,7 +705,7 @@ func TestHandshakeClientECDHERSAChaCha20(t *testing.T) {
 
 	test := &clientTest{
 		name:   "ECDHE-RSA-CHACHA20-POLY1305",
-		args:   []string{"-cipher", "ECDHE-RSA-CHACHA20-POLY1305"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
 		config: config,
 	}
 
@@ -697,7 +718,7 @@ func TestHandshakeClientECDHEECDSAChaCha20(t *testing.T) {
 
 	test := &clientTest{
 		name:   "ECDHE-ECDSA-CHACHA20-POLY1305",
-		args:   []string{"-cipher", "ECDHE-ECDSA-CHACHA20-POLY1305"},
+		cipher: "ECDHE-ECDSA-CHACHA20-POLY1305",
 		config: config,
 		cert:   testECDSACertificate,
 		key:    testECDSAPrivateKey,
@@ -770,7 +791,8 @@ func TestHandshakeClientCertRSA(t *testing.T) {
 
 	test := &clientTest{
 		name:   "ClientCert-RSA-RSA",
-		args:   []string{"-cipher", "AES128", "-Verify", "1"},
+		args:   []string{"-Verify", "1"},
+		cipher: "AES128",
 		config: config,
 	}
 
@@ -779,7 +801,8 @@ func TestHandshakeClientCertRSA(t *testing.T) {
 
 	test = &clientTest{
 		name:   "ClientCert-RSA-ECDSA",
-		args:   []string{"-cipher", "ECDHE-ECDSA-AES128-SHA", "-Verify", "1"},
+		args:   []string{"-Verify", "1"},
+		cipher: "ECDHE-ECDSA-AES128-SHA",
 		config: config,
 		cert:   testECDSACertificate,
 		key:    testECDSAPrivateKey,
@@ -791,7 +814,8 @@ func TestHandshakeClientCertRSA(t *testing.T) {
 
 	test = &clientTest{
 		name:   "ClientCert-RSA-AES256-GCM-SHA384",
-		args:   []string{"-cipher", "ECDHE-RSA-AES256-GCM-SHA384", "-Verify", "1"},
+		args:   []string{"-Verify", "1"},
+		cipher: "ECDHE-RSA-AES256-GCM-SHA384",
 		config: config,
 		cert:   testRSACertificate,
 		key:    testRSAPrivateKey,
@@ -807,7 +831,8 @@ func TestHandshakeClientCertECDSA(t *testing.T) {
 
 	test := &clientTest{
 		name:   "ClientCert-ECDSA-RSA",
-		args:   []string{"-cipher", "AES128", "-Verify", "1"},
+		args:   []string{"-Verify", "1"},
+		cipher: "AES128",
 		config: config,
 	}
 
@@ -817,7 +842,8 @@ func TestHandshakeClientCertECDSA(t *testing.T) {
 
 	test = &clientTest{
 		name:   "ClientCert-ECDSA-ECDSA",
-		args:   []string{"-cipher", "ECDHE-ECDSA-AES128-SHA", "-Verify", "1"},
+		args:   []string{"-Verify", "1"},
+		cipher: "ECDHE-ECDSA-AES128-SHA",
 		config: config,
 		cert:   testECDSACertificate,
 		key:    testECDSAPrivateKey,
@@ -851,8 +877,9 @@ func TestHandshakeClientCertRSAPSS(t *testing.T) {
 
 	test := &clientTest{
 		name: "ClientCert-RSA-RSAPSS",
-		args: []string{"-cipher", "AES128", "-Verify", "1", "-client_sigalgs",
+		args: []string{"-Verify", "1", "-client_sigalgs",
 			"rsa_pss_rsae_sha256", "-sigalgs", "rsa_pss_rsae_sha256"},
+		cipher: "AES128",
 		config: config,
 		cert:   testRSAPSSCertificate,
 		key:    testRSAPrivateKey,
@@ -868,8 +895,9 @@ func TestHandshakeClientCertRSAPKCS1v15(t *testing.T) {
 
 	test := &clientTest{
 		name: "ClientCert-RSA-RSAPKCS1v15",
-		args: []string{"-cipher", "AES128", "-Verify", "1", "-client_sigalgs",
+		args: []string{"-Verify", "1", "-client_sigalgs",
 			"rsa_pkcs1_sha256", "-sigalgs", "rsa_pkcs1_sha256"},
+		cipher: "AES128",
 		config: config,
 	}
 
