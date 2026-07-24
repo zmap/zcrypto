@@ -8,6 +8,7 @@ import (
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/mlkem"
+	"crypto/mlkem/mlkemtest"
 	"errors"
 	"hash"
 	"io"
@@ -530,6 +531,35 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 	}
 }
 
+func mlkemEncapsulate768(rand io.Reader, ek *mlkem.EncapsulationKey768) ([]byte, []byte, error) {
+	randData := make([]byte, 32)
+	if _, err := io.ReadFull(rand, randData); err != nil {
+		return nil, nil, err
+	}
+	kemSS, ct, err := mlkemtest.Encapsulate768(ek, randData)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(ct) != mlkem768CTSize || len(kemSS) != mlkemSSSize {
+		return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+	}
+	return kemSS, ct, nil
+}
+func mlkemEncapsulate1024(rand io.Reader, ek *mlkem.EncapsulationKey1024) ([]byte, []byte, error) {
+	randData := make([]byte, 32)
+	if _, err := io.ReadFull(rand, randData); err != nil {
+		return nil, nil, err
+	}
+	kemSS, ct, err := mlkemtest.Encapsulate1024(ek, randData)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(ct) != mlkem1024CTSize || len(kemSS) != mlkemSSSize {
+		return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+	}
+	return kemSS, ct, nil
+}
+
 func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientShare []byte) ([]byte, []byte, error) {
 	switch group {
 	case X25519MLKEM768:
@@ -544,9 +574,9 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 			return nil, nil, err
 		}
 
-		kemSS, ct := ek.Encapsulate()
-		if len(ct) != mlkem768CTSize || len(kemSS) != mlkemSSSize {
-			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		kemSS, ct, err := mlkemEncapsulate768(rand, ek)
+		if err != nil {
+			return nil, nil, err
 		}
 
 		sp, err := generateECDHEParameters(rand, X25519)
@@ -577,9 +607,9 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 			return nil, nil, err
 		}
 
-		kemSS, ct := ek.Encapsulate()
-		if len(ct) != mlkem768CTSize || len(kemSS) != mlkemSSSize {
-			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		kemSS, ct, err := mlkemEncapsulate768(rand, ek)
+		if err != nil {
+			return nil, nil, err
 		}
 
 		sp, err := generateECDHEParameters(rand, CurveP256)
@@ -610,9 +640,9 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 			return nil, nil, err
 		}
 
-		kemSS, ct := ek.Encapsulate()
-		if len(ct) != mlkem1024CTSize || len(kemSS) != mlkemSSSize {
-			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		kemSS, ct, err := mlkemEncapsulate1024(rand, ek)
+		if err != nil {
+			return nil, nil, err
 		}
 
 		sp, err := generateECDHEParameters(rand, CurveP384)
@@ -643,9 +673,9 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 			return nil, nil, err
 		}
 
-		kemSS, ct := ek.Encapsulate()
-		if len(ct) != mlkem1024CTSize || len(kemSS) != mlkemSSSize {
-			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		kemSS, ct, err := mlkemEncapsulate1024(rand, ek)
+		if err != nil {
+			return nil, nil, err
 		}
 
 		// ServerHello.share = CT(1568)
