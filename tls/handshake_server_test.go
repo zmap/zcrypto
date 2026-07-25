@@ -529,7 +529,10 @@ type serverTest struct {
 	name string
 	// command, if not empty, contains a series of arguments for the
 	// command to run for the reference server.
-	command []string
+	args []string
+	// cipher, if not empty, is the name of the cipher suite that will be used
+	// for this test. Equivalent to adding "-cipher <cipher>@SECLEVEL=0" to args.
+	cipher string
 	// expectedPeerCerts contains a list of PEM blocks of expected
 	// certificates from the client.
 	expectedPeerCerts []string
@@ -547,7 +550,14 @@ type serverTest struct {
 	wait bool
 }
 
-var defaultClientCommand = []string{"openssl", "s_client", "-no_ticket"}
+// note that some of our tests specifically test resumption, so we can't
+// put -no_ticket here
+var clientCommand = []string{
+	"openssl", "s_client",
+	// required for legacy ciphers like RC4-SHA
+	"-provider", "legacy",
+	"-provider", "default",
+}
 
 // connFromCommand starts opens a listening socket and starts the reference
 // client to connect to it. It returns a recordingConn that wraps the resulting
@@ -565,12 +575,20 @@ func (test *serverTest) connFromCommand() (conn *recordingConn, child *exec.Cmd,
 	port := l.Addr().(*net.TCPAddr).Port
 
 	var command []string
-	command = append(command, test.command...)
-	if len(command) == 0 {
-		command = defaultClientCommand
+	command = append(command, clientCommand...)
+	command = append(command, test.args...)
+
+	cipher := test.cipher
+	if cipher == "" {
+		cipher = "DEFAULT"
 	}
+	// setting the SECLEVEL is necessary to make openssl not error when
+	// using insecure ciphers.
+	command = append(command, "-cipher", cipher+"@SECLEVEL=0")
+
 	command = append(command, "-connect")
 	command = append(command, fmt.Sprintf("127.0.0.1:%d", port))
+
 	cmd := exec.Command(command[0], command[1:]...)
 	cmd.Stdin = nil
 	var output bytes.Buffer
@@ -742,11 +760,7 @@ func runServerTestForVersion(t *testing.T, template *serverTest, version, option
 		test.config = template.config.Clone()
 	}
 	test.name = version + "-" + test.name
-	if len(test.command) == 0 {
-		test.command = defaultClientCommand
-	}
-	test.command = append([]string(nil), test.command...)
-	test.command = append(test.command, option)
+	test.args = append(test.args, option)
 
 	runTestAndUpdateIfNeeded(t, version, test.run, test.wait)
 }
@@ -778,8 +792,9 @@ func runServerTestTLS13(t *testing.T, template *serverTest) {
 
 func TestHandshakeServerRSARC4(t *testing.T) {
 	test := &serverTest{
-		name:    "RSA-RC4",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "RC4-SHA"},
+		name:   "RSA-RC4",
+		args:   []string{"-no_ticket"},
+		cipher: "RC4-SHA",
 	}
 	runServerTestTLS10(t, test)
 	runServerTestTLS11(t, test)
@@ -788,8 +803,9 @@ func TestHandshakeServerRSARC4(t *testing.T) {
 
 func TestHandshakeServerRSA3DES(t *testing.T) {
 	test := &serverTest{
-		name:    "RSA-3DES",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "DES-CBC3-SHA"},
+		name:   "RSA-3DES",
+		args:   []string{"-no_ticket"},
+		cipher: "DES-CBC3-SHA",
 	}
 	runServerTestTLS10(t, test)
 	runServerTestTLS12(t, test)
@@ -797,8 +813,9 @@ func TestHandshakeServerRSA3DES(t *testing.T) {
 
 func TestHandshakeServerRSAAES(t *testing.T) {
 	test := &serverTest{
-		name:    "RSA-AES",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA"},
+		name:   "RSA-AES",
+		args:   []string{"-no_ticket"},
+		cipher: "AES128-SHA",
 	}
 	runServerTestTLS10(t, test)
 	runServerTestTLS12(t, test)
@@ -806,38 +823,40 @@ func TestHandshakeServerRSAAES(t *testing.T) {
 
 func TestHandshakeServerAESGCM(t *testing.T) {
 	test := &serverTest{
-		name:    "RSA-AES-GCM",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "ECDHE-RSA-AES128-GCM-SHA256"},
+		name:   "RSA-AES-GCM",
+		args:   []string{"-no_ticket"},
+		cipher: "ECDHE-RSA-AES128-GCM-SHA256",
 	}
 	runServerTestTLS12(t, test)
 }
 
 func TestHandshakeServerAES256GCMSHA384(t *testing.T) {
 	test := &serverTest{
-		name:    "RSA-AES256-GCM-SHA384",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "ECDHE-RSA-AES256-GCM-SHA384"},
+		name:   "RSA-AES256-GCM-SHA384",
+		args:   []string{"-no_ticket"},
+		cipher: "ECDHE-RSA-AES256-GCM-SHA384",
 	}
 	runServerTestTLS12(t, test)
 }
 
 func TestHandshakeServerAES128SHA256(t *testing.T) {
 	test := &serverTest{
-		name:    "AES128-SHA256",
-		command: []string{"openssl", "s_client", "-no_ticket", "-ciphersuites", "TLS_AES_128_GCM_SHA256"},
+		name: "AES128-SHA256",
+		args: []string{"-no_ticket", "-ciphersuites", "TLS_AES_128_GCM_SHA256"},
 	}
 	runServerTestTLS13(t, test)
 }
 func TestHandshakeServerAES256SHA384(t *testing.T) {
 	test := &serverTest{
-		name:    "AES256-SHA384",
-		command: []string{"openssl", "s_client", "-no_ticket", "-ciphersuites", "TLS_AES_256_GCM_SHA384"},
+		name: "AES256-SHA384",
+		args: []string{"-no_ticket", "-ciphersuites", "TLS_AES_256_GCM_SHA384"},
 	}
 	runServerTestTLS13(t, test)
 }
 func TestHandshakeServerCHACHA20SHA256(t *testing.T) {
 	test := &serverTest{
-		name:    "CHACHA20-SHA256",
-		command: []string{"openssl", "s_client", "-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256"},
+		name: "CHACHA20-SHA256",
+		args: []string{"-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256"},
 	}
 	runServerTestTLS13(t, test)
 }
@@ -850,9 +869,10 @@ func TestHandshakeServerECDHEECDSAAES(t *testing.T) {
 	config.BuildNameToCertificate()
 
 	test := &serverTest{
-		name:    "ECDHE-ECDSA-AES",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "ECDHE-ECDSA-AES256-SHA", "-ciphersuites", "TLS_AES_128_GCM_SHA256"},
-		config:  config,
+		name:   "ECDHE-ECDSA-AES",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_AES_128_GCM_SHA256"},
+		cipher: "ECDHE-ECDSA-AES256-SHA",
+		config: config,
 	}
 	runServerTestTLS10(t, test)
 	runServerTestTLS12(t, test)
@@ -864,9 +884,10 @@ func TestHandshakeServerX25519(t *testing.T) {
 	config.CurvePreferences = []CurveID{X25519}
 
 	test := &serverTest{
-		name:    "X25519",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "ECDHE-RSA-CHACHA20-POLY1305", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "X25519"},
-		config:  config,
+		name:   "X25519",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "X25519"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
+		config: config,
 	}
 	runServerTestTLS12(t, test)
 	runServerTestTLS13(t, test)
@@ -877,9 +898,10 @@ func TestHandshakeServerP256(t *testing.T) {
 	config.CurvePreferences = []CurveID{CurveP256}
 
 	test := &serverTest{
-		name:    "P256",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "ECDHE-RSA-CHACHA20-POLY1305", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "P-256"},
-		config:  config,
+		name:   "P256",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "P-256"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
+		config: config,
 	}
 	runServerTestTLS12(t, test)
 	runServerTestTLS13(t, test)
@@ -890,9 +912,9 @@ func TestHandshakeServerHelloRetryRequest(t *testing.T) {
 	config.CurvePreferences = []CurveID{CurveP256}
 
 	test := &serverTest{
-		name:    "HelloRetryRequest",
-		command: []string{"openssl", "s_client", "-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "X25519:P-256"},
-		config:  config,
+		name:   "HelloRetryRequest",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "X25519:P-256"},
+		config: config,
 	}
 	runServerTestTLS13(t, test)
 }
@@ -905,8 +927,9 @@ func TestHandshakeServerALPN(t *testing.T) {
 		name: "ALPN",
 		// Note that this needs OpenSSL 1.0.2 because that is the first
 		// version that supports the -alpn flag.
-		command: []string{"openssl", "s_client", "-alpn", "proto2,proto1", "-cipher", "ECDHE-RSA-CHACHA20-POLY1305", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256"},
-		config:  config,
+		args:   []string{"-alpn", "proto2,proto1", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
+		config: config,
 		validate: func(state ConnectionState) error {
 			// The server's preferences should override the client.
 			if state.NegotiatedProtocol != "proto1" {
@@ -927,8 +950,9 @@ func TestHandshakeServerALPNNoMatch(t *testing.T) {
 		name: "ALPN-NoMatch",
 		// Note that this needs OpenSSL 1.0.2 because that is the first
 		// version that supports the -alpn flag.
-		command: []string{"openssl", "s_client", "-alpn", "proto2,proto1", "-cipher", "ECDHE-RSA-CHACHA20-POLY1305", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256"},
-		config:  config,
+		args:   []string{"-alpn", "proto2,proto1", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
+		config: config,
 		validate: func(state ConnectionState) error {
 			// Rather than reject the connection, Go doesn't select
 			// a protocol when there is no overlap.
@@ -947,8 +971,9 @@ func TestHandshakeServerALPNNoMatch(t *testing.T) {
 // verifies that the server correctly selects that certificate.
 func TestHandshakeServerSNI(t *testing.T) {
 	test := &serverTest{
-		name:    "SNI",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA", "-servername", "snitest.com"},
+		name:   "SNI",
+		args:   []string{"-no_ticket", "-servername", "snitest.com"},
+		cipher: "AES128-SHA",
 	}
 	runServerTestTLS12(t, test)
 }
@@ -966,9 +991,10 @@ func TestHandshakeServerSNIGetCertificate(t *testing.T) {
 		return cert, nil
 	}
 	test := &serverTest{
-		name:    "SNI-GetCertificate",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA", "-servername", "snitest.com"},
-		config:  config,
+		name:   "SNI-GetCertificate",
+		args:   []string{"-no_ticket", "-servername", "snitest.com"},
+		cipher: "AES128-SHA",
+		config: config,
 	}
 	runServerTestTLS12(t, test)
 }
@@ -984,9 +1010,10 @@ func TestHandshakeServerSNIGetCertificateNotFound(t *testing.T) {
 		return nil, nil
 	}
 	test := &serverTest{
-		name:    "SNI-GetCertificateNotFound",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA", "-servername", "snitest.com"},
-		config:  config,
+		name:   "SNI-GetCertificateNotFound",
+		args:   []string{"-no_ticket", "-servername", "snitest.com"},
+		cipher: "AES128-SHA",
+		config: config,
 	}
 	runServerTestTLS12(t, test)
 }
@@ -1079,13 +1106,15 @@ func TestServerResumption(t *testing.T) {
 	defer os.Remove(sessionFilePath)
 
 	testIssue := &serverTest{
-		name:    "IssueTicket",
-		command: []string{"openssl", "s_client", "-cipher", "AES128-SHA", "-ciphersuites", "TLS_AES_128_GCM_SHA256", "-sess_out", sessionFilePath},
-		wait:    true,
+		name:   "IssueTicket",
+		args:   []string{"-ciphersuites", "TLS_AES_128_GCM_SHA256", "-sess_out", sessionFilePath},
+		cipher: "AES128-SHA",
+		wait:   true,
 	}
 	testResume := &serverTest{
-		name:    "Resume",
-		command: []string{"openssl", "s_client", "-cipher", "AES128-SHA", "-ciphersuites", "TLS_AES_128_GCM_SHA256", "-sess_in", sessionFilePath},
+		name:   "Resume",
+		args:   []string{"-ciphersuites", "TLS_AES_128_GCM_SHA256", "-sess_in", sessionFilePath},
+		cipher: "AES128-SHA",
 		validate: func(state ConnectionState) error {
 			if !state.DidResume {
 				return errors.New("did not resume")
@@ -1105,8 +1134,9 @@ func TestServerResumption(t *testing.T) {
 
 	testResumeHRR := &serverTest{
 		name: "Resume-HelloRetryRequest",
-		command: []string{"openssl", "s_client", "-curves", "X25519:P-256", "-cipher", "AES128-SHA", "-ciphersuites",
+		args: []string{"-curves", "X25519:P-256", "-ciphersuites",
 			"TLS_AES_128_GCM_SHA256", "-sess_in", sessionFilePath},
+		cipher: "AES128-SHA",
 		config: config,
 		validate: func(state ConnectionState) error {
 			if !state.DidResume {
@@ -1126,15 +1156,17 @@ func TestServerResumptionDisabled(t *testing.T) {
 	config := testConfig.Clone()
 
 	testIssue := &serverTest{
-		name:    "IssueTicketPreDisable",
-		command: []string{"openssl", "s_client", "-cipher", "AES128-SHA", "-ciphersuites", "TLS_AES_128_GCM_SHA256", "-sess_out", sessionFilePath},
-		config:  config,
-		wait:    true,
+		name:   "IssueTicketPreDisable",
+		args:   []string{"-ciphersuites", "TLS_AES_128_GCM_SHA256", "-sess_out", sessionFilePath},
+		cipher: "AES128-SHA",
+		config: config,
+		wait:   true,
 	}
 	testResume := &serverTest{
-		name:    "ResumeDisabled",
-		command: []string{"openssl", "s_client", "-cipher", "AES128-SHA", "-ciphersuites", "TLS_AES_128_GCM_SHA256", "-sess_in", sessionFilePath},
-		config:  config,
+		name:   "ResumeDisabled",
+		args:   []string{"-ciphersuites", "TLS_AES_128_GCM_SHA256", "-sess_in", sessionFilePath},
+		cipher: "AES128-SHA",
+		config: config,
 		validate: func(state ConnectionState) error {
 			if state.DidResume {
 				return errors.New("resumed with SessionTicketsDisabled")
@@ -1162,7 +1194,8 @@ func TestFallbackSCSV(t *testing.T) {
 		name:   "FallbackSCSV",
 		config: &serverConfig,
 		// OpenSSL 1.0.1j is needed for the -fallback_scsv option.
-		command:                       []string{"openssl", "s_client", "-fallback_scsv"},
+		args: []string{"-fallback_scsv"},
+
 		expectHandshakeErrorIncluding: "inappropriate protocol fallback",
 	}
 	runServerTestTLS11(t, test)
@@ -1170,9 +1203,10 @@ func TestFallbackSCSV(t *testing.T) {
 
 func TestHandshakeServerExportKeyingMaterial(t *testing.T) {
 	test := &serverTest{
-		name:    "ExportKeyingMaterial",
-		command: []string{"openssl", "s_client", "-cipher", "ECDHE-RSA-AES256-SHA", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256"},
-		config:  testConfig.Clone(),
+		name:   "ExportKeyingMaterial",
+		args:   []string{"-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256"},
+		cipher: "ECDHE-RSA-AES256-SHA",
+		config: testConfig.Clone(),
 		validate: func(state ConnectionState) error {
 			if km, err := state.ExportKeyingMaterial("test", nil, 42); err != nil {
 				return fmt.Errorf("ExportKeyingMaterial failed: %v", err)
@@ -1189,8 +1223,9 @@ func TestHandshakeServerExportKeyingMaterial(t *testing.T) {
 
 func TestHandshakeServerRSAPKCS1v15(t *testing.T) {
 	test := &serverTest{
-		name:    "RSA-RSAPKCS1v15",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "ECDHE-RSA-CHACHA20-POLY1305", "-sigalgs", "rsa_pkcs1_sha256"},
+		name:   "RSA-RSAPKCS1v15",
+		args:   []string{"-no_ticket", "-sigalgs", "rsa_pkcs1_sha256"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
 	}
 	runServerTestTLS12(t, test)
 }
@@ -1200,15 +1235,17 @@ func TestHandshakeServerRSAPSS(t *testing.T) {
 	// verify the server implementation will disregard the client preference in
 	// that case. See Issue 29793.
 	test := &serverTest{
-		name:    "RSA-RSAPSS",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "ECDHE-RSA-CHACHA20-POLY1305", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-sigalgs", "rsa_pss_rsae_sha512:rsa_pss_rsae_sha256"},
+		name:   "RSA-RSAPSS",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-sigalgs", "rsa_pss_rsae_sha512:rsa_pss_rsae_sha256"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
 	}
 	runServerTestTLS12(t, test)
 	runServerTestTLS13(t, test)
 
 	test = &serverTest{
-		name:                          "RSA-RSAPSS-TooSmall",
-		command:                       []string{"openssl", "s_client", "-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-sigalgs", "rsa_pss_rsae_sha512"},
+		name: "RSA-RSAPSS-TooSmall",
+		args: []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-sigalgs", "rsa_pss_rsae_sha512"},
+
 		expectHandshakeErrorIncluding: "peer doesn't support any of the certificate's signature algorithms",
 	}
 	runServerTestTLS13(t, test)
@@ -1222,9 +1259,10 @@ func TestHandshakeServerEd25519(t *testing.T) {
 	config.BuildNameToCertificate()
 
 	test := &serverTest{
-		name:    "Ed25519",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "ECDHE-ECDSA-CHACHA20-POLY1305", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256"},
-		config:  config,
+		name:   "Ed25519",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256"},
+		cipher: "ECDHE-ECDSA-CHACHA20-POLY1305",
+		config: config,
 	}
 	runServerTestTLS12(t, test)
 	runServerTestTLS13(t, test)
@@ -1362,17 +1400,19 @@ func TestClientAuth(t *testing.T) {
 	config.ClientAuth = RequestClientCert
 
 	test := &serverTest{
-		name:    "ClientAuthRequestedNotGiven",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA", "-ciphersuites", "TLS_AES_128_GCM_SHA256"},
-		config:  config,
+		name:   "ClientAuthRequestedNotGiven",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_AES_128_GCM_SHA256"},
+		cipher: "AES128-SHA",
+		config: config,
 	}
 	runServerTestTLS12(t, test)
 	runServerTestTLS13(t, test)
 
 	test = &serverTest{
 		name: "ClientAuthRequestedAndGiven",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA", "-ciphersuites", "TLS_AES_128_GCM_SHA256",
+		args: []string{"-no_ticket", "-ciphersuites", "TLS_AES_128_GCM_SHA256",
 			"-cert", certPath, "-key", keyPath, "-client_sigalgs", "rsa_pss_rsae_sha256"},
+		cipher:            "AES128-SHA",
 		config:            config,
 		expectedPeerCerts: []string{clientCertificatePEM},
 	}
@@ -1381,8 +1421,9 @@ func TestClientAuth(t *testing.T) {
 
 	test = &serverTest{
 		name: "ClientAuthRequestedAndECDSAGiven",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA", "-ciphersuites", "TLS_AES_128_GCM_SHA256",
+		args: []string{"-no_ticket", "-ciphersuites", "TLS_AES_128_GCM_SHA256",
 			"-cert", ecdsaCertPath, "-key", ecdsaKeyPath},
+		cipher:            "AES128-SHA",
 		config:            config,
 		expectedPeerCerts: []string{clientECDSACertificatePEM},
 	}
@@ -1391,8 +1432,9 @@ func TestClientAuth(t *testing.T) {
 
 	test = &serverTest{
 		name: "ClientAuthRequestedAndEd25519Given",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA", "-ciphersuites", "TLS_AES_128_GCM_SHA256",
+		args: []string{"-no_ticket", "-ciphersuites", "TLS_AES_128_GCM_SHA256",
 			"-cert", ed25519CertPath, "-key", ed25519KeyPath},
+		cipher:            "AES128-SHA",
 		config:            config,
 		expectedPeerCerts: []string{clientEd25519CertificatePEM},
 	}
@@ -1401,8 +1443,9 @@ func TestClientAuth(t *testing.T) {
 
 	test = &serverTest{
 		name: "ClientAuthRequestedAndPKCS1v15Given",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA",
-			"-cert", certPath, "-key", keyPath, "-client_sigalgs", "rsa_pkcs1_sha256"},
+		args: []string{"-no_ticket", "-cert", certPath, "-key",
+			keyPath, "-client_sigalgs", "rsa_pkcs1_sha256"},
+		cipher:            "AES128-SHA",
 		config:            config,
 		expectedPeerCerts: []string{clientCertificatePEM},
 	}
