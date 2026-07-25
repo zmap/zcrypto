@@ -685,6 +685,63 @@ func TestHandshakeClientP256(t *testing.T) {
 	runClientTestTLS13(t, test)
 }
 
+func TestHandshakeClientX25519MLKEM768(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{X25519MLKEM768}
+
+	test := &clientTest{
+		name:   "X25519-MLKEM768",
+		args:   []string{"-curves", "X25519MLKEM768"},
+		cipher: "ECDHE-RSA-AES128-GCM-SHA256",
+		config: config,
+	}
+
+	// post-quantum ciphers are only supported on TLS 1.3
+	runClientTestTLS13(t, test)
+}
+
+func TestHandshakeClientSecP256r1MLKEM768(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{SecP256r1MLKEM768}
+
+	test := &clientTest{
+		name:   "SecP256r1-MLKEM768",
+		args:   []string{"-curves", "SecP256r1MLKEM768"},
+		cipher: "ECDHE-RSA-AES128-GCM-SHA256",
+		config: config,
+	}
+
+	runClientTestTLS13(t, test)
+}
+
+func TestHandshakeClientSecP384r1MLKEM1024(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{SecP384r1MLKEM1024}
+
+	test := &clientTest{
+		name:   "SecP384r1-MLKEM1024",
+		args:   []string{"-curves", "SecP384r1MLKEM1024"},
+		cipher: "ECDHE-RSA-AES128-GCM-SHA256",
+		config: config,
+	}
+
+	runClientTestTLS13(t, test)
+}
+
+func TestHandshakeClientMLKEM1024(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{MLKEM1024}
+
+	test := &clientTest{
+		name:   "MLKEM1024",
+		args:   []string{"-curves", "MLKEM1024"},
+		cipher: "ECDHE-RSA-AES128-GCM-SHA256",
+		config: config,
+	}
+
+	runClientTestTLS13(t, test)
+}
+
 func TestHandshakeClientHelloRetryRequest(t *testing.T) {
 	config := testConfig.Clone()
 	config.CurvePreferences = []CurveID{X25519, CurveP256}

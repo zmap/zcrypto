@@ -392,7 +392,7 @@ type ecdheKeyAgreement struct {
 
 func isTLS13OnlyKeyExchange(curveID CurveID) bool {
 	switch curveID {
-	case X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024:
+	case MLKEM1024, X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024:
 		return true
 	default:
 		return false

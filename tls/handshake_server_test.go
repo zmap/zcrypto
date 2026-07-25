@@ -907,6 +907,59 @@ func TestHandshakeServerP256(t *testing.T) {
 	runServerTestTLS13(t, test)
 }
 
+func TestHandshakeServerX25519MLKEM768(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{X25519MLKEM768}
+
+	test := &serverTest{
+		name:   "X25519-MLKEM768",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "X25519MLKEM768"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
+		config: config,
+	}
+	// post-quantum ciphers are only supported on TLS 1.3
+	runServerTestTLS13(t, test)
+}
+
+func TestHandshakeServerSecP256r1MLKEM768(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{SecP256r1MLKEM768}
+
+	test := &serverTest{
+		name:   "SecP256r1-MLKEM768",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "SecP256r1MLKEM768"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
+		config: config,
+	}
+	runServerTestTLS13(t, test)
+}
+
+func TestHandshakeServerSecP384r1MLKEM1024(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{SecP384r1MLKEM1024}
+
+	test := &serverTest{
+		name:   "SecP384r1-MLKEM1024",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "SecP384r1MLKEM1024"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
+		config: config,
+	}
+	runServerTestTLS13(t, test)
+}
+
+func TestHandshakeServerMLKEM1024(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{MLKEM1024}
+
+	test := &serverTest{
+		name:   "MLKEM1024",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "MLKEM1024"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
+		config: config,
+	}
+	runServerTestTLS13(t, test)
+}
+
 func TestHandshakeServerHelloRetryRequest(t *testing.T) {
 	config := testConfig.Clone()
 	config.CurvePreferences = []CurveID{CurveP256}
