@@ -16,6 +16,7 @@ import (
 	"hash"
 	"io"
 	"net"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -328,11 +329,17 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, er
 		shareGroups := []CurveID{prefs[0]}
 		switch prefs[0] {
 		case X25519MLKEM768:
-			shareGroups = append(shareGroups, X25519)
+			if slices.Contains(prefs, X25519) {
+				shareGroups = append(shareGroups, X25519)
+			}
 		case SecP256r1MLKEM768:
-			shareGroups = append(shareGroups, CurveP256)
+			if slices.Contains(prefs, CurveP256) {
+				shareGroups = append(shareGroups, CurveP256)
+			}
 		case SecP384r1MLKEM1024:
-			shareGroups = append(shareGroups, CurveP384)
+			if slices.Contains(prefs, CurveP384) {
+				shareGroups = append(shareGroups, CurveP384)
+			}
 		}
 
 		hello.keyShares = make([]keyShare, 0, len(shareGroups))
