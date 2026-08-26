@@ -1206,16 +1206,25 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 		}
 		return
 	case *mldsa44.PublicKey:
+		if algo != MLDSA44Sig {
+			return ErrUnsupportedAlgorithm
+		}
 		if !mldsa44.Verify(pub, digest, nil, signature) {
 			return errors.New("x509: MLDSA44 verification failure")
 		}
 		return
 	case *mldsa65.PublicKey:
+		if algo != MLDSA65Sig {
+			return ErrUnsupportedAlgorithm
+		}
 		if !mldsa65.Verify(pub, digest, nil, signature) {
 			return errors.New("x509: MLDSA65 verification failure")
 		}
 		return
 	case *mldsa87.PublicKey:
+		if algo != MLDSA87Sig {
+			return ErrUnsupportedAlgorithm
+		}
 		if !mldsa87.Verify(pub, digest, nil, signature) {
 			return errors.New("x509: MLDSA87 verification failure")
 		}
