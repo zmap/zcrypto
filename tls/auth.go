@@ -265,10 +265,19 @@ func signatureSchemesForCertificate(version uint16, cert *Certificate) []Signatu
 	case ed25519.PublicKey:
 		sigAlgs = []SignatureScheme{Ed25519}
 	case *mldsa44.PublicKey:
+		if version != VersionTLS13 {
+			return nil
+		}
 		sigAlgs = []SignatureScheme{MLDSA44Sig}
 	case *mldsa65.PublicKey:
+		if version != VersionTLS13 {
+			return nil
+		}
 		sigAlgs = []SignatureScheme{MLDSA65Sig}
 	case *mldsa87.PublicKey:
+		if version != VersionTLS13 {
+			return nil
+		}
 		sigAlgs = []SignatureScheme{MLDSA87Sig}
 	default:
 		return nil
