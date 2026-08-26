@@ -119,6 +119,12 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 		// handle SignatureAndHashAlgorithm
 		var sigAndHash []uint8
 		sigAndHash, sig = sig[:2], sig[2:]
+
+		scheme := SignatureScheme(sigAndHash[0])<<8 | SignatureScheme(sigAndHash[1])
+		if isTLS13OnlySignatureAlgorithm(scheme) {
+			return nil, errMLDSAInTLS12
+		}
+
 		tls12HashId = sigAndHash[0]
 		ka.sh.Hash = tls12HashId
 		ka.sh.Signature = sigAndHash[1]
@@ -392,12 +398,23 @@ type ecdheKeyAgreement struct {
 
 func isTLS13OnlyKeyExchange(curveID CurveID) bool {
 	switch curveID {
-	case X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024:
+	case X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024, MLKEM512, MLKEM768, MLKEM1024:
 		return true
 	default:
 		return false
 	}
 }
+
+func isTLS13OnlySignatureAlgorithm(s SignatureScheme) bool {
+	switch s {
+	case MLDSA44Sig, MLDSA65Sig, MLDSA87Sig:
+		return true
+	default:
+		return false
+	}
+}
+
+var errMLDSAInTLS12 = errors.New("tls: ML-DSA signature schemes are not permitted in TLS 1.2")
 
 func (ka *ecdheKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {
 	var curveID CurveID
@@ -528,6 +545,10 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	}
 	curveID := CurveID(skx.key[1])<<8 | CurveID(skx.key[2])
 
+	if isTLS13OnlyKeyExchange(curveID) {
+		return errors.New("tls: server selected TLS 1.3-only key exchange group")
+	}
+
 	publicLen := int(skx.key[3])
 	if publicLen+4 > len(skx.key) {
 		return errServerKeyExchange
@@ -573,6 +594,11 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	if ka.version >= VersionTLS12 {
 		signatureAlgorithm := SignatureScheme(sig[0])<<8 | SignatureScheme(sig[1])
 		sig = sig[2:]
+
+		if isTLS13OnlySignatureAlgorithm(signatureAlgorithm) {
+			return errMLDSAInTLS12
+		}
+
 		if len(sig) < 2 {
 			return errServerKeyExchange
 		}
@@ -737,6 +763,11 @@ func (ka *dheKeyAgreement) processServerKeyExchange(config *Config, clientHello 
 	sig := k
 	serverDHParams := skx.key[:len(skx.key)-len(sig)]
 	skx.digest, ka.verifyError = ka.auth.verifyParameters(config, clientHello, serverHello, cert, serverDHParams, sig)
+
+	if errors.Is(ka.verifyError, errMLDSAInTLS12) {
+		return ka.verifyError
+	}
+
 	if config.InsecureSkipVerify {
 		return nil
 	}

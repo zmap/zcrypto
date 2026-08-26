@@ -22,6 +22,10 @@ import (
 
 	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
+
+	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
 )
 
 type clientHandshakeState struct {
@@ -253,6 +257,19 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, er
 		clientHelloVersion = VersionTLS12
 	}
 
+	supportsTLS13 := supportedVersions[0] == VersionTLS13
+	curvePreferences := config.curvePreferences()
+	if !supportsTLS13 {
+		filtered := make([]CurveID, 0, len(curvePreferences))
+		for _, curve := range curvePreferences {
+			if isTLS13OnlyKeyExchange(curve) {
+				continue
+			}
+			filtered = append(filtered, curve)
+		}
+		curvePreferences = filtered
+	}
+
 	hello := &clientHelloMsg{
 		vers:                         clientHelloVersion,
 		compressionMethods:           []uint8{compressionNone},
@@ -261,7 +278,7 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, er
 		ocspStapling:                 true,
 		scts:                         true,
 		serverName:                   hostnameInSNI(config.ServerName),
-		supportedCurves:              config.curvePreferences(),
+		supportedCurves:              curvePreferences,
 		supportedPoints:              []uint8{pointFormatUncompressed},
 		secureRenegotiationSupported: true,
 		alpnProtocols:                config.NextProtos,
@@ -306,18 +323,20 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, er
 		return nil, nil, errors.New("tls: short read from Rand: " + err.Error())
 	}
 
-	if hello.vers >= VersionTLS12 {
+	if supportsTLS13 {
+		hello.supportedSignatureAlgorithms = supportedSignatureAlgorithmsTLS13
+	} else if hello.vers >= VersionTLS12 {
 		hello.supportedSignatureAlgorithms = supportedSignatureAlgorithms
 	}
 
 	var keySharesByGroup map[CurveID]tls13KeyShare
-	if hello.supportedVersions[0] == VersionTLS13 {
+	if supportsTLS13 {
 		if !config.ForceSuites {
 			// If ForceSuites == true, we've already appended the user's ciphers above
 			hello.cipherSuites = append(hello.cipherSuites, config.cipherSuitesTLS13()...)
 		}
 
-		prefs := config.curvePreferences()
+		prefs := curvePreferences
 		if len(prefs) == 0 {
 			return nil, nil, errors.New("tls: no supported key exchange mechanisms (no curve preferences)")
 		}
@@ -867,7 +886,11 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		hs.finishedHash.Write(skx.marshal())
 		err = keyAgreement.processServerKeyExchange(c.config, hs.hello, hs.serverHello, c.peerCertificates[0], skx)
 		if err != nil {
-			c.sendAlert(AlertUnexpectedMessage)
+			if errors.Is(err, errMLDSAInTLS12) {
+				c.sendAlert(AlertIllegalParameter)
+			} else {
+				c.sendAlert(AlertUnexpectedMessage)
+			}
 			return err
 		}
 		c.handshakeLog.ServerKeyExchange = skx.MakeLog(keyAgreement)
@@ -1207,7 +1230,7 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 	}
 
 	switch certs[0].PublicKey.(type) {
-	case *rsa.PublicKey, *x509.AugmentedECDSA, *ecdsa.PublicKey, ed25519.PublicKey:
+	case *rsa.PublicKey, *x509.AugmentedECDSA, *ecdsa.PublicKey, ed25519.PublicKey, *mldsa44.PublicKey, *mldsa65.PublicKey, *mldsa87.PublicKey:
 		break
 	default:
 		c.sendAlert(AlertUnsupportedCertificate)
