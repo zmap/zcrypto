@@ -757,8 +757,12 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 			return nil, nil, err
 		}
 
-		ss, ct := ek.Encapsulate()
-		if len(ct) != mlkem768CTSize || len(ss) != mlkemSSSize {
+		kemSS, ct, err := mlkemEncapsulate768(rand, ek)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if len(ct) != mlkem768CTSize || len(kemSS) != mlkemSSSize {
 			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
 		}
 
