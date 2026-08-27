@@ -766,7 +766,7 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
 		}
 
-		return ct, ss, nil
+		return ct, kemSS, nil
 
 	case MLKEM1024:
 		// ClientHello.share = EK(1568)
