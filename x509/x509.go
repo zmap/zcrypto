@@ -1503,18 +1503,30 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 		}
 		return p, nil
 	case MLDSA44:
+		paramsData := keyData.Algorithm.Parameters.FullBytes
+		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
+			return nil, errors.New("x509: invalid MLDSA44 public key parameters")
+		}
 		pub := new(mldsa44.PublicKey)
 		if err := pub.UnmarshalBinary(asn1Data); err != nil {
 			return nil, errors.New("x509: failed to unmarshal MLDSA44 public key")
 		}
 		return pub, nil
 	case MLDSA65:
+		paramsData := keyData.Algorithm.Parameters.FullBytes
+		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
+			return nil, errors.New("x509: invalid MLDSA44 public key parameters")
+		}
 		pub := new(mldsa65.PublicKey)
 		if err := pub.UnmarshalBinary(asn1Data); err != nil {
 			return nil, errors.New("x509: failed to unmarshal MLDSA65 public key")
 		}
 		return pub, nil
 	case MLDSA87:
+		paramsData := keyData.Algorithm.Parameters.FullBytes
+		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
+			return nil, errors.New("x509: invalid MLDSA44 public key parameters")
+		}
 		pub := new(mldsa87.PublicKey)
 		if err := pub.UnmarshalBinary(asn1Data); err != nil {
 			return nil, errors.New("x509: failed to unmarshal MLDSA87 public key")
