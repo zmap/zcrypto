@@ -564,7 +564,7 @@ func ParseResponseForCert(bytes []byte, cert, issuer *x509.Certificate) (*Respon
 	ret := &Response{
 		TBSResponseData:    basicResp.TBSResponseData.Raw,
 		Signature:          basicResp.Signature.RightAlign(),
-		SignatureAlgorithm: getSignatureAlgorithmFromOID(basicResp.SignatureAlgorithm.Algorithm),
+		SignatureAlgorithm: x509.GetSignatureAlgorithmFromAI(basicResp.SignatureAlgorithm),
 		Extensions:         singleResp.SingleExtensions,
 		SerialNumber:       singleResp.CertID.SerialNumber,
 		ProducedAt:         basicResp.TBSResponseData.ProducedAt,

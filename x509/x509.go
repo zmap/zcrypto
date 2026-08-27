@@ -497,6 +497,9 @@ func rsaPSSParameters(hashFunc crypto.Hash) asn1.RawValue {
 
 // GetSignatureAlgorithmFromAI converts asn1 AlgorithmIdentifier to SignatureAlgorithm int
 func GetSignatureAlgorithmFromAI(ai pkix.AlgorithmIdentifier) SignatureAlgorithm {
+	if !asn1.AllowPermissiveParsing && (ai.Algorithm.Equal(oidSignatureMLDSA44) || ai.Algorithm.Equal(oidSignatureMLDSA65) || ai.Algorithm.Equal(oidSignatureMLDSA87)) && len(ai.Parameters.FullBytes) != 0 {
+		return UnknownSignatureAlgorithm
+	}
 	if !ai.Algorithm.Equal(oidSignatureRSAPSS) {
 		for _, details := range signatureAlgorithmDetails {
 			if ai.Algorithm.Equal(details.oid) {
@@ -1515,7 +1518,7 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 	case MLDSA65:
 		paramsData := keyData.Algorithm.Parameters.FullBytes
 		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
-			return nil, errors.New("x509: invalid MLDSA44 public key parameters")
+			return nil, errors.New("x509: invalid MLDSA65 public key parameters")
 		}
 		pub := new(mldsa65.PublicKey)
 		if err := pub.UnmarshalBinary(asn1Data); err != nil {
@@ -1525,7 +1528,7 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 	case MLDSA87:
 		paramsData := keyData.Algorithm.Parameters.FullBytes
 		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
-			return nil, errors.New("x509: invalid MLDSA44 public key parameters")
+			return nil, errors.New("x509: invalid MLDSA65 public key parameters")
 		}
 		pub := new(mldsa87.PublicKey)
 		if err := pub.UnmarshalBinary(asn1Data); err != nil {
