@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zmap/zcrypto/internal/testenv"
 	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 )
@@ -472,7 +473,6 @@ func TestTLSUniqueMatches(t *testing.T) {
 	}
 }
 
-/*
 func TestVerifyHostname(t *testing.T) {
 	testenv.MustHaveExternalNetwork(t)
 
@@ -495,7 +495,6 @@ func TestVerifyHostname(t *testing.T) {
 		//t.Fatalf("verify www.google.com succeeded with InsecureSkipVerify=true")
 	}
 }
-*/
 
 func TestConnCloseBreakingWrite(t *testing.T) {
 	ln := newLocalListener(t)

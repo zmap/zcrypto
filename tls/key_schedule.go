@@ -8,6 +8,7 @@ import (
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/mlkem"
+	"crypto/mlkem/mlkemtest"
 	"errors"
 	"hash"
 	"io"
@@ -492,28 +493,53 @@ type tls13MLKEM1024 struct {
 
 func (k *tls13MLKEM1024) Group() CurveID { return MLKEM1024 }
 
+// ClientHello.key_share.data = EK(1568)
 func (k *tls13MLKEM1024) PublicKey() []byte {
 	return k.dk.EncapsulationKey().Bytes()
 }
 
+// ServerHello.key_share.data = CT(1568)
+// SharedKey = KEM_ss
 func (k *tls13MLKEM1024) SharedKey(serverShare []byte) ([]byte, error) {
+	ct := serverShare
+	if ct == nil {
+		return nil, errors.New("tls: invalid server share length for MLKEM1024")
+	}
 	if len(serverShare) != mlkem.CiphertextSize1024 {
 		return nil, errors.New("tls: invalid server share length for MLKEM1024")
 	}
-	ss, err := k.dk.Decapsulate(serverShare)
+	kemSS, err := k.dk.Decapsulate(ct)
 	if err != nil {
 		return nil, err
 	}
-	if len(ss) != mlkemSSSize {
+	if len(kemSS) != mlkemSSSize {
 		return nil, errors.New("tls: invalid ML-KEM shared secret size")
 	}
-	return ss, nil
+
+	return kemSS, nil
+}
+
+// mlkem.GenerateKey{768,1024} don't let us provide a custom source of
+// randomness, so we do this instead
+func NewDecapsulationKey768(rand io.Reader) (*mlkem.DecapsulationKey768, error) {
+	seed := make([]byte, 64)
+	if _, err := io.ReadFull(rand, seed); err != nil {
+		return nil, err
+	}
+	return mlkem.NewDecapsulationKey768(seed)
+}
+func NewDecapsulationKey1024(rand io.Reader) (*mlkem.DecapsulationKey1024, error) {
+	seed := make([]byte, 64)
+	if _, err := io.ReadFull(rand, seed); err != nil {
+		return nil, err
+	}
+	return mlkem.NewDecapsulationKey1024(seed)
 }
 
 func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error) {
 	switch group {
 	case X25519MLKEM768:
-		dk, err := mlkem.GenerateKey768()
+		dk, err := NewDecapsulationKey768(rand)
 		if err != nil {
 			return nil, err
 		}
@@ -523,7 +549,7 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 		}
 		return &tls13X25519MLKEM768KeyShare{dk: dk, xparams: xp}, nil
 	case SecP256r1MLKEM768:
-		dk, err := mlkem.GenerateKey768()
+		dk, err := NewDecapsulationKey768(rand)
 		if err != nil {
 			return nil, err
 		}
@@ -533,7 +559,7 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 		}
 		return &tls13SecP256r1MLKEM768{dk: dk, xparams: xp}, nil
 	case SecP384r1MLKEM1024:
-		dk, err := mlkem.GenerateKey1024()
+		dk, err := NewDecapsulationKey1024(rand)
 		if err != nil {
 			return nil, err
 		}
@@ -550,13 +576,13 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 		}
 		return &tls13MLKEM512{dk: dk}, nil
 	case MLKEM768:
-		dk, err := mlkem.GenerateKey768()
+		dk, err := NewDecapsulationKey768(rand)
 		if err != nil {
 			return nil, err
 		}
 		return &tls13MLKEM768{dk: dk}, nil
 	case MLKEM1024:
-		dk, err := mlkem.GenerateKey1024()
+		dk, err := NewDecapsulationKey1024(rand)
 		if err != nil {
 			return nil, err
 		}
@@ -573,6 +599,35 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 	}
 }
 
+func mlkemEncapsulate768(rand io.Reader, ek *mlkem.EncapsulationKey768) ([]byte, []byte, error) {
+	randData := make([]byte, 32)
+	if _, err := io.ReadFull(rand, randData); err != nil {
+		return nil, nil, err
+	}
+	kemSS, ct, err := mlkemtest.Encapsulate768(ek, randData)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(ct) != mlkem768CTSize || len(kemSS) != mlkemSSSize {
+		return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+	}
+	return kemSS, ct, nil
+}
+func mlkemEncapsulate1024(rand io.Reader, ek *mlkem.EncapsulationKey1024) ([]byte, []byte, error) {
+	randData := make([]byte, 32)
+	if _, err := io.ReadFull(rand, randData); err != nil {
+		return nil, nil, err
+	}
+	kemSS, ct, err := mlkemtest.Encapsulate1024(ek, randData)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(ct) != mlkem1024CTSize || len(kemSS) != mlkemSSSize {
+		return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+	}
+	return kemSS, ct, nil
+}
+
 func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientShare []byte) ([]byte, []byte, error) {
 	switch group {
 	case X25519MLKEM768:
@@ -587,9 +642,9 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 			return nil, nil, err
 		}
 
-		kemSS, ct := ek.Encapsulate()
-		if len(ct) != mlkem768CTSize || len(kemSS) != mlkemSSSize {
-			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		kemSS, ct, err := mlkemEncapsulate768(rand, ek)
+		if err != nil {
+			return nil, nil, err
 		}
 
 		sp, err := generateECDHEParameters(rand, X25519)
@@ -620,9 +675,9 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 			return nil, nil, err
 		}
 
-		kemSS, ct := ek.Encapsulate()
-		if len(ct) != mlkem768CTSize || len(kemSS) != mlkemSSSize {
-			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		kemSS, ct, err := mlkemEncapsulate768(rand, ek)
+		if err != nil {
+			return nil, nil, err
 		}
 
 		sp, err := generateECDHEParameters(rand, CurveP256)
@@ -653,9 +708,9 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 			return nil, nil, err
 		}
 
-		kemSS, ct := ek.Encapsulate()
-		if len(ct) != mlkem1024CTSize || len(kemSS) != mlkemSSSize {
-			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		kemSS, ct, err := mlkemEncapsulate1024(rand, ek)
+		if err != nil {
+			return nil, nil, err
 		}
 
 		sp, err := generateECDHEParameters(rand, CurveP384)
@@ -714,21 +769,31 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 		return ct, ss, nil
 
 	case MLKEM1024:
-		if len(clientShare) != mlkem.EncapsulationKeySize1024 {
+		// ClientHello.share = EK(1568)
+		ekBytes := clientShare
+		if len(ekBytes) != mlkem1024EKSize {
 			return nil, nil, errors.New("tls: invalid client share length for MLKEM1024")
 		}
 
-		ek, err := mlkem.NewEncapsulationKey1024(clientShare)
+		ek, err := mlkem.NewEncapsulationKey1024(ekBytes)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		ss, ct := ek.Encapsulate()
-		if len(ct) != mlkem1024CTSize || len(ss) != mlkemSSSize {
+		kemSS, ct, err := mlkemEncapsulate1024(rand, ek)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(ct) != mlkem1024CTSize || len(kemSS) != mlkemSSSize {
 			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
 		}
 
-		return ct, ss, nil
+		// ServerHello.share = CT(1568)
+		serverShare := ct
+
+		// shared = KEM_ss
+		shared := kemSS
+		return serverShare, shared, nil
 
 	default:
 		// Classical TLS 1.3 ECDHE (X25519, P-256, P-384, P-521, etc.)
