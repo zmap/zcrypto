@@ -501,14 +501,10 @@ func (k *tls13MLKEM1024) PublicKey() []byte {
 // ServerHello.key_share.data = CT(1568)
 // SharedKey = KEM_ss
 func (k *tls13MLKEM1024) SharedKey(serverShare []byte) ([]byte, error) {
-	ct := serverShare
-	if ct == nil {
-		return nil, errors.New("tls: invalid server share length for MLKEM1024")
-	}
 	if len(serverShare) != mlkem.CiphertextSize1024 {
 		return nil, errors.New("tls: invalid server share length for MLKEM1024")
 	}
-	kemSS, err := k.dk.Decapsulate(ct)
+	kemSS, err := k.dk.Decapsulate(serverShare)
 	if err != nil {
 		return nil, err
 	}

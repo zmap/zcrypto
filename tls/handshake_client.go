@@ -324,9 +324,7 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, er
 		return nil, nil, errors.New("tls: short read from Rand: " + err.Error())
 	}
 
-	if supportsTLS13 {
-		hello.supportedSignatureAlgorithms = supportedSignatureAlgorithmsTLS13
-	} else if hello.vers >= VersionTLS12 {
+	if hello.vers >= VersionTLS12 {
 		hello.supportedSignatureAlgorithms = supportedSignatureAlgorithms
 	}
 
