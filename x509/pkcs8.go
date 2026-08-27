@@ -120,6 +120,7 @@ func ParsePKCS8PrivateKey(der []byte) (key interface{}, err error) {
 // and ed25519.PrivateKey. Unsupported key types result in an error.
 //
 // # Per RFC 9881 specifications, MLDSA private keys should be encoded in seed format when possible
+// ML-DSA keys are unable to be encoded in seed format if they are an expanded private key
 //
 // This kind of key is commonly encoded in PEM blocks of type "PRIVATE KEY".
 func MarshalPKCS8PrivateKey(key interface{}) ([]byte, error) {
@@ -156,34 +157,67 @@ func MarshalPKCS8PrivateKey(key interface{}) ([]byte, error) {
 		}
 
 	case *mldsa44.PrivateKey:
+		var err error
 		privKey.Algo = pkix.AlgorithmIdentifier{
 			Algorithm: oidPublicKeyMLDSA44,
 		}
-		seedDER, err := asn1.MarshalWithParams(k.Seed(), "tag:0")
-		if err != nil {
-			return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+		if seed := k.Seed(); seed != nil {
+			privKey.PrivateKey, err = asn1.MarshalWithParams(seed, "tag:0")
+			if err != nil {
+				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+			}
+		} else {
+			expandedKey, err := k.MarshalBinary()
+			if err != nil {
+				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+			}
+			privKey.PrivateKey, err = asn1.Marshal(expandedKey)
+			if err != nil {
+				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+			}
 		}
-		privKey.PrivateKey = seedDER
 
 	case *mldsa65.PrivateKey:
+		var err error
 		privKey.Algo = pkix.AlgorithmIdentifier{
 			Algorithm: oidPublicKeyMLDSA65,
 		}
-		seedDER, err := asn1.MarshalWithParams(k.Seed(), "tag:0")
-		if err != nil {
-			return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+		if seed := k.Seed(); seed != nil {
+			privKey.PrivateKey, err = asn1.MarshalWithParams(seed, "tag:0")
+			if err != nil {
+				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+			}
+		} else {
+			expandedKey, err := k.MarshalBinary()
+			if err != nil {
+				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+			}
+			privKey.PrivateKey, err = asn1.Marshal(expandedKey)
+			if err != nil {
+				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+			}
 		}
-		privKey.PrivateKey = seedDER
 
 	case *mldsa87.PrivateKey:
+		var err error
 		privKey.Algo = pkix.AlgorithmIdentifier{
 			Algorithm: oidPublicKeyMLDSA87,
 		}
-		seedDER, err := asn1.MarshalWithParams(k.Seed(), "tag:0")
-		if err != nil {
-			return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+		if seed := k.Seed(); seed != nil {
+			privKey.PrivateKey, err = asn1.MarshalWithParams(seed, "tag:0")
+			if err != nil {
+				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+			}
+		} else {
+			expandedKey, err := k.MarshalBinary()
+			if err != nil {
+				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+			}
+			privKey.PrivateKey, err = asn1.Marshal(expandedKey)
+			if err != nil {
+				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+			}
 		}
-		privKey.PrivateKey = seedDER
 
 	case ed25519.PrivateKey:
 		privKey.Algo = pkix.AlgorithmIdentifier{
