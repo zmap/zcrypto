@@ -379,6 +379,9 @@ ParsedCertificate = SubRecordType({
         "rsa_public_key": RSAPublicKey(),
         "dsa_public_key": DSAPublicKey(),
         "ecdsa_public_key": ECDSAPublicKey(),
+        "mldsa44_public_key": MLDSAPublicKey(),
+        "mldsa65_public_key": MLDSAPublicKey(),
+        "mldsa87_public_key": MLDSAPublicKey(),
     }, category="Public Key", doc="The certificate's public key. Only one of the *_public_key fields will be set."),
     "extensions": SubRecord({
         "key_usage": SubRecord({

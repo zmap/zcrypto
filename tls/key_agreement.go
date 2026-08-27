@@ -120,11 +120,6 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 		var sigAndHash []uint8
 		sigAndHash, sig = sig[:2], sig[2:]
 
-		scheme := SignatureScheme(sigAndHash[0])<<8 | SignatureScheme(sigAndHash[1])
-		if isTLS13OnlySignatureAlgorithm(scheme) {
-			return nil, errMLDSAInTLS12
-		}
-
 		tls12HashId = sigAndHash[0]
 		ka.sh.Hash = tls12HashId
 		ka.sh.Signature = sigAndHash[1]
@@ -133,6 +128,10 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 		}
 		if len(sig) < 2 {
 			return nil, errServerKeyExchange
+		}
+		scheme := SignatureScheme(sigAndHash[0])<<8 | SignatureScheme(sigAndHash[1])
+		if isTLS13OnlySignatureAlgorithm(scheme) {
+			return nil, errMLDSAInTLS12
 		}
 
 		if !isSupportedSignatureAndHash(SigAndHash{ka.sigType, tls12HashId}, config.signatureAndHashesForClient()) {
@@ -763,10 +762,6 @@ func (ka *dheKeyAgreement) processServerKeyExchange(config *Config, clientHello 
 	sig := k
 	serverDHParams := skx.key[:len(skx.key)-len(sig)]
 	skx.digest, ka.verifyError = ka.auth.verifyParameters(config, clientHello, serverHello, cert, serverDHParams, sig)
-
-	if errors.Is(ka.verifyError, errMLDSAInTLS12) {
-		return ka.verifyError
-	}
 
 	if config.InsecureSkipVerify {
 		return nil
