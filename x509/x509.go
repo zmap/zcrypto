@@ -1528,7 +1528,7 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 	case MLDSA87:
 		paramsData := keyData.Algorithm.Parameters.FullBytes
 		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
-			return nil, errors.New("x509: invalid MLDSA65 public key parameters")
+			return nil, errors.New("x509: invalid MLDSA87 public key parameters")
 		}
 		pub := new(mldsa87.PublicKey)
 		if err := pub.UnmarshalBinary(asn1Data); err != nil {
