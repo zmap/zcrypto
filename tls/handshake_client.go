@@ -24,9 +24,7 @@ import (
 	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 
-	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
+	"crypto/mldsa"
 )
 
 type clientHandshakeState struct {
@@ -1231,7 +1229,7 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 	}
 
 	switch certs[0].PublicKey.(type) {
-	case *rsa.PublicKey, *x509.AugmentedECDSA, *ecdsa.PublicKey, ed25519.PublicKey, *mldsa44.PublicKey, *mldsa65.PublicKey, *mldsa87.PublicKey:
+	case *rsa.PublicKey, *x509.AugmentedECDSA, *ecdsa.PublicKey, ed25519.PublicKey, *mldsa.PublicKey:
 		break
 	default:
 		c.sendAlert(AlertUnsupportedCertificate)
