@@ -24,9 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/curve25519"
@@ -1471,17 +1468,17 @@ func TestCreateCertificateRequest(t *testing.T) {
 		t.Fatalf("Failed to generate ECDSA key: %s", err)
 	}
 
-	_, mldsa44Priv, err := mldsa44.GenerateKey(rand.Reader)
+	mldsa44Priv, err := mldsa.GenerateKey(mldsa.MLDSA44())
 	if err != nil {
 		t.Fatalf("Failed to generate MLDSA44 key: %s", err)
 	}
 
-	_, mldsa65Priv, err := mldsa65.GenerateKey(rand.Reader)
+	mldsa65Priv, err := mldsa.GenerateKey(mldsa.MLDSA65())
 	if err != nil {
 		t.Fatalf("Failed to generate MLDSA65 key: %s", err)
 	}
 
-	_, mldsa87Priv, err := mldsa87.GenerateKey(rand.Reader)
+	mldsa87Priv, err := mldsa.GenerateKey(mldsa.MLDSA87())
 	if err != nil {
 		t.Fatalf("Failed to generate MLDSA87 key: %s", err)
 	}

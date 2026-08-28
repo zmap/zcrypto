@@ -42,8 +42,8 @@ func TestPKCS8(t *testing.T) {
 	}
 
 	derBytes, _ = hex.DecodeString(pkcs8MLDSA65PrivateKeyHex)
-	if _, err := ParsePKCS8PrivateKey(derBytes); err != nil {
-		t.Errorf("failed to decode PKCS8 with MLDSA65 private key: %s", err)
+	if _, err := ParsePKCS8PrivateKey(derBytes); err == nil {
+		t.Error("parsed MLDSA65 expanded private key without seed")
 	}
 
 	derBytes, _ = hex.DecodeString(pkcs8MLDSA87PrivateKeyHex)

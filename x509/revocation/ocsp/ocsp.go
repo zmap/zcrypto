@@ -27,9 +27,7 @@ import (
 	"github.com/zmap/zcrypto/x509/pkix"
 	"github.com/zmap/zcrypto/x509/revocation/crl"
 
-	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
+	"crypto/mldsa"
 )
 
 var idPKIXOCSPBasic = asn1.ObjectIdentifier([]int{1, 3, 6, 1, 5, 5, 7, 48, 1, 1})
@@ -223,26 +221,23 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo x509.SignatureA
 		default:
 			err = errors.New("x509: unknown elliptic curve")
 		}
-	case *mldsa44.PublicKey:
-		_ = pub
-		pubType = x509.MLDSA44
+	case *mldsa.PublicKey:
 		hashFunc = 0
 		shouldHash = false
-		sigAlgo.Algorithm = oidSignatureMLDSA44
 
-	case *mldsa65.PublicKey:
-		_ = pub
-		pubType = x509.MLDSA65
-		hashFunc = 0
-		shouldHash = false
-		sigAlgo.Algorithm = oidSignatureMLDSA65
-
-	case *mldsa87.PublicKey:
-		_ = pub
-		pubType = x509.MLDSA87
-		hashFunc = 0
-		shouldHash = false
-		sigAlgo.Algorithm = oidSignatureMLDSA87
+		switch pub.Parameters() {
+		case mldsa.MLDSA44():
+			pubType = x509.MLDSA44
+			sigAlgo.Algorithm = oidSignatureMLDSA44
+		case mldsa.MLDSA65():
+			pubType = x509.MLDSA65
+			sigAlgo.Algorithm = oidSignatureMLDSA65
+		case mldsa.MLDSA87():
+			pubType = x509.MLDSA87
+			sigAlgo.Algorithm = oidSignatureMLDSA87
+		default:
+			err = errors.New("x509: unknown ML-DSA parameter set")
+		}
 
 	default:
 		err = errors.New("x509: only RSA, ECDSA, and MLDSA keys supported")
