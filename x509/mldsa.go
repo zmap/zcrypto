@@ -1,12 +1,10 @@
 package x509
 
 import (
-	"bytes"
 	"errors"
 
-	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
+	"crypto/mldsa"
+
 	"github.com/zmap/zcrypto/encoding/asn1"
 )
 
@@ -22,19 +20,14 @@ import (
 //	        expandedKey OCTET STRING (SIZE (2560))
 //	    }
 //	}
-func ParseMLDSA44PrivateKey(der []byte) (*mldsa44.PrivateKey, error) {
+func ParseMLDSA44PrivateKey(der []byte) (*mldsa.PrivateKey, error) {
 	var raw asn1.RawValue
 	if rest, err := asn1.Unmarshal(der, &raw); err == nil && len(rest) == 0 {
 		if raw.Class == asn1.ClassContextSpecific && raw.Tag == 0 && !raw.IsCompound {
-			if len(raw.Bytes) != mldsa44.SeedSize {
+			if len(raw.Bytes) != mldsa.PrivateKeySize {
 				return nil, errors.New("x509: invalid MLDSA44 seed length")
 			}
-
-			var seed [mldsa44.SeedSize]byte
-			copy(seed[:], raw.Bytes)
-
-			_, priv := mldsa44.NewKeyFromSeed(&seed)
-			return priv, nil
+			return mldsa.NewPrivateKey(mldsa.MLDSA44(), raw.Bytes)
 		}
 	}
 
@@ -43,55 +36,25 @@ func ParseMLDSA44PrivateKey(der []byte) (*mldsa44.PrivateKey, error) {
 		ExpandedKey []byte
 	}
 	if rest, err := asn1.Unmarshal(der, &both); err == nil && len(rest) == 0 {
-		if len(both.Seed) != mldsa44.SeedSize {
-			return nil, errors.New("x509: invalid MLDSA44 seed length in 'both' private key")
-		}
-		if len(both.ExpandedKey) != mldsa44.PrivateKeySize {
-			return nil, errors.New("x509: invalid MLDSA44 expanded private key length in 'both' private key")
-		}
-
-		var seed [mldsa44.SeedSize]byte
-		copy(seed[:], both.Seed)
-
-		_, priv := mldsa44.NewKeyFromSeed(&seed)
-		expandedFromSeed, err := priv.MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-		if !bytes.Equal(expandedFromSeed, both.ExpandedKey) {
-			return nil, errors.New("x509: inconsistent MLDSA44 seed and expanded private key in 'both'")
-		}
-
-		return priv, nil
+		return nil, errors.New("x509: MLDSA44 private keys with both seed and expanded key are not supported")
 	}
 
 	var expandedKey []byte
 	if rest, err := asn1.Unmarshal(der, &expandedKey); err == nil && len(rest) == 0 {
-		if len(expandedKey) != mldsa44.PrivateKeySize {
-			return nil, errors.New("x509: invalid MLDSA44 expanded private key length")
-		}
-		var priv mldsa44.PrivateKey
-		if err := priv.UnmarshalBinary(expandedKey); err != nil {
-			return nil, err
-		}
-		return &priv, nil
+		return nil, errors.New("x509: MLDSA44 expanded private keys without seed are not supported")
 	}
+
 	return nil, errors.New("x509: failed to parse MLDSA44 private key")
 }
 
-func ParseMLDSA65PrivateKey(der []byte) (*mldsa65.PrivateKey, error) {
+func ParseMLDSA65PrivateKey(der []byte) (*mldsa.PrivateKey, error) {
 	var raw asn1.RawValue
 	if rest, err := asn1.Unmarshal(der, &raw); err == nil && len(rest) == 0 {
 		if raw.Class == asn1.ClassContextSpecific && raw.Tag == 0 && !raw.IsCompound {
-			if len(raw.Bytes) != mldsa65.SeedSize {
+			if len(raw.Bytes) != mldsa.PrivateKeySize {
 				return nil, errors.New("x509: invalid MLDSA65 seed length")
 			}
-
-			var seed [mldsa65.SeedSize]byte
-			copy(seed[:], raw.Bytes)
-
-			_, priv := mldsa65.NewKeyFromSeed(&seed)
-			return priv, nil
+			return mldsa.NewPrivateKey(mldsa.MLDSA65(), raw.Bytes)
 		}
 	}
 
@@ -100,55 +63,25 @@ func ParseMLDSA65PrivateKey(der []byte) (*mldsa65.PrivateKey, error) {
 		ExpandedKey []byte
 	}
 	if rest, err := asn1.Unmarshal(der, &both); err == nil && len(rest) == 0 {
-		if len(both.Seed) != mldsa65.SeedSize {
-			return nil, errors.New("x509: invalid MLDSA65 seed length in 'both' private key")
-		}
-		if len(both.ExpandedKey) != mldsa65.PrivateKeySize {
-			return nil, errors.New("x509: invalid MLDSA65 expanded private key length in 'both' private key")
-		}
-
-		var seed [mldsa65.SeedSize]byte
-		copy(seed[:], both.Seed)
-
-		_, priv := mldsa65.NewKeyFromSeed(&seed)
-		expandedFromSeed, err := priv.MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-		if !bytes.Equal(expandedFromSeed, both.ExpandedKey) {
-			return nil, errors.New("x509: inconsistent MLDSA65 seed and expanded private key in 'both'")
-		}
-
-		return priv, nil
+		return nil, errors.New("x509: MLDSA65 private keys with both seed and expanded key are not supported")
 	}
 
 	var expandedKey []byte
 	if rest, err := asn1.Unmarshal(der, &expandedKey); err == nil && len(rest) == 0 {
-		if len(expandedKey) != mldsa65.PrivateKeySize {
-			return nil, errors.New("x509: invalid MLDSA65 expanded private key length")
-		}
-		var priv mldsa65.PrivateKey
-		if err := priv.UnmarshalBinary(expandedKey); err != nil {
-			return nil, err
-		}
-		return &priv, nil
+		return nil, errors.New("x509: MLDSA65 expanded private keys without seed are not supported")
 	}
+
 	return nil, errors.New("x509: failed to parse MLDSA65 private key")
 }
 
-func ParseMLDSA87PrivateKey(der []byte) (*mldsa87.PrivateKey, error) {
+func ParseMLDSA87PrivateKey(der []byte) (*mldsa.PrivateKey, error) {
 	var raw asn1.RawValue
 	if rest, err := asn1.Unmarshal(der, &raw); err == nil && len(rest) == 0 {
 		if raw.Class == asn1.ClassContextSpecific && raw.Tag == 0 && !raw.IsCompound {
-			if len(raw.Bytes) != mldsa87.SeedSize {
+			if len(raw.Bytes) != mldsa.PrivateKeySize {
 				return nil, errors.New("x509: invalid MLDSA87 seed length")
 			}
-
-			var seed [mldsa87.SeedSize]byte
-			copy(seed[:], raw.Bytes)
-
-			_, priv := mldsa87.NewKeyFromSeed(&seed)
-			return priv, nil
+			return mldsa.NewPrivateKey(mldsa.MLDSA87(), raw.Bytes)
 		}
 	}
 
@@ -157,38 +90,13 @@ func ParseMLDSA87PrivateKey(der []byte) (*mldsa87.PrivateKey, error) {
 		ExpandedKey []byte
 	}
 	if rest, err := asn1.Unmarshal(der, &both); err == nil && len(rest) == 0 {
-		if len(both.Seed) != mldsa87.SeedSize {
-			return nil, errors.New("x509: invalid MLDSA87 seed length in 'both' private key")
-		}
-		if len(both.ExpandedKey) != mldsa87.PrivateKeySize {
-			return nil, errors.New("x509: invalid MLDSA87 expanded private key length in 'both' private key")
-		}
-
-		var seed [mldsa87.SeedSize]byte
-		copy(seed[:], both.Seed)
-
-		_, priv := mldsa87.NewKeyFromSeed(&seed)
-		expandedFromSeed, err := priv.MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-		if !bytes.Equal(expandedFromSeed, both.ExpandedKey) {
-			return nil, errors.New("x509: inconsistent MLDSA87 seed and expanded private key in 'both'")
-		}
-
-		return priv, nil
+		return nil, errors.New("x509: MLDSA87 private keys with both seed and expanded key are not supported")
 	}
 
 	var expandedKey []byte
 	if rest, err := asn1.Unmarshal(der, &expandedKey); err == nil && len(rest) == 0 {
-		if len(expandedKey) != mldsa87.PrivateKeySize {
-			return nil, errors.New("x509: invalid MLDSA87 expanded private key length")
-		}
-		var priv mldsa87.PrivateKey
-		if err := priv.UnmarshalBinary(expandedKey); err != nil {
-			return nil, err
-		}
-		return &priv, nil
+		return nil, errors.New("x509: MLDSA87 expanded private keys without seed are not supported")
 	}
+
 	return nil, errors.New("x509: failed to parse MLDSA87 private key")
 }

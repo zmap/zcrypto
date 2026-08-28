@@ -14,9 +14,7 @@ import (
 	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509/pkix"
 
-	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
+	"crypto/mldsa"
 )
 
 // pkcs8 reflects an ASN.1, PKCS#8 PrivateKey. See
@@ -156,67 +154,28 @@ func MarshalPKCS8PrivateKey(key interface{}) ([]byte, error) {
 			return nil, errors.New("x509: failed to marshal EC private key while building PKCS#8: " + err.Error())
 		}
 
-	case *mldsa44.PrivateKey:
-		var err error
-		privKey.Algo = pkix.AlgorithmIdentifier{
-			Algorithm: oidPublicKeyMLDSA44,
-		}
-		if seed := k.Seed(); seed != nil {
-			privKey.PrivateKey, err = asn1.MarshalWithParams(seed, "tag:0")
-			if err != nil {
-				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+	case *mldsa.PrivateKey:
+		switch k.PublicKey().Parameters() {
+		case mldsa.MLDSA44():
+			privKey.Algo = pkix.AlgorithmIdentifier{
+				Algorithm: oidPublicKeyMLDSA44,
 			}
-		} else {
-			expandedKey, err := k.MarshalBinary()
-			if err != nil {
-				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+		case mldsa.MLDSA65():
+			privKey.Algo = pkix.AlgorithmIdentifier{
+				Algorithm: oidPublicKeyMLDSA65,
 			}
-			privKey.PrivateKey, err = asn1.Marshal(expandedKey)
-			if err != nil {
-				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
+		case mldsa.MLDSA87():
+			privKey.Algo = pkix.AlgorithmIdentifier{
+				Algorithm: oidPublicKeyMLDSA87,
 			}
+		default:
+			return nil, errors.New("x509: unknown ML-DSA parameter set while marshaling PKCS#8")
 		}
 
-	case *mldsa65.PrivateKey:
 		var err error
-		privKey.Algo = pkix.AlgorithmIdentifier{
-			Algorithm: oidPublicKeyMLDSA65,
-		}
-		if seed := k.Seed(); seed != nil {
-			privKey.PrivateKey, err = asn1.MarshalWithParams(seed, "tag:0")
-			if err != nil {
-				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
-			}
-		} else {
-			expandedKey, err := k.MarshalBinary()
-			if err != nil {
-				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
-			}
-			privKey.PrivateKey, err = asn1.Marshal(expandedKey)
-			if err != nil {
-				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
-			}
-		}
-
-	case *mldsa87.PrivateKey:
-		var err error
-		privKey.Algo = pkix.AlgorithmIdentifier{
-			Algorithm: oidPublicKeyMLDSA87,
-		}
-		if seed := k.Seed(); seed != nil {
-			privKey.PrivateKey, err = asn1.MarshalWithParams(seed, "tag:0")
-			if err != nil {
-				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
-			}
-		} else {
-			expandedKey, err := k.MarshalBinary()
-			if err != nil {
-				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
-			}
-			privKey.PrivateKey, err = asn1.Marshal(expandedKey)
-			if err != nil {
-				return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
-			}
+		privKey.PrivateKey, err = asn1.MarshalWithParams(k.Bytes(), "tag:0")
+		if err != nil {
+			return nil, fmt.Errorf("x509: failed to marshal private key: %v", err)
 		}
 
 	case ed25519.PrivateKey:

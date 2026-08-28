@@ -28,9 +28,7 @@ import (
 	"github.com/zmap/zcrypto/x509"
 	"github.com/zmap/zcrypto/x509/pkix"
 
-	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
+	"crypto/mldsa"
 )
 
 var (
@@ -50,11 +48,7 @@ func publicKey(priv interface{}) interface{} {
 		return &k.PublicKey
 	case *ecdsa.PrivateKey:
 		return &k.PublicKey
-	case *mldsa44.PrivateKey:
-		return k.Public()
-	case *mldsa65.PrivateKey:
-		return k.Public()
-	case *mldsa87.PrivateKey:
+	case *mldsa.PrivateKey:
 		return k.Public()
 	case ed25519.PrivateKey:
 		return k.Public().(ed25519.PublicKey)
@@ -77,11 +71,11 @@ func main() {
 		if *mldsaParam != "" {
 			switch *mldsaParam {
 			case "MLDSA44":
-				_, priv, err = mldsa44.GenerateKey(rand.Reader)
+				priv, err = mldsa.GenerateKey(mldsa.MLDSA44())
 			case "MLDSA65":
-				_, priv, err = mldsa65.GenerateKey(rand.Reader)
+				priv, err = mldsa.GenerateKey(mldsa.MLDSA65())
 			case "MLDSA87":
-				_, priv, err = mldsa87.GenerateKey(rand.Reader)
+				priv, err = mldsa.GenerateKey(mldsa.MLDSA87())
 			default:
 				log.Fatalf("Unrecognized ML-DSA parameter set: %q", *mldsaParam)
 			}

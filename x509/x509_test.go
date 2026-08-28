@@ -24,6 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/curve25519"
@@ -34,9 +37,7 @@ import (
 	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509/pkix"
 
-	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
+	"crypto/mldsa"
 )
 
 func TestParsePKCS1PrivateKey(t *testing.T) {
@@ -282,20 +283,23 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 		t.Fatalf("Failed to generate ECDSA key: %s", err)
 	}
 
-	mldsa44Pub, mldsa44Priv, err := mldsa44.GenerateKey(rand.Reader)
+	mldsa44Priv, err := mldsa.GenerateKey(mldsa.MLDSA44())
 	if err != nil {
 		t.Fatalf("Failed to generate MLDSA44 key: %s", err)
 	}
+	mldsa44Pub := mldsa44Priv.PublicKey()
 
-	mldsa65Pub, mldsa65Priv, err := mldsa65.GenerateKey(rand.Reader)
+	mldsa65Priv, err := mldsa.GenerateKey(mldsa.MLDSA65())
 	if err != nil {
 		t.Fatalf("Failed to generate MLDSA65 key: %s", err)
 	}
+	mldsa65Pub := mldsa65Priv.PublicKey()
 
-	mldsa87Pub, mldsa87Priv, err := mldsa87.GenerateKey(rand.Reader)
+	mldsa87Priv, err := mldsa.GenerateKey(mldsa.MLDSA87())
 	if err != nil {
 		t.Fatalf("Failed to generate MLDSA87 key: %s", err)
 	}
+	mldsa87Pub := mldsa87Priv.PublicKey()
 
 	byt := make([]byte, 0)
 	null := asn1.BitString{Bytes: byt, BitLength: 0}
@@ -1007,8 +1011,8 @@ func TestMLDSA44(t *testing.T) {
 		if sa := cert.SignatureAlgorithm; sa != test.sigAlgo {
 			t.Errorf("%d: signature algorithm is %v, want %v", i, sa, test.sigAlgo)
 		}
-		if parsedKey, ok := cert.PublicKey.(*mldsa44.PublicKey); !ok {
-			t.Errorf("%d: wanted a MLDSA public key but found: %#v", i, parsedKey)
+		if parsedKey, ok := cert.PublicKey.(*mldsa.PublicKey); !ok || parsedKey.Parameters() != mldsa.MLDSA44() {
+			t.Errorf("%d: wanted a MLDSA44 public key but found: %#v", i, parsedKey)
 		}
 		if pka := cert.PublicKeyAlgorithm; pka != MLDSA44 {
 			t.Errorf("%d: public key algorithm is %v, want MLDSA44", i, pka)
@@ -1030,8 +1034,8 @@ func TestMLDSA65(t *testing.T) {
 		if sa := cert.SignatureAlgorithm; sa != test.sigAlgo {
 			t.Errorf("%d: signature algorithm is %v, want %v", i, sa, test.sigAlgo)
 		}
-		if parsedKey, ok := cert.PublicKey.(*mldsa65.PublicKey); !ok {
-			t.Errorf("%d: wanted a MLDSA public key but found: %#v", i, parsedKey)
+		if parsedKey, ok := cert.PublicKey.(*mldsa.PublicKey); !ok || parsedKey.Parameters() != mldsa.MLDSA65() {
+			t.Errorf("%d: wanted a MLDSA65 public key but found: %#v", i, parsedKey)
 		}
 		if pka := cert.PublicKeyAlgorithm; pka != MLDSA65 {
 			t.Errorf("%d: public key algorithm is %v, want MLDSA65", i, pka)
@@ -1053,8 +1057,8 @@ func TestMLDSA87(t *testing.T) {
 		if sa := cert.SignatureAlgorithm; sa != test.sigAlgo {
 			t.Errorf("%d: signature algorithm is %v, want %v", i, sa, test.sigAlgo)
 		}
-		if parsedKey, ok := cert.PublicKey.(*mldsa87.PublicKey); !ok {
-			t.Errorf("%d: wanted a MLDSA public key but found: %#v", i, parsedKey)
+		if parsedKey, ok := cert.PublicKey.(*mldsa.PublicKey); !ok || parsedKey.Parameters() != mldsa.MLDSA87() {
+			t.Errorf("%d: wanted a MLDSA87 public key but found: %#v", i, parsedKey)
 		}
 		if pka := cert.PublicKeyAlgorithm; pka != MLDSA87 {
 			t.Errorf("%d: public key algorithm is %v, want MLDSA87", i, pka)

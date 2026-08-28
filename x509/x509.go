@@ -35,10 +35,7 @@ import (
 	"strconv"
 	"time"
 
-	// Cloudflare CIRCL MLDSA Implementation
-	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
+	"crypto/mldsa"
 
 	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"golang.org/x/crypto/ed25519"
@@ -119,24 +116,19 @@ func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorith
 			return
 		}
 		publicKeyAlgorithm.Parameters.FullBytes = paramBytes
-	case *mldsa44.PublicKey:
-		publicKeyBytes, err = pub.MarshalBinary()
-		if err != nil {
-			return nil, pkix.AlgorithmIdentifier{}, err
+	case *mldsa.PublicKey:
+		publicKeyBytes = pub.Bytes()
+
+		switch pub.Parameters() {
+		case mldsa.MLDSA44():
+			publicKeyAlgorithm.Algorithm = oidPublicKeyMLDSA44
+		case mldsa.MLDSA65():
+			publicKeyAlgorithm.Algorithm = oidPublicKeyMLDSA65
+		case mldsa.MLDSA87():
+			publicKeyAlgorithm.Algorithm = oidPublicKeyMLDSA87
+		default:
+			return nil, pkix.AlgorithmIdentifier{}, errors.New("x509: unknown MLDSA parameter set")
 		}
-		publicKeyAlgorithm.Algorithm = oidPublicKeyMLDSA44
-	case *mldsa65.PublicKey:
-		publicKeyBytes, err = pub.MarshalBinary()
-		if err != nil {
-			return nil, pkix.AlgorithmIdentifier{}, err
-		}
-		publicKeyAlgorithm.Algorithm = oidPublicKeyMLDSA65
-	case *mldsa87.PublicKey:
-		publicKeyBytes, err = pub.MarshalBinary()
-		if err != nil {
-			return nil, pkix.AlgorithmIdentifier{}, err
-		}
-		publicKeyAlgorithm.Algorithm = oidPublicKeyMLDSA87
 	case *AugmentedECDSA:
 		return marshalPublicKey(pub.Pub)
 	case ed25519.PublicKey:
@@ -1208,28 +1200,31 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 			return errors.New("x509: Ed25519 verification failure")
 		}
 		return
-	case *mldsa44.PublicKey:
-		if algo != MLDSA44Sig {
+	case *mldsa.PublicKey:
+		switch pub.Parameters() {
+		case mldsa.MLDSA44():
+			if algo != MLDSA44Sig {
+				return ErrUnsupportedAlgorithm
+			}
+			if err := mldsa.Verify(pub, digest, signature, nil); err != nil {
+				return errors.New("x509: MLDSA44 verification failure")
+			}
+		case mldsa.MLDSA65():
+			if algo != MLDSA65Sig {
+				return ErrUnsupportedAlgorithm
+			}
+			if err := mldsa.Verify(pub, digest, signature, nil); err != nil {
+				return errors.New("x509: MLDSA65 verification failure")
+			}
+		case mldsa.MLDSA87():
+			if algo != MLDSA87Sig {
+				return ErrUnsupportedAlgorithm
+			}
+			if err := mldsa.Verify(pub, digest, signature, nil); err != nil {
+				return errors.New("x509: MLDSA87 verification failure")
+			}
+		default:
 			return ErrUnsupportedAlgorithm
-		}
-		if !mldsa44.Verify(pub, digest, nil, signature) {
-			return errors.New("x509: MLDSA44 verification failure")
-		}
-		return
-	case *mldsa65.PublicKey:
-		if algo != MLDSA65Sig {
-			return ErrUnsupportedAlgorithm
-		}
-		if !mldsa65.Verify(pub, digest, nil, signature) {
-			return errors.New("x509: MLDSA65 verification failure")
-		}
-		return
-	case *mldsa87.PublicKey:
-		if algo != MLDSA87Sig {
-			return ErrUnsupportedAlgorithm
-		}
-		if !mldsa87.Verify(pub, digest, nil, signature) {
-			return errors.New("x509: MLDSA87 verification failure")
 		}
 		return
 	}
@@ -1510,8 +1505,8 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
 			return nil, errors.New("x509: invalid MLDSA44 public key parameters")
 		}
-		pub := new(mldsa44.PublicKey)
-		if err := pub.UnmarshalBinary(asn1Data); err != nil {
+		pub, err := mldsa.NewPublicKey(mldsa.MLDSA44(), asn1Data)
+		if err != nil {
 			return nil, errors.New("x509: failed to unmarshal MLDSA44 public key")
 		}
 		return pub, nil
@@ -1520,8 +1515,8 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
 			return nil, errors.New("x509: invalid MLDSA65 public key parameters")
 		}
-		pub := new(mldsa65.PublicKey)
-		if err := pub.UnmarshalBinary(asn1Data); err != nil {
+		pub, err := mldsa.NewPublicKey(mldsa.MLDSA65(), asn1Data)
+		if err != nil {
 			return nil, errors.New("x509: failed to unmarshal MLDSA65 public key")
 		}
 		return pub, nil
@@ -1530,8 +1525,8 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
 			return nil, errors.New("x509: invalid MLDSA87 public key parameters")
 		}
-		pub := new(mldsa87.PublicKey)
-		if err := pub.UnmarshalBinary(asn1Data); err != nil {
+		pub, err := mldsa.NewPublicKey(mldsa.MLDSA87(), asn1Data)
+		if err != nil {
 			return nil, errors.New("x509: failed to unmarshal MLDSA87 public key")
 		}
 		return pub, nil
@@ -2728,26 +2723,23 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo SignatureAlgori
 			err = errors.New("x509: unknown elliptic curve")
 		}
 
-	case *mldsa44.PublicKey:
-		_ = pub
-		pubType = MLDSA44
+	case *mldsa.PublicKey:
 		hashFunc = 0
 		shouldHash = false
-		sigAlgo.Algorithm = oidSignatureMLDSA44
 
-	case *mldsa65.PublicKey:
-		_ = pub
-		pubType = MLDSA65
-		hashFunc = 0
-		shouldHash = false
-		sigAlgo.Algorithm = oidSignatureMLDSA65
-
-	case *mldsa87.PublicKey:
-		_ = pub
-		pubType = MLDSA87
-		hashFunc = 0
-		shouldHash = false
-		sigAlgo.Algorithm = oidSignatureMLDSA87
+		switch pub.Parameters() {
+		case mldsa.MLDSA44():
+			pubType = MLDSA44
+			sigAlgo.Algorithm = oidSignatureMLDSA44
+		case mldsa.MLDSA65():
+			pubType = MLDSA65
+			sigAlgo.Algorithm = oidSignatureMLDSA65
+		case mldsa.MLDSA87():
+			pubType = MLDSA87
+			sigAlgo.Algorithm = oidSignatureMLDSA87
+		default:
+			err = errors.New("x509: unknown MLDSA parameter set")
+		}
 
 	case ed25519.PublicKey:
 		pubType = Ed25519

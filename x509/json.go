@@ -20,9 +20,7 @@ import (
 	"github.com/zmap/zcrypto/util"
 	"github.com/zmap/zcrypto/x509/pkix"
 
-	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
+	"crypto/mldsa"
 )
 
 var kMinTime, kMaxTime time.Time
@@ -326,19 +324,19 @@ func GetAugmentedECDSAPublicKeyJSON(key *AugmentedECDSA) *ECDSAPublicKeyJSON {
 	}
 }
 
-func GetMLDSA44PublicKeyJSON(key *mldsa44.PublicKey) *MLDSAPublicKeyJSON {
+func GetMLDSA44PublicKeyJSON(key *mldsa.PublicKey) *MLDSAPublicKeyJSON {
 	return &MLDSAPublicKeyJSON{
 		PublicKey: key.Bytes(),
 	}
 }
 
-func GetMLDSA65PublicKeyJSON(key *mldsa65.PublicKey) *MLDSAPublicKeyJSON {
+func GetMLDSA65PublicKeyJSON(key *mldsa.PublicKey) *MLDSAPublicKeyJSON {
 	return &MLDSAPublicKeyJSON{
 		PublicKey: key.Bytes(),
 	}
 }
 
-func GetMLDSA87PublicKeyJSON(key *mldsa87.PublicKey) *MLDSAPublicKeyJSON {
+func GetMLDSA87PublicKeyJSON(key *mldsa.PublicKey) *MLDSAPublicKeyJSON {
 	return &MLDSAPublicKeyJSON{
 		PublicKey: key.Bytes(),
 	}
@@ -391,17 +389,20 @@ func (c *Certificate) jsonifySubjectKey() JSONSubjectKeyInfo {
 			Length: key.Pub.Curve.Params().BitSize,
 			Pub:    key.Raw.Bytes,
 		}
-	case *mldsa44.PublicKey:
-		j.MLDSA44PublicKey = &MLDSAPublicKeyJSON{
-			PublicKey: key.Bytes(),
-		}
-	case *mldsa65.PublicKey:
-		j.MLDSA65PublicKey = &MLDSAPublicKeyJSON{
-			PublicKey: key.Bytes(),
-		}
-	case *mldsa87.PublicKey:
-		j.MLDSA87PublicKey = &MLDSAPublicKeyJSON{
-			PublicKey: key.Bytes(),
+	case *mldsa.PublicKey:
+		switch key.Parameters() {
+		case mldsa.MLDSA44():
+			j.MLDSA44PublicKey = &MLDSAPublicKeyJSON{
+				PublicKey: key.Bytes(),
+			}
+		case mldsa.MLDSA65():
+			j.MLDSA65PublicKey = &MLDSAPublicKeyJSON{
+				PublicKey: key.Bytes(),
+			}
+		case mldsa.MLDSA87():
+			j.MLDSA87PublicKey = &MLDSAPublicKeyJSON{
+				PublicKey: key.Bytes(),
+			}
 		}
 	}
 	return j
