@@ -303,17 +303,7 @@ type SignatureAlgorithmExtension struct {
 }
 
 func (e *SignatureAlgorithmExtension) WriteToConfig(c *Config) error {
-	algs := e.getStructuredAlgorithms()
-	c.SignatureAndHashes = make([]SigAndHash, 0, len(algs))
-
-	for i, alg := range algs {
-		switch SignatureScheme(e.SignatureAndHashes[i]) {
-		case MLDSA44Sig, MLDSA65Sig, MLDSA87Sig:
-			continue
-		default:
-			c.SignatureAndHashes = append(c.SignatureAndHashes, alg)
-		}
-	}
+	c.SignatureAndHashes = e.getStructuredAlgorithms()
 	return nil
 }
 
@@ -328,7 +318,7 @@ func (e *SignatureAlgorithmExtension) CheckImplemented() error {
 			continue
 		}
 
-		if isSupportedSignatureAlgorithm(SignatureScheme(raw), supportedSignatureAlgorithmsTLS13) {
+		if isSupportedSignatureAlgorithm(SignatureScheme(raw), supportedSignatureAlgorithms) {
 			continue
 		}
 

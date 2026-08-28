@@ -129,10 +129,6 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 		if len(sig) < 2 {
 			return nil, errServerKeyExchange
 		}
-		scheme := SignatureScheme(sigAndHash[0])<<8 | SignatureScheme(sigAndHash[1])
-		if isTLS13OnlySignatureAlgorithm(scheme) {
-			return nil, errMLDSAInTLS12
-		}
 
 		if !isSupportedSignatureAndHash(SigAndHash{ka.sigType, tls12HashId}, config.signatureAndHashesForClient()) {
 			return nil, errors.New("tls: unsupported hash function for ServerKeyExchange")
@@ -404,17 +400,6 @@ func isTLS13OnlyKeyExchange(curveID CurveID) bool {
 	}
 }
 
-func isTLS13OnlySignatureAlgorithm(s SignatureScheme) bool {
-	switch s {
-	case MLDSA44Sig, MLDSA65Sig, MLDSA87Sig:
-		return true
-	default:
-		return false
-	}
-}
-
-var errMLDSAInTLS12 = errors.New("tls: ML-DSA signature schemes are not permitted in TLS 1.2")
-
 func (ka *ecdheKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {
 	var curveID CurveID
 	for _, c := range clientHello.supportedCurves {
@@ -593,10 +578,6 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	if ka.version >= VersionTLS12 {
 		signatureAlgorithm := SignatureScheme(sig[0])<<8 | SignatureScheme(sig[1])
 		sig = sig[2:]
-
-		if isTLS13OnlySignatureAlgorithm(signatureAlgorithm) {
-			return errMLDSAInTLS12
-		}
 
 		if len(sig) < 2 {
 			return errServerKeyExchange

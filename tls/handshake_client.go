@@ -891,11 +891,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		hs.finishedHash.Write(skx.marshal())
 		err = keyAgreement.processServerKeyExchange(c.config, hs.hello, hs.serverHello, c.peerCertificates[0], skx)
 		if err != nil {
-			if errors.Is(err, errMLDSAInTLS12) {
-				c.sendAlert(AlertIllegalParameter)
-			} else {
-				c.sendAlert(AlertUnexpectedMessage)
-			}
+			c.sendAlert(AlertUnexpectedMessage)
 			return err
 		}
 		c.handshakeLog.ServerKeyExchange = skx.MakeLog(keyAgreement)
