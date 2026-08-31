@@ -209,6 +209,12 @@ ECDSAPublicKey = SubRecordType({
     # "asn1_oid":OID(),
 }, doc="The public portion of an ECDSA asymmetric key.")
 
+MLDSAPublicKey = SubRecordType({
+    "public_key": IndexedBinary(
+        doc="The encoded ML-DSA public key."
+    ),
+}, doc="The public portion of an ML-DSA key.")
+
 # x509/ct/types.go: type Version uint8; "represents the Version enum from section 3.2 of the RFC: enum { v1(0), (255) } Version;"
 SCTVersion = Unsigned8BitInteger().with_args(doc="Version of the protocol to which the SCT conforms.", examples=[0, 255])
 
@@ -373,6 +379,9 @@ ParsedCertificate = SubRecordType({
         "rsa_public_key": RSAPublicKey(),
         "dsa_public_key": DSAPublicKey(),
         "ecdsa_public_key": ECDSAPublicKey(),
+        "mldsa44_public_key": MLDSAPublicKey(),
+        "mldsa65_public_key": MLDSAPublicKey(),
+        "mldsa87_public_key": MLDSAPublicKey(),
     }, category="Public Key", doc="The certificate's public key. Only one of the *_public_key fields will be set."),
     "extensions": SubRecord({
         "key_usage": SubRecord({
