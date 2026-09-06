@@ -3,12 +3,12 @@ module github.com/zmap/zcrypto
 require (
 	github.com/mreiferson/go-httpclient v0.0.0-20201222173833-5e475fde3a4d
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
-	github.com/weppos/publicsuffix-go v0.50.4-0.20260821095816-b0fdb5c2d345
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
+	github.com/weppos/publicsuffix-go v0.50.4-0.20260821095816-b0fdb5c2d345
 	github.com/zmap/zcertificate v0.0.1
 	golang.org/x/crypto v0.55.0
-	golang.org/x/net v0.57.0
+	golang.org/x/net v0.58.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 )
 
