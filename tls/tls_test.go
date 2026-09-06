@@ -474,7 +474,6 @@ func TestTLSUniqueMatches(t *testing.T) {
 }
 
 func TestVerifyHostname(t *testing.T) {
-	t.Skip()
 	testenv.MustHaveExternalNetwork(t)
 
 	c, err := Dial("tcp", "www.google.com:https", &Config{})
