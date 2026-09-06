@@ -35,6 +35,8 @@ import (
 	"strconv"
 	"time"
 
+	"crypto/mldsa"
+
 	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"golang.org/x/crypto/ed25519"
 
@@ -67,11 +69,11 @@ type pkixPublicKey struct {
 // ParsePKIXPublicKey parses a DER encoded public key. These values are
 // typically found in PEM blocks with "BEGIN PUBLIC KEY".
 //
-// Supported key types include RSA, DSA, and ECDSA. Unknown key
+// Supported key types include RSA, DSA, ECDSA, and MLDSA. Unknown key
 // types result in an error.
 //
 // On success, pub will be of type *rsa.PublicKey, *dsa.PublicKey,
-// or *ecdsa.PublicKey.
+// *ecdsa.PublicKey, or *mldsa(44/65/87).PublicKey.
 func ParsePKIXPublicKey(derBytes []byte) (pub interface{}, err error) {
 	var pki publicKeyInfo
 	if rest, err := asn1.Unmarshal(derBytes, &pki); err != nil {
@@ -114,6 +116,19 @@ func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorith
 			return
 		}
 		publicKeyAlgorithm.Parameters.FullBytes = paramBytes
+	case *mldsa.PublicKey:
+		publicKeyBytes = pub.Bytes()
+
+		switch pub.Parameters() {
+		case mldsa.MLDSA44():
+			publicKeyAlgorithm.Algorithm = oidPublicKeyMLDSA44
+		case mldsa.MLDSA65():
+			publicKeyAlgorithm.Algorithm = oidPublicKeyMLDSA65
+		case mldsa.MLDSA87():
+			publicKeyAlgorithm.Algorithm = oidPublicKeyMLDSA87
+		default:
+			return nil, pkix.AlgorithmIdentifier{}, errors.New("x509: unknown MLDSA parameter set")
+		}
 	case *AugmentedECDSA:
 		return marshalPublicKey(pub.Pub)
 	case ed25519.PublicKey:
@@ -123,7 +138,7 @@ func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorith
 		publicKeyAlgorithm.Algorithm = oidKeyX25519
 		return []byte(pub), publicKeyAlgorithm, nil
 	default:
-		return nil, pkix.AlgorithmIdentifier{}, errors.New("x509: only RSA, ECDSA, ed25519, or X25519 public keys supported")
+		return nil, pkix.AlgorithmIdentifier{}, errors.New("x509: only RSA, ECDSA, MLDSA, ed25519, or X25519 public keys supported")
 	}
 
 	return publicKeyBytes, publicKeyAlgorithm, nil
@@ -226,6 +241,9 @@ const (
 	SHA384WithRSAPSS
 	SHA512WithRSAPSS
 	Ed25519Sig
+	MLDSA44Sig
+	MLDSA65Sig
+	MLDSA87Sig
 )
 
 func (algo SignatureAlgorithm) isRSAPSS() bool {
@@ -254,6 +272,9 @@ var algoName = [...]string{
 	ECDSAWithSHA384:  "ECDSA-SHA384",
 	ECDSAWithSHA512:  "ECDSA-SHA512",
 	Ed25519Sig:       "Ed25519",
+	MLDSA44Sig:       "MLDSA44",
+	MLDSA65Sig:       "MLDSA65",
+	MLDSA87Sig:       "MLDSA87",
 }
 
 func (algo SignatureAlgorithm) String() string {
@@ -270,6 +291,9 @@ var keyAlgorithmNames = []string{
 	"ECDSA",
 	"Ed25519",
 	"X25519",
+	"MLDSA44",
+	"MLDSA65",
+	"MLDSA87",
 }
 
 type PublicKeyAlgorithm int
@@ -281,6 +305,9 @@ const (
 	ECDSA
 	Ed25519
 	X25519
+	MLDSA44
+	MLDSA65
+	MLDSA87
 	total_key_algorithms
 )
 
@@ -352,6 +379,9 @@ var (
 	oidSignatureECDSAWithSHA384 = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 3, 3}
 	oidSignatureECDSAWithSHA512 = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 3, 4}
 	oidSignatureEd25519         = asn1.ObjectIdentifier{1, 3, 101, 112}
+	oidSignatureMLDSA44         = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 3, 17}
+	oidSignatureMLDSA65         = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 3, 18}
+	oidSignatureMLDSA87         = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 3, 19}
 
 	oidSHA256 = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 1}
 	oidSHA384 = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 2}
@@ -395,6 +425,9 @@ var signatureAlgorithmDetails = []struct {
 	{ECDSAWithSHA384, oidSignatureECDSAWithSHA384, ECDSA, crypto.SHA384},
 	{ECDSAWithSHA512, oidSignatureECDSAWithSHA512, ECDSA, crypto.SHA512},
 	{Ed25519Sig, oidKeyEd25519, Ed25519, cryptoNoDigest},
+	{MLDSA44Sig, oidSignatureMLDSA44, MLDSA44, cryptoNoDigest},
+	{MLDSA65Sig, oidSignatureMLDSA65, MLDSA65, cryptoNoDigest},
+	{MLDSA87Sig, oidSignatureMLDSA87, MLDSA87, cryptoNoDigest},
 }
 
 // pssParameters reflects the parameters in an AlgorithmIdentifier that
@@ -456,6 +489,9 @@ func rsaPSSParameters(hashFunc crypto.Hash) asn1.RawValue {
 
 // GetSignatureAlgorithmFromAI converts asn1 AlgorithmIdentifier to SignatureAlgorithm int
 func GetSignatureAlgorithmFromAI(ai pkix.AlgorithmIdentifier) SignatureAlgorithm {
+	if !asn1.AllowPermissiveParsing && (ai.Algorithm.Equal(oidSignatureMLDSA44) || ai.Algorithm.Equal(oidSignatureMLDSA65) || ai.Algorithm.Equal(oidSignatureMLDSA87)) && len(ai.Parameters.FullBytes) != 0 {
+		return UnknownSignatureAlgorithm
+	}
 	if !ai.Algorithm.Equal(oidSignatureRSAPSS) {
 		for _, details := range signatureAlgorithmDetails {
 			if ai.Algorithm.Equal(details.oid) {
@@ -526,6 +562,9 @@ var (
 	oidPublicKeyDSA     = asn1.ObjectIdentifier{1, 2, 840, 10040, 4, 1}
 	oidPublicKeyECDSA   = asn1.ObjectIdentifier{1, 2, 840, 10045, 2, 1}
 	oidPublicKeyEd25519 = oidSignatureEd25519
+	oidPublicKeyMLDSA44 = oidSignatureMLDSA44
+	oidPublicKeyMLDSA65 = oidSignatureMLDSA65
+	oidPublicKeyMLDSA87 = oidSignatureMLDSA87
 )
 
 func getPublicKeyAlgorithmFromOID(oid asn1.ObjectIdentifier) PublicKeyAlgorithm {
@@ -540,6 +579,12 @@ func getPublicKeyAlgorithmFromOID(oid asn1.ObjectIdentifier) PublicKeyAlgorithm 
 		return Ed25519
 	case oid.Equal(oidKeyX25519):
 		return X25519
+	case oid.Equal(oidPublicKeyMLDSA44):
+		return MLDSA44
+	case oid.Equal(oidPublicKeyMLDSA65):
+		return MLDSA65
+	case oid.Equal(oidPublicKeyMLDSA87):
+		return MLDSA87
 	}
 	return UnknownPublicKeyAlgorithm
 }
@@ -1088,6 +1133,12 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 		return InsecureAlgorithmError(algo)
 	case Ed25519Sig:
 		hashType = 0
+	case MLDSA44Sig:
+		hashType = 0
+	case MLDSA65Sig:
+		hashType = 0
+	case MLDSA87Sig:
+		hashType = 0
 	default:
 		return ErrUnsupportedAlgorithm
 	}
@@ -1147,6 +1198,33 @@ func CheckSignatureFromKey(publicKey interface{}, algo SignatureAlgorithm, signe
 	case ed25519.PublicKey:
 		if !ed25519.Verify(pub, digest, signature) {
 			return errors.New("x509: Ed25519 verification failure")
+		}
+		return
+	case *mldsa.PublicKey:
+		switch pub.Parameters() {
+		case mldsa.MLDSA44():
+			if algo != MLDSA44Sig {
+				return ErrUnsupportedAlgorithm
+			}
+			if err := mldsa.Verify(pub, digest, signature, nil); err != nil {
+				return errors.New("x509: MLDSA44 verification failure")
+			}
+		case mldsa.MLDSA65():
+			if algo != MLDSA65Sig {
+				return ErrUnsupportedAlgorithm
+			}
+			if err := mldsa.Verify(pub, digest, signature, nil); err != nil {
+				return errors.New("x509: MLDSA65 verification failure")
+			}
+		case mldsa.MLDSA87():
+			if algo != MLDSA87Sig {
+				return ErrUnsupportedAlgorithm
+			}
+			if err := mldsa.Verify(pub, digest, signature, nil); err != nil {
+				return errors.New("x509: MLDSA87 verification failure")
+			}
+		default:
+			return ErrUnsupportedAlgorithm
 		}
 		return
 	}
@@ -1422,6 +1500,36 @@ func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{
 			return nil, errors.New("x509: trailing data after X25519 public key")
 		}
 		return p, nil
+	case MLDSA44:
+		paramsData := keyData.Algorithm.Parameters.FullBytes
+		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
+			return nil, errors.New("x509: invalid MLDSA44 public key parameters")
+		}
+		pub, err := mldsa.NewPublicKey(mldsa.MLDSA44(), asn1Data)
+		if err != nil {
+			return nil, errors.New("x509: failed to unmarshal MLDSA44 public key")
+		}
+		return pub, nil
+	case MLDSA65:
+		paramsData := keyData.Algorithm.Parameters.FullBytes
+		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
+			return nil, errors.New("x509: invalid MLDSA65 public key parameters")
+		}
+		pub, err := mldsa.NewPublicKey(mldsa.MLDSA65(), asn1Data)
+		if err != nil {
+			return nil, errors.New("x509: failed to unmarshal MLDSA65 public key")
+		}
+		return pub, nil
+	case MLDSA87:
+		paramsData := keyData.Algorithm.Parameters.FullBytes
+		if !asn1.AllowPermissiveParsing && len(paramsData) != 0 {
+			return nil, errors.New("x509: invalid MLDSA87 public key parameters")
+		}
+		pub, err := mldsa.NewPublicKey(mldsa.MLDSA87(), asn1Data)
+		if err != nil {
+			return nil, errors.New("x509: failed to unmarshal MLDSA87 public key")
+		}
+		return pub, nil
 	default:
 		return nil, nil
 	}
@@ -2615,6 +2723,24 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo SignatureAlgori
 			err = errors.New("x509: unknown elliptic curve")
 		}
 
+	case *mldsa.PublicKey:
+		hashFunc = 0
+		shouldHash = false
+
+		switch pub.Parameters() {
+		case mldsa.MLDSA44():
+			pubType = MLDSA44
+			sigAlgo.Algorithm = oidSignatureMLDSA44
+		case mldsa.MLDSA65():
+			pubType = MLDSA65
+			sigAlgo.Algorithm = oidSignatureMLDSA65
+		case mldsa.MLDSA87():
+			pubType = MLDSA87
+			sigAlgo.Algorithm = oidSignatureMLDSA87
+		default:
+			err = errors.New("x509: unknown MLDSA parameter set")
+		}
+
 	case ed25519.PublicKey:
 		pubType = Ed25519
 		hashFunc = 0
@@ -2622,7 +2748,7 @@ func signingParamsForPublicKey(pub interface{}, requestedSigAlgo SignatureAlgori
 		sigAlgo.Algorithm = oidKeyEd25519
 
 	default:
-		err = errors.New("x509: only RSA, ECDSA, Ed25519, and X25519 keys supported")
+		err = errors.New("x509: only RSA, ECDSA, MLDSA, Ed25519, and X25519 keys supported")
 	}
 
 	if err != nil {

@@ -728,6 +728,33 @@ func TestHandshakeClientSecP384r1MLKEM1024(t *testing.T) {
 	runClientTestTLS13(t, test)
 }
 
+func TestHandshakeClientMLKEM512(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{MLKEM512}
+
+	test := &clientTest{
+		name:   "MLKEM512",
+		args:   []string{"-curves", "MLKEM512"},
+		cipher: "ECDHE-RSA-AES128-GCM-SHA256",
+		config: config,
+	}
+
+	runClientTestTLS13(t, test)
+}
+
+func TestHandshakeClientMLKEM768(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{MLKEM768}
+
+	test := &clientTest{
+		name:   "MLKEM768",
+		args:   []string{"-curves", "MLKEM768"},
+		cipher: "ECDHE-RSA-AES128-GCM-SHA256",
+		config: config,
+	}
+
+	runClientTestTLS13(t, test)
+}
 func TestHandshakeClientMLKEM1024(t *testing.T) {
 	config := testConfig.Clone()
 	config.CurvePreferences = []CurveID{MLKEM1024}

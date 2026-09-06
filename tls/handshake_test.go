@@ -341,6 +341,17 @@ func TestMain(m *testing.M) {
 }
 
 func runMain(m *testing.M) int {
+	// Starting in Go 1.26, crypto/ecdsa ignores custom randomness readers by
+	// default. Enable custom randomness so the existing zeroSource produces
+	// reproducible signatures.
+	godebug := os.Getenv("GODEBUG")
+	if godebug != "" {
+		godebug += ","
+	}
+	if err := os.Setenv("GODEBUG", godebug+"cryptocustomrand=1"); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to configure deterministic crypto randomness: %v\n", err)
+		return 1
+	}
 	// TLS 1.3 cipher suites preferences are not configurable and change based
 	// on the architecture. Force them to the version with AES acceleration for
 	// test consistency.

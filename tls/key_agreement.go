@@ -119,6 +119,7 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 		// handle SignatureAndHashAlgorithm
 		var sigAndHash []uint8
 		sigAndHash, sig = sig[:2], sig[2:]
+
 		tls12HashId = sigAndHash[0]
 		ka.sh.Hash = tls12HashId
 		ka.sh.Signature = sigAndHash[1]
@@ -392,7 +393,7 @@ type ecdheKeyAgreement struct {
 
 func isTLS13OnlyKeyExchange(curveID CurveID) bool {
 	switch curveID {
-	case MLKEM1024, X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024:
+	case X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024, MLKEM512, MLKEM768, MLKEM1024:
 		return true
 	default:
 		return false
@@ -528,6 +529,10 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	}
 	curveID := CurveID(skx.key[1])<<8 | CurveID(skx.key[2])
 
+	if isTLS13OnlyKeyExchange(curveID) {
+		return errors.New("tls: server selected TLS 1.3-only key exchange group")
+	}
+
 	publicLen := int(skx.key[3])
 	if publicLen+4 > len(skx.key) {
 		return errServerKeyExchange
@@ -573,6 +578,7 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	if ka.version >= VersionTLS12 {
 		signatureAlgorithm := SignatureScheme(sig[0])<<8 | SignatureScheme(sig[1])
 		sig = sig[2:]
+
 		if len(sig) < 2 {
 			return errServerKeyExchange
 		}
@@ -737,6 +743,7 @@ func (ka *dheKeyAgreement) processServerKeyExchange(config *Config, clientHello 
 	sig := k
 	serverDHParams := skx.key[:len(skx.key)-len(sig)]
 	skx.digest, ka.verifyError = ka.auth.verifyParameters(config, clientHello, serverHello, cert, serverDHParams, sig)
+
 	if config.InsecureSkipVerify {
 		return nil
 	}

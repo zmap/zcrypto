@@ -947,6 +947,30 @@ func TestHandshakeServerSecP384r1MLKEM1024(t *testing.T) {
 	runServerTestTLS13(t, test)
 }
 
+func TestHandshakeServerMLKEM512(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{MLKEM512}
+
+	test := &serverTest{
+		name:   "MLKEM512",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "MLKEM512"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
+		config: config,
+	}
+	runServerTestTLS13(t, test)
+}
+func TestHandshakeServerMLKEM768(t *testing.T) {
+	config := testConfig.Clone()
+	config.CurvePreferences = []CurveID{MLKEM768}
+
+	test := &serverTest{
+		name:   "MLKEM768",
+		args:   []string{"-no_ticket", "-ciphersuites", "TLS_CHACHA20_POLY1305_SHA256", "-curves", "MLKEM768"},
+		cipher: "ECDHE-RSA-CHACHA20-POLY1305",
+		config: config,
+	}
+	runServerTestTLS13(t, test)
+}
 func TestHandshakeServerMLKEM1024(t *testing.T) {
 	config := testConfig.Clone()
 	config.CurvePreferences = []CurveID{MLKEM1024}
