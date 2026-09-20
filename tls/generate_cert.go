@@ -27,6 +27,8 @@ import (
 	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
 	"github.com/zmap/zcrypto/x509/pkix"
+
+	"crypto/mldsa"
 )
 
 var (
@@ -37,6 +39,7 @@ var (
 	rsaBits    = flag.Int("rsa-bits", 2048, "Size of RSA key to generate. Ignored if --ecdsa-curve is set")
 	ecdsaCurve = flag.String("ecdsa-curve", "", "ECDSA curve to use to generate a key. Valid values are P224, P256 (recommended), P384, P521")
 	ed25519Key = flag.Bool("ed25519", false, "Generate an Ed25519 key")
+	mldsaParam = flag.String("mldsa-parameter", "", "ML-DSA parameter set to use to generate a key. Valid values are MLDSA44, MLDSA65, MLDSA87")
 )
 
 func publicKey(priv interface{}) interface{} {
@@ -45,6 +48,8 @@ func publicKey(priv interface{}) interface{} {
 		return &k.PublicKey
 	case *ecdsa.PrivateKey:
 		return &k.PublicKey
+	case *mldsa.PrivateKey:
+		return k.Public()
 	case ed25519.PrivateKey:
 		return k.Public().(ed25519.PublicKey)
 	default:
@@ -63,7 +68,18 @@ func main() {
 	var err error
 	switch *ecdsaCurve {
 	case "":
-		if *ed25519Key {
+		if *mldsaParam != "" {
+			switch *mldsaParam {
+			case "MLDSA44":
+				priv, err = mldsa.GenerateKey(mldsa.MLDSA44())
+			case "MLDSA65":
+				priv, err = mldsa.GenerateKey(mldsa.MLDSA65())
+			case "MLDSA87":
+				priv, err = mldsa.GenerateKey(mldsa.MLDSA87())
+			default:
+				log.Fatalf("Unrecognized ML-DSA parameter set: %q", *mldsaParam)
+			}
+		} else if *ed25519Key {
 			_, priv, err = ed25519.GenerateKey(rand.Reader)
 		} else {
 			priv, err = rsa.GenerateKey(rand.Reader, *rsaBits)
@@ -83,7 +99,7 @@ func main() {
 		log.Fatalf("Failed to generate private key: %v", err)
 	}
 
-	// ECDSA, ED25519 and RSA subject keys should have the DigitalSignature
+	// ECDSA, ML-DSA, ED25519 and RSA subject keys should have the DigitalSignature
 	// KeyUsage bits set in the x509.Certificate template
 	keyUsage := x509.KeyUsageDigitalSignature
 	// Only RSA subject keys should have the KeyEncipherment KeyUsage bits set. In

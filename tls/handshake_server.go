@@ -18,6 +18,8 @@ import (
 
 	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
+
+	"crypto/mldsa"
 )
 
 // serverHandshakeState contains details of a server handshake in progress.
@@ -293,6 +295,9 @@ func (hs *serverHandshakeState) processClientHello() error {
 func supportsECDHE(c *Config, supportedCurves []CurveID, supportedPoints []uint8) bool {
 	supportsCurve := false
 	for _, curve := range supportedCurves {
+		if isTLS13OnlyKeyExchange(curve) {
+			continue
+		}
 		if c.supportsCurve(curve) {
 			supportsCurve = true
 			break
@@ -843,7 +848,7 @@ func (c *Conn) processCertsFromClient(certificate Certificate) error {
 
 	if len(certs) > 0 {
 		switch certs[0].PublicKey.(type) {
-		case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *x509.AugmentedECDSA:
+		case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *x509.AugmentedECDSA, *mldsa.PublicKey:
 		default:
 			c.sendAlert(AlertUnsupportedCertificate)
 			return fmt.Errorf("tls: client certificate contains an unsupported public key of type %T", certs[0].PublicKey)

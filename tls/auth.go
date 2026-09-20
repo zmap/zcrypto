@@ -17,6 +17,8 @@ import (
 
 	rsa "github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
+
+	"crypto/mldsa"
 )
 
 // verifyHandshakeSignature verifies a signature against pre-hashed
@@ -69,6 +71,30 @@ func verifyHandshakeSignature(sigType uint8, pubkey crypto.PublicKey, hashFunc c
 		} else {
 			return fmt.Errorf("expected an RSA public key, got %T", pubkey)
 		}
+	case signatureMLDSA44:
+		pubKey, ok := pubkey.(*mldsa.PublicKey)
+		if !ok || pubKey.Parameters() != mldsa.MLDSA44() {
+			return fmt.Errorf("expected an ML-DSA-44 public key, got %T", pubkey)
+		}
+		if err := mldsa.Verify(pubKey, signed, sig, nil); err != nil {
+			return errors.New("ML-DSA-44 verification failure")
+		}
+	case signatureMLDSA65:
+		pubKey, ok := pubkey.(*mldsa.PublicKey)
+		if !ok || pubKey.Parameters() != mldsa.MLDSA65() {
+			return fmt.Errorf("expected an ML-DSA65 public key, got %T", pubkey)
+		}
+		if err := mldsa.Verify(pubKey, signed, sig, nil); err != nil {
+			return errors.New("ML-DSA65 verification failure")
+		}
+	case signatureMLDSA87:
+		pubKey, ok := pubkey.(*mldsa.PublicKey)
+		if !ok || pubKey.Parameters() != mldsa.MLDSA87() {
+			return fmt.Errorf("expected an ML-DSA-87 public key, got %T", pubkey)
+		}
+		if err := mldsa.Verify(pubKey, signed, sig, nil); err != nil {
+			return errors.New("ML-DSA-87 verification failure")
+		}
 	default:
 		return errors.New("internal error: unknown signature type")
 	}
@@ -120,6 +146,12 @@ func typeAndHashFromSignatureScheme(signatureAlgorithm SignatureScheme) (sigType
 		sigType = signatureECDSA
 	case Ed25519:
 		sigType = signatureEd25519
+	case MLDSA44Sig:
+		sigType = signatureMLDSA44
+	case MLDSA65Sig:
+		sigType = signatureMLDSA65
+	case MLDSA87Sig:
+		sigType = signatureMLDSA87
 	default:
 		return 0, 0, fmt.Errorf("unsupported signature algorithm: %v", signatureAlgorithm)
 	}
@@ -133,6 +165,12 @@ func typeAndHashFromSignatureScheme(signatureAlgorithm SignatureScheme) (sigType
 	case PKCS1WithSHA512, PSSWithSHA512, ECDSAWithP521AndSHA512:
 		hash = crypto.SHA512
 	case Ed25519:
+		hash = directSigning
+	case MLDSA44Sig:
+		hash = directSigning
+	case MLDSA65Sig:
+		hash = directSigning
+	case MLDSA87Sig:
 		hash = directSigning
 	default:
 		return 0, 0, fmt.Errorf("unsupported signature algorithm: %v", signatureAlgorithm)
@@ -224,10 +262,18 @@ func signatureSchemesForCertificate(version uint16, cert *Certificate) []Signatu
 		}
 	case ed25519.PublicKey:
 		sigAlgs = []SignatureScheme{Ed25519}
-	default:
-		return nil
+	case *mldsa.PublicKey:
+		switch pub.Parameters() {
+		case mldsa.MLDSA44():
+			sigAlgs = []SignatureScheme{MLDSA44Sig}
+		case mldsa.MLDSA65():
+			sigAlgs = []SignatureScheme{MLDSA65Sig}
+		case mldsa.MLDSA87():
+			sigAlgs = []SignatureScheme{MLDSA87Sig}
+		default:
+			return nil
+		}
 	}
-
 	if cert.SupportedSignatureAlgorithms != nil {
 		var filteredSigAlgs []SignatureScheme
 		for _, sigAlg := range sigAlgs {
@@ -267,7 +313,7 @@ func selectSignatureScheme(vers uint16, c *Certificate, peerAlgs []SignatureSche
 // an unsupported private key.
 func unsupportedCertificateError(cert *Certificate) error {
 	switch cert.PrivateKey.(type) {
-	case rsa.PrivateKey, ecdsa.PrivateKey:
+	case rsa.PrivateKey, ecdsa.PrivateKey, mldsa.PrivateKey:
 		return fmt.Errorf("tls: unsupported certificate: private key is %T, expected *%T",
 			cert.PrivateKey, cert.PrivateKey)
 	case *ed25519.PrivateKey:
@@ -292,6 +338,7 @@ func unsupportedCertificateError(cert *Certificate) error {
 	case *rsa.PublicKey:
 		return fmt.Errorf("tls: certificate RSA key size too small for supported signature algorithms")
 	case ed25519.PublicKey:
+	case *mldsa.PublicKey:
 	default:
 		return fmt.Errorf("tls: unsupported certificate key (%T)", pub)
 	}
