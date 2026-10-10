@@ -16,6 +16,7 @@ import (
 	"hash"
 	"io"
 	"net"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -406,9 +407,9 @@ func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error) {
 				return nil, 0, AlertRecordOverflow
 			}
 			// Remove padding and find the ContentType scanning from the end.
-			for i := len(plaintext) - 1; i >= 0; i-- {
-				if plaintext[i] != 0 {
-					typ = recordType(plaintext[i])
+			for i, p := range slices.Backward(plaintext) {
+				if p != 0 {
+					typ = recordType(p)
 					plaintext = plaintext[:i]
 					break
 				}
