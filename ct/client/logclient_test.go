@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"math"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/zmap/zcrypto/ct"
-	"golang.org/x/net/context"
 )
 
 const (
