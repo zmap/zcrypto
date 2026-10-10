@@ -106,7 +106,7 @@ func TestGetSTHWorks(t *testing.T) {
 	if sth.TreeHeadSignature.SignatureAlgorithm != expectedDS.SignatureAlgorithm {
 		t.Fatalf("Invalid TreeHeadSignature.SignatureAlgorithm: expected %v, got %v", sth.TreeHeadSignature.SignatureAlgorithm, expectedDS.SignatureAlgorithm)
 	}
-	if bytes.Compare(sth.TreeHeadSignature.Signature, expectedDS.Signature) != 0 {
+	if !bytes.Equal(sth.TreeHeadSignature.Signature, expectedDS.Signature) {
 		t.Fatalf("Invalid TreeHeadSignature.Signature: expected %v, got %v", sth.TreeHeadSignature.Signature, expectedDS.Signature)
 	}
 }

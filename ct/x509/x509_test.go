@@ -11,6 +11,21 @@ import (
 	"crypto/rand"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
+	// END CT CHANGES
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/pem"
+	// START CT CHANGES
+	"errors"
+	// END CT CHANGES
+	"math/big"
+	"net"
+	"reflect"
+	// START CT CHANGES
+	"strings"
+	// END CT CHANGES
+	"testing"
+	"time"
 
 	"github.com/zmap/zcrypto/dsa"
 
@@ -18,24 +33,6 @@ import (
 	"github.com/zmap/zcrypto/ct/asn1"
 	"github.com/zmap/zcrypto/ct/x509/pkix"
 	"github.com/zmap/zcrypto/rsa"
-
-	// END CT CHANGES
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/pem"
-
-	// START CT CHANGES
-	"errors"
-	// END CT CHANGES
-	"math/big"
-	"net"
-	"reflect"
-
-	// START CT CHANGES
-	"strings"
-	// END CT CHANGES
-	"testing"
-	"time"
 )
 
 func TestParsePKCS1PrivateKey(t *testing.T) {
@@ -440,7 +437,7 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 			t.Errorf("%s: ExtraExtensions didn't override SubjectKeyId", test.name)
 		}
 
-		if bytes.Index(derBytes, extraExtensionData) == -1 {
+		if !bytes.Contains(derBytes, extraExtensionData) {
 			t.Errorf("%s: didn't find extra extension in DER output", test.name)
 		}
 

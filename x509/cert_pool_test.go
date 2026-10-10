@@ -18,7 +18,7 @@ func TestSubjects(t *testing.T) {
 	}
 	subjects := pool.Subjects()
 	for i := range subjects {
-		if bytes.Compare(subjects[i], pool.Certificates()[i].RawSubject) != 0 {
+		if !bytes.Equal(subjects[i], pool.Certificates()[i].RawSubject) {
 			t.Fail()
 		}
 	}
