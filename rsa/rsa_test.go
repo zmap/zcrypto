@@ -85,7 +85,7 @@ func TestNPrimeKeyGeneration(t *testing.T) {
 func TestImpossibleKeyGeneration(t *testing.T) {
 	// This test ensures that trying to generate toy RSA keys doesn't enter
 	// an infinite loop.
-	for i := 0; i < 32; i++ {
+	for i := range 32 {
 		GenerateKey(rand.Reader, i)
 		GenerateMultiPrimeKey(rand.Reader, 3, i)
 		GenerateMultiPrimeKey(rand.Reader, 4, i)

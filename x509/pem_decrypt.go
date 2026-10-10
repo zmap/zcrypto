@@ -204,7 +204,7 @@ func EncryptPEMBlock(rand io.Reader, blockType string, data, password []byte, al
 	// code.
 	copy(encrypted, data)
 	// See RFC 1423, section 1.1
-	for i := 0; i < pad; i++ {
+	for range pad {
 		encrypted = append(encrypted, byte(pad))
 	}
 	enc.CryptBlocks(encrypted, encrypted)

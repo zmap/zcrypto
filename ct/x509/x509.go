@@ -928,7 +928,7 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 
 				if err == nil {
 					var usage int
-					for i := 0; i < 9; i++ {
+					for i := range 9 {
 						if usageBits.At(i) != 0 {
 							usage |= 1 << uint(i)
 						}

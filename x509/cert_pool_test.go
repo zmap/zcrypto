@@ -87,7 +87,7 @@ func TestSumAndCovers(t *testing.T) {
 
 func makeRandomCertsForPool(n int) []*Certificate {
 	out := make([]*Certificate, 0, n)
-	for i := 0; i < n; i++ {
+	for range n {
 		c := new(Certificate)
 		c.FingerprintSHA256 = make([]byte, 256/8)
 		if _, err := rand.Read(c.FingerprintSHA256); err != nil {

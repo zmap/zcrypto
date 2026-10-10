@@ -193,7 +193,7 @@ func (n Name) appendRDNs(in RDNSequence, values []string, oid asn1.ObjectIdentif
 // roughly following the RFC 2253 Distinguished Names syntax.
 func (r RDNSequence) String() string {
 	s := ""
-	for i := 0; i < len(r); i++ {
+	for i := range r {
 		idx := len(r) - 1 - i
 		if LegacyNameString {
 			idx = i
