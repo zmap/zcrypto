@@ -105,9 +105,7 @@ func execSecurityRoots() (*CertPool, error) {
 	// tweaked their trust policy. These 4 goroutines are only
 	// defensive in the pathological case of many trust edits.
 	for i := 0; i < 4; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for block := range blockCh {
 				cert, err := ParseCertificate(block.Bytes)
 				if err != nil {
@@ -131,7 +129,7 @@ func execSecurityRoots() (*CertPool, error) {
 				}
 				mu.Unlock()
 			}
-		}()
+		})
 	}
 	for len(data) > 0 {
 		var block *pem.Block
