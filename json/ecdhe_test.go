@@ -18,63 +18,81 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"math/big"
+	"reflect"
 	"testing"
-
-	. "gopkg.in/check.v1"
 )
 
-func TestECDHE(t *testing.T) { TestingT(t) }
-
-type ECDHESuite struct{}
-
-var _ = Suite(&ECDHESuite{})
-
-func (s *ECDHESuite) TestEncodeDecodeCurveID(c *C) {
+func TestEncodeDecodeCurveID(t *testing.T) {
 	for curve := range ecIDToName {
-		out, errEnc := json.Marshal(&curve)
-		c.Assert(errEnc, IsNil)
+		out, err := json.Marshal(&curve)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		var back TLSCurveID
-		errDec := json.Unmarshal(out, &back)
-		c.Assert(errDec, IsNil)
-		c.Check(back, Equals, curve)
+		if err := json.Unmarshal(out, &back); err != nil {
+			t.Fatal(err)
+		}
+		if back != curve {
+			t.Errorf("decoded curve: got %v, want %v", back, curve)
+		}
 	}
 }
 
-func (s *ECDHESuite) TestEncodeDecodeECPoint(c *C) {
-	max := new(big.Int)
-	max.Exp(big.NewInt(2), big.NewInt(255), nil)
-	max.Sub(max, big.NewInt(19))
-	x, errX := rand.Int(rand.Reader, max)
-	y, errY := rand.Int(rand.Reader, max)
-	c.Assert(errX, IsNil)
-	c.Assert(errY, IsNil)
+func TestEncodeDecodeECPoint(t *testing.T) {
+	maxCoordinate := new(big.Int)
+	maxCoordinate.Exp(big.NewInt(2), big.NewInt(255), nil)
+	maxCoordinate.Sub(maxCoordinate, big.NewInt(19))
+
+	x, err := rand.Int(rand.Reader, maxCoordinate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	y, err := rand.Int(rand.Reader, maxCoordinate)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	p := ECPoint{
 		X: x,
 		Y: y,
 	}
-	out, errEnc := json.Marshal(&p)
-	c.Assert(errEnc, IsNil)
-	c.Check(len(out), Not(Equals), 0)
-	var back ECPoint
-	errDec := json.Unmarshal(out, &back)
-	c.Assert(errDec, IsNil)
-}
-
-func (s *ECDHESuite) TestCurveIDDescription(c *C) {
-	for curve, name := range ecIDToName {
-		c.Check(curve.Description(), Equals, name)
+	out, err := json.Marshal(&p)
+	if err != nil {
+		t.Fatal(err)
 	}
-	unk := TLSCurveID(6500)
-	c.Check(unk.Description(), Equals, "unknown")
+
+	var back ECPoint
+	if err := json.Unmarshal(out, &back); err != nil {
+		t.Fatal(err)
+	}
 }
 
-func (s *ECDHESuite) TestEncodeDecodeECParam(c *C) {
+func TestCurveIDDescription(t *testing.T) {
+	for curve, name := range ecIDToName {
+		if got := curve.Description(); got != name {
+			t.Errorf("curve %v: got description %q, want %q", curve, got, name)
+		}
+	}
+
+	unk := TLSCurveID(6500)
+	if got := unk.Description(); got != "unknown" {
+		t.Errorf("unknown curve: got description %q, want %q", got, "unknown")
+	}
+}
+
+func TestEncodeDecodeECParam(t *testing.T) {
 	ecp := new(ECDHParams)
-	out, errEnc := json.Marshal(&ecp)
-	c.Assert(errEnc, IsNil)
-	c.Check(len(out), Not(Equals), 0)
+	out, err := json.Marshal(ecp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	back := new(ECDHParams)
-	errDec := json.Unmarshal(out, back)
-	c.Assert(errDec, IsNil)
-	c.Check(back, DeepEquals, ecp)
+	if err := json.Unmarshal(out, back); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(back, ecp) {
+		t.Errorf("decoded params: got %+v, want %+v", back, ecp)
+	}
 }
