@@ -197,7 +197,7 @@ func TestAddJSON(t *testing.T) {
 
 	tests := []struct {
 		success bool
-		data    interface{}
+		data    any
 	}{
 		{true, struct{ hi string }{"bob"}},
 	}

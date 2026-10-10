@@ -435,7 +435,7 @@ func (c *CertValidationLevel) MarshalJSON() ([]byte, error) {
 // and Firefox
 // (http://hg.mozilla.org/mozilla-central/file/tip/security/certverifier/ExtendedValidation.cpp)
 // EV OID lists
-var ExtendedValidationOIDs = map[string]interface{}{
+var ExtendedValidationOIDs = map[string]any{
 	// CA/Browser Forum EV OID standard
 	// https://cabforum.org/object-registry/
 	"2.23.140.1.1": nil,
@@ -589,7 +589,7 @@ var ExtendedValidationOIDs = map[string]interface{}{
 
 // OrganizationValidationOIDs contains CA specific OV OIDs from
 // https://cabforum.org/object-registry/
-var OrganizationValidationOIDs = map[string]interface{}{
+var OrganizationValidationOIDs = map[string]any{
 	// CA/Browser Forum OV OID standard
 	// https://cabforum.org/object-registry/
 	"2.23.140.1.2.2": nil,
@@ -612,7 +612,7 @@ var OrganizationValidationOIDs = map[string]interface{}{
 }
 
 // DomainValidationOIDs contain OIDs that identify DV certs.
-var DomainValidationOIDs = map[string]interface{}{
+var DomainValidationOIDs = map[string]any{
 	// Globalsign
 	"1.3.6.1.4.1.4146.1.10.10": nil,
 	// Let's Encrypt

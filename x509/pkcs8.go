@@ -31,7 +31,7 @@ type pkcs8 struct {
 // More types might be supported in the future.
 //
 // This kind of key is commonly encoded in PEM blocks of type "PRIVATE KEY".
-func ParsePKCS8PrivateKey(der []byte) (key interface{}, err error) {
+func ParsePKCS8PrivateKey(der []byte) (key any, err error) {
 	var privKey pkcs8
 	if _, err := asn1.Unmarshal(der, &privKey); err != nil {
 		if _, err := asn1.Unmarshal(der, &ecPrivateKey{}); err == nil {
@@ -86,7 +86,7 @@ func ParsePKCS8PrivateKey(der []byte) (key interface{}, err error) {
 // and ed25519.PrivateKey. Unsupported key types result in an error.
 //
 // This kind of key is commonly encoded in PEM blocks of type "PRIVATE KEY".
-func MarshalPKCS8PrivateKey(key interface{}) ([]byte, error) {
+func MarshalPKCS8PrivateKey(key any) ([]byte, error) {
 	var privKey pkcs8
 
 	switch k := key.(type) {

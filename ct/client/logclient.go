@@ -62,7 +62,7 @@ type addChainResponse struct {
 // addJSONRequest represents the JSON request body sent ot the add-json CT
 // method.
 type addJSONRequest struct {
-	Data interface{} `json:"data"`
+	Data any `json:"data"`
 }
 
 // getSTHResponse respresents the JSON response to the get-sth CT method
@@ -128,7 +128,7 @@ func New(uri string) *LogClient {
 // Makes a HTTP call to |uri|, and attempts to parse the response as a JSON
 // representation of the structure in |res|.
 // Returns a non-nil |error| if there was a problem.
-func (c *LogClient) fetchAndParse(uri string, res interface{}) error {
+func (c *LogClient) fetchAndParse(uri string, res any) error {
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
 		return err
@@ -158,7 +158,7 @@ func (c *LogClient) fetchAndParse(uri string, res interface{}) error {
 // Makes a HTTP POST call to |uri|, and attempts to parse the response as a JSON
 // representation of the structure in |res|.
 // Returns a non-nil |error| if there was a problem.
-func (c *LogClient) postAndParse(uri string, req interface{}, res interface{}) (*http.Response, string, error) {
+func (c *LogClient) postAndParse(uri string, req any, res any) (*http.Response, string, error) {
 	postBody, err := json.Marshal(req)
 	if err != nil {
 		return nil, "", err
@@ -292,7 +292,7 @@ func (c *LogClient) AddChainWithContext(ctx context.Context, chain []ct.ASN1Cert
 	return c.addChainWithRetry(ctx, AddChainPath, chain)
 }
 
-func (c *LogClient) AddJSON(data interface{}) (*ct.SignedCertificateTimestamp, error) {
+func (c *LogClient) AddJSON(data any) (*ct.SignedCertificateTimestamp, error) {
 	req := addJSONRequest{
 		Data: data,
 	}
