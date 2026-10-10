@@ -5,6 +5,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/base64"
@@ -19,7 +20,6 @@ import (
 
 	"github.com/mreiferson/go-httpclient"
 	"github.com/zmap/zcrypto/ct"
-	"golang.org/x/net/context"
 )
 
 // URI paths for CT Log endpoints
@@ -37,10 +37,10 @@ type LogClient struct {
 	httpClient *http.Client // used to interact with the log via HTTP
 }
 
-//////////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////////
 // JSON structures follow.
 // These represent the structures returned by the CT Log server.
-//////////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////////
 
 // addChainRequest represents the JSON request body sent to the add-chain CT
 // method.
@@ -167,7 +167,7 @@ func (c *LogClient) postAndParse(uri string, req interface{}, res interface{}) (
 	if err != nil {
 		return nil, "", err
 	}
-	//httpReq.Header.Set("Keep-Alive", "timeout=15, max=100")
+	// httpReq.Header.Set("Keep-Alive", "timeout=15, max=100")
 	httpReq.Header.Set("Content-Type", "application/json")
 	resp, err := c.httpClient.Do(httpReq)
 	// Read all of the body, if there is one, so that the http.Client can do
