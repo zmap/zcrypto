@@ -61,7 +61,7 @@ type pkixPublicKey struct {
 
 // ParsePKIXPublicKey parses a DER encoded public key. These values are
 // typically found in PEM blocks with "BEGIN PUBLIC KEY".
-func ParsePKIXPublicKey(derBytes []byte) (pub interface{}, err error) {
+func ParsePKIXPublicKey(derBytes []byte) (pub any, err error) {
 	var pki publicKeyInfo
 	if _, err = asn1.Unmarshal(derBytes, &pki); err != nil {
 		return
@@ -73,7 +73,7 @@ func ParsePKIXPublicKey(derBytes []byte) (pub interface{}, err error) {
 	return parsePublicKey(algo, &pki)
 }
 
-func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorithm pkix.AlgorithmIdentifier, err error) {
+func marshalPublicKey(pub any) (publicKeyBytes []byte, publicKeyAlgorithm pkix.AlgorithmIdentifier, err error) {
 	switch pub := pub.(type) {
 	case *rsa.PublicKey:
 		publicKeyBytes, err = asn1.Marshal(rsaPublicKey{
@@ -111,7 +111,7 @@ func marshalPublicKey(pub interface{}) (publicKeyBytes []byte, publicKeyAlgorith
 }
 
 // MarshalPKIXPublicKey serialises a public key to DER-encoded PKIX format.
-func MarshalPKIXPublicKey(pub interface{}) ([]byte, error) {
+func MarshalPKIXPublicKey(pub any) ([]byte, error) {
 	var publicKeyBytes []byte
 	var publicKeyAlgorithm pkix.AlgorithmIdentifier
 	var err error
@@ -501,7 +501,7 @@ type Certificate struct {
 	SignatureAlgorithm SignatureAlgorithm
 
 	PublicKeyAlgorithm PublicKeyAlgorithm
-	PublicKey          interface{}
+	PublicKey          any
 
 	Version             int
 	SerialNumber        *big.Int
@@ -763,7 +763,7 @@ type distributionPointName struct {
 	RelativeName pkix.RDNSequence `asn1:"optional,tag:1"`
 }
 
-func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (interface{}, error) {
+func parsePublicKey(algo PublicKeyAlgorithm, keyData *publicKeyInfo) (any, error) {
 	asn1Data := keyData.PublicKey.RightAlign()
 	switch algo {
 	case RSA:
@@ -1487,7 +1487,7 @@ func subjectBytes(cert *Certificate) ([]byte, error) {
 //
 // The only supported key types are RSA and ECDSA (*rsa.PublicKey or
 // *ecdsa.PublicKey for pub, *rsa.PrivateKey or *ecdsa.PublicKey for priv).
-func CreateCertificate(rand io.Reader, template, parent *Certificate, pub interface{}, priv interface{}) (cert []byte, err error) {
+func CreateCertificate(rand io.Reader, template, parent *Certificate, pub any, priv any) (cert []byte, err error) {
 	var publicKeyBytes []byte
 	var publicKeyAlgorithm pkix.AlgorithmIdentifier
 
@@ -1628,7 +1628,7 @@ func ParseDERCRL(derBytes []byte) (certList *pkix.CertificateList, err error) {
 // contains the given list of revoked certificates.
 //
 // The only supported key type is RSA (*rsa.PrivateKey for priv).
-func (c *Certificate) CreateCRL(rand io.Reader, priv interface{}, revokedCerts []pkix.RevokedCertificate, now, expiry time.Time) (crlBytes []byte, err error) {
+func (c *Certificate) CreateCRL(rand io.Reader, priv any, revokedCerts []pkix.RevokedCertificate, now, expiry time.Time) (crlBytes []byte, err error) {
 	rsaPriv, ok := priv.(*rsa.PrivateKey)
 	if !ok {
 		return nil, errors.New("x509: non-RSA private keys not supported")

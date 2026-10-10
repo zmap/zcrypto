@@ -317,7 +317,7 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		pub, priv interface{}
+		pub, priv any
 		checkSig  bool
 	}{
 		{"RSA/RSA", &rsaPriv.PublicKey, rsaPriv, true},

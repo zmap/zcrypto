@@ -294,7 +294,7 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		pub, priv  interface{}
+		pub, priv  any
 		checkSig   bool
 		sigAlgo    SignatureAlgorithm
 		selfSigned bool
@@ -968,7 +968,7 @@ func TestCreateCertificateRequest(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		priv    interface{}
+		priv    any
 		sigAlgo SignatureAlgorithm
 	}{
 		{"RSA", rsaPriv, SHA1WithRSA},

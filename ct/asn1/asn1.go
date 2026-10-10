@@ -612,7 +612,7 @@ func parseField(v reflect.Value, bytes []byte, initOffset int, params fieldParam
 			err = SyntaxError{"data truncated"}
 			return
 		}
-		var result interface{}
+		var result any
 		if !t.isCompound && t.class == classUniversal {
 			innerBytes := bytes[offset : offset+t.length]
 			switch t.tag {
@@ -951,13 +951,13 @@ func setDefaultValue(v reflect.Value, params fieldParameters) (ok bool) {
 //
 // Other ASN.1 types are not supported; if it encounters them,
 // Unmarshal returns a parse error.
-func Unmarshal(b []byte, val interface{}) (rest []byte, err error) {
+func Unmarshal(b []byte, val any) (rest []byte, err error) {
 	return UnmarshalWithParams(b, val, "")
 }
 
 // UnmarshalWithParams allows field parameters to be specified for the
 // top-level element. The form of the params is the same as the field tags.
-func UnmarshalWithParams(b []byte, val interface{}, params string) (rest []byte, err error) {
+func UnmarshalWithParams(b []byte, val any, params string) (rest []byte, err error) {
 	v := reflect.ValueOf(val).Elem()
 	offset, err := parseField(v, b, 0, parseFieldParameters(params))
 	if err != nil {

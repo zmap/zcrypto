@@ -23,7 +23,7 @@ func TestParseTorServiceDescriptorSyntax(t *testing.T) {
 		Algorithm: asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 1},
 	}
 	// mustASN1 marshals a given object to its ASN1 bytes or panics.
-	mustASN1 := func(value interface{}) []byte {
+	mustASN1 := func(value any) []byte {
 		result, err := asn1.Marshal(value)
 		if err != nil {
 			panic(fmt.Sprintf("err marshaling asn1 test data: %v", err))
