@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/zmap/zcrypto/encoding/asn1"
@@ -192,7 +193,7 @@ func (n Name) appendRDNs(in RDNSequence, values []string, oid asn1.ObjectIdentif
 // String returns a string representation of the sequence r,
 // roughly following the RFC 2253 Distinguished Names syntax.
 func (r RDNSequence) String() string {
-	s := ""
+	var s strings.Builder
 	for i := range r {
 		idx := len(r) - 1 - i
 		if LegacyNameString {
@@ -200,11 +201,11 @@ func (r RDNSequence) String() string {
 		}
 		rdn := r[idx]
 		if i > 0 {
-			s += ", "
+			s.WriteString(", ")
 		}
 		for j, tv := range rdn {
 			if j > 0 {
-				s += ", "
+				s.WriteString(", ")
 			}
 
 			oidString := tv.Type.String()
@@ -215,7 +216,7 @@ func (r RDNSequence) String() string {
 			if typeName == "" {
 				derBytes, err := asn1.Marshal(tv.Value)
 				if err == nil {
-					s += oidString + "=#" + hex.EncodeToString(derBytes)
+					s.WriteString(oidString + "=#" + hex.EncodeToString(derBytes))
 					continue // No value escaping necessary.
 				}
 
@@ -246,11 +247,11 @@ func (r RDNSequence) String() string {
 				}
 			}
 
-			s += typeName + "=" + string(escaped)
+			s.WriteString(typeName + "=" + string(escaped))
 		}
 	}
 
-	return s
+	return s.String()
 }
 
 // ToRDNSequence converts n into a single RDNSequence. The following
