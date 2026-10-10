@@ -41,11 +41,11 @@ func (s *ECDHESuite) TestEncodeDecodeCurveID(c *C) {
 }
 
 func (s *ECDHESuite) TestEncodeDecodeECPoint(c *C) {
-	max := new(big.Int)
-	max.Exp(big.NewInt(2), big.NewInt(255), nil)
-	max.Sub(max, big.NewInt(19))
-	x, errX := rand.Int(rand.Reader, max)
-	y, errY := rand.Int(rand.Reader, max)
+	maxCoordinate := new(big.Int)
+	maxCoordinate.Exp(big.NewInt(2), big.NewInt(255), nil)
+	maxCoordinate.Sub(maxCoordinate, big.NewInt(19))
+	x, errX := rand.Int(rand.Reader, maxCoordinate)
+	y, errY := rand.Int(rand.Reader, maxCoordinate)
 	c.Assert(errX, IsNil)
 	c.Assert(errY, IsNil)
 	p := ECPoint{
