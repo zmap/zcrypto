@@ -251,7 +251,7 @@ func (s *String) ReadASN1Boolean(out *bool) bool {
 	return true
 }
 
-var bigIntType = reflect.TypeOf((*big.Int)(nil)).Elem()
+var bigIntType = reflect.TypeFor[big.Int]()
 
 // ReadASN1Integer decodes an ASN.1 INTEGER into out and advances. If out does
 // not point to an integer or to a big.Int, it panics. It reports whether the

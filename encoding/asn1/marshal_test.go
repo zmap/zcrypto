@@ -283,7 +283,7 @@ func TestIssue11130(t *testing.T) {
 		t.Errorf("%v", err)
 		return
 	}
-	if reflect.TypeOf(v).String() != reflect.TypeOf(ObjectIdentifier{}).String() {
+	if reflect.TypeOf(v).String() != reflect.TypeFor[ObjectIdentifier]().String() {
 		t.Errorf("marshal OID returned an invalid type")
 		return
 	}
