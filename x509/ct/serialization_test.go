@@ -87,7 +87,7 @@ func TestWriteVarBytes(t *testing.T) {
 	if b[0] != 0x06 || b[1] != 0xec || b[2] != 0x09 {
 		t.Errorf("Buffer has incorrect size header %02x,%02x,%02x", b[0], b[1], b[2])
 	}
-	if bytes.Compare(data, b[3:]) != 0 {
+	if !bytes.Equal(data, b[3:]) {
 		t.Errorf("Buffer data corrupt")
 	}
 }
