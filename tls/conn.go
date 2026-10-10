@@ -285,11 +285,7 @@ func extractPadding(payload []byte) (toRemove int, good byte) {
 	good = byte(int32(^t) >> 31)
 
 	// The maximum possible padding length plus the actual length field
-	toCheck := 256
-	// The length of the padded data is public, so we can use an if here
-	if toCheck > len(payload) {
-		toCheck = len(payload)
-	}
+	toCheck := min(256, len(payload))
 
 	for i := 0; i < toCheck; i++ {
 		t := uint(paddingLen) - uint(i)
@@ -909,10 +905,7 @@ func (c *Conn) maxPayloadSizeForWrite(typ recordType) int {
 		return maxPlaintext // avoid overflow in multiply below
 	}
 
-	n := payloadBytes * int(pkt+1)
-	if n > maxPlaintext {
-		n = maxPlaintext
-	}
+	n := min(payloadBytes*int(pkt+1), maxPlaintext)
 	return n
 }
 
@@ -1432,10 +1425,10 @@ func (c *Conn) handshake(ctx context.Context) (ret error) {
 	defer cancel()
 
 	// TODO This is pulled from a newer version of crypto/TLS with quic support which we lack. Commenting out for now.
-	//if c.quic != nil {
+	// if c.quic != nil {
 	//	c.quic.cancelc = handshakeCtx.Done()
 	//	c.quic.cancel = cancel
-	//} else if ctx.Done() != nil {
+	// } else if ctx.Done() != nil {
 	if ctx.Done() != nil {
 		// Start the "interrupter" goroutine, if this context might be canceled.
 		// (The background context cannot).
@@ -1469,7 +1462,7 @@ func (c *Conn) handshake(ctx context.Context) (ret error) {
 	// TODO: c.handshakeFn() gives a race condition in ZGrab2
 	// using explicit calls here instead
 
-	//c.handshakeErr = c.handshakeFn()
+	// c.handshakeErr = c.handshakeFn()
 	if c.isClient {
 		c.handshakeErr = c.clientHandshake()
 	} else {

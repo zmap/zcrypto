@@ -980,10 +980,7 @@ func (c *slowConn) Write(p []byte) (int, error) {
 	wrote := 0
 	for wrote < len(p) {
 		time.Sleep(100 * time.Microsecond)
-		allowed := int(time.Since(t0).Seconds()*float64(c.bps)) / 8
-		if allowed > len(p) {
-			allowed = len(p)
-		}
+		allowed := min(int(time.Since(t0).Seconds()*float64(c.bps))/8, len(p))
 		if wrote < allowed {
 			n, err := c.Conn.Write(p[wrote:allowed])
 			wrote += n
