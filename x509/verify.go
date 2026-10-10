@@ -555,8 +555,8 @@ func checkChainForKeyUsage(chain []*Certificate, keyUsages []ExtKeyUsage) bool {
 	// is unacceptable.
 
 NextCert:
-	for i := len(chain) - 1; i >= 0; i-- {
-		cert := chain[i]
+	for _, cert := range slices.Backward(chain) {
+
 		if len(cert.ExtKeyUsage) == 0 && len(cert.UnknownExtKeyUsage) == 0 {
 			// The certificate doesn't have any extended key usage specified.
 			continue
