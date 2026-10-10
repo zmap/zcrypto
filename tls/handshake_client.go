@@ -172,7 +172,7 @@ func (c *ClientFingerprintConfiguration) marshal(config *Config) ([]byte, error)
 				}
 			}
 			if !found {
-				return nil, errors.New(fmt.Sprintf("tls: unimplemented cipher suite %d", suite))
+				return nil, fmt.Errorf("tls: unimplemented cipher suite %d", suite)
 			}
 		}
 
@@ -188,10 +188,10 @@ func (c *ClientFingerprintConfiguration) marshal(config *Config) ([]byte, error)
 	if len(c.CompressionMethods) > 0 {
 		copy(compressions[1:], c.CompressionMethods)
 		if c.CompressionMethods[0] != 0 {
-			return nil, errors.New(fmt.Sprintf("tls: unimplemented compression method %d", c.CompressionMethods[0]))
+			return nil, fmt.Errorf("tls: unimplemented compression method %d", c.CompressionMethods[0])
 		}
 		if len(c.CompressionMethods) > 1 {
-			return nil, errors.New(fmt.Sprintf("tls: unimplemented compression method %d", c.CompressionMethods[1]))
+			return nil, fmt.Errorf("tls: unimplemented compression method %d", c.CompressionMethods[1])
 		}
 	} else {
 		return nil, errors.New("tls: no compression method")
