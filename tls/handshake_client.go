@@ -399,13 +399,7 @@ func (c *Conn) clientHandshake() (err error) {
 			cacheKey = c.config.ClientFingerprintConfiguration.CacheKey.Key(c.conn.RemoteAddr())
 			candidateSession, ok := sessionCache.Get(cacheKey)
 			if ok {
-				cipherSuiteOk := false
-				for _, id := range c.config.ClientFingerprintConfiguration.CipherSuites {
-					if id == candidateSession.cipherSuite {
-						cipherSuiteOk = true
-						break
-					}
-				}
+				cipherSuiteOk := slices.Contains(c.config.ClientFingerprintConfiguration.CipherSuites, candidateSession.cipherSuite)
 				versOk := candidateSession.vers >= c.config.minSupportedVersion() &&
 					candidateSession.vers <= c.config.ClientFingerprintConfiguration.HandshakeVersion
 				if versOk && cipherSuiteOk {
@@ -605,13 +599,7 @@ func (c *Conn) loadSession(hello *clientHelloMsg) (cacheKey string,
 	}
 
 	// Check that version used for the previous session is still valid.
-	versOk := false
-	for _, v := range hello.supportedVersions {
-		if v == session.vers {
-			versOk = true
-			break
-		}
-	}
+	versOk := slices.Contains(hello.supportedVersions, session.vers)
 	if !versOk {
 		return cacheKey, nil, nil, nil
 	}
@@ -1331,10 +1319,8 @@ func clientSessionCacheKey(serverAddr net.Addr, config *Config) string {
 // protocols and a list of the preference order.
 func mutualProtocol(protos, preferenceProtos []string) string {
 	for _, s := range preferenceProtos {
-		for _, c := range protos {
-			if s == c {
-				return s
-			}
+		if slices.Contains(protos, s) {
+			return s
 		}
 	}
 	return ""

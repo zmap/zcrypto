@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"slices"
 
 	"github.com/zmap/zcrypto/x509"
 )
@@ -70,11 +71,9 @@ func (p *defaultProvider) FetchAndParse() (*CRLSet, error) {
 // Check - Given a parsed CRLSet, check if a given cert is present
 func (crlSet *CRLSet) Check(cert *x509.Certificate, issuerSPKIHash string) *Entry {
 	// check for BlockedSPKIs first
-	for _, spki := range crlSet.BlockedSPKIs {
-		if issuerSPKIHash == spki {
-			return &Entry{
-				SerialNumber: cert.SerialNumber,
-			}
+	if slices.Contains(crlSet.BlockedSPKIs, issuerSPKIHash) {
+		return &Entry{
+			SerialNumber: cert.SerialNumber,
 		}
 	}
 
