@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -246,11 +247,9 @@ func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err e
 	}
 
 	// If any key usage is acceptable then we're done.
-	for _, usage := range keyUsages {
-		if usage == ExtKeyUsageAny {
-			chains = candidateChains
-			return
-		}
+	if slices.Contains(keyUsages, ExtKeyUsageAny) {
+		chains = candidateChains
+		return
 	}
 
 	for _, candidate := range candidateChains {
@@ -390,10 +389,8 @@ func (c *Certificate) VerifyHostname(h string) error {
 	if ip := net.ParseIP(candidateIP); ip != nil {
 		// We only match IP addresses against IP SANs.
 		// https://tools.ietf.org/html/rfc6125#appendix-B.2
-		for _, candidate := range c.IPAddresses {
-			if ip.Equal(candidate) {
-				return nil
-			}
+		if slices.ContainsFunc(c.IPAddresses, ip.Equal) {
+			return nil
 		}
 		return HostnameError{c, candidateIP}
 	}

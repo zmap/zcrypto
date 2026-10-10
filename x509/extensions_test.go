@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 	"testing"
 
@@ -556,12 +557,7 @@ func TestExtendedKeyUsageExtensionJSON(t *testing.T) {
 }
 
 func containsExtKeyUsage(s []ExtKeyUsage, e ExtKeyUsage) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(s, e)
 }
 
 func TestTorServiceDescriptorHashJSON(t *testing.T) {

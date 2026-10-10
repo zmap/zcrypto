@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -329,13 +330,7 @@ func TestTLSPointFormats(t *testing.T) {
 				if len(serverHello.supportedPoints) < 1 {
 					t.Fatal("missing ec_point_format extension from server")
 				}
-				found := false
-				for _, p := range serverHello.supportedPoints {
-					if p == pointFormatUncompressed {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(serverHello.supportedPoints, pointFormatUncompressed)
 				if !found {
 					t.Fatal("missing uncompressed format in ec_point_format extension from server")
 				}

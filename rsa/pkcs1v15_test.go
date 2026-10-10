@@ -14,6 +14,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"io"
+	"slices"
 	"testing"
 	"testing/quick"
 
@@ -177,11 +178,9 @@ func TestNonZeroRandomBytes(t *testing.T) {
 	if err != nil {
 		t.Errorf("returned error: %s", err)
 	}
-	for _, b := range b {
-		if b == 0 {
-			t.Errorf("Zero octet found")
-			return
-		}
+	if slices.Contains(b, 0) {
+		t.Errorf("Zero octet found")
+		return
 	}
 }
 

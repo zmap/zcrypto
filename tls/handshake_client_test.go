@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -229,13 +230,7 @@ func (test *clientTest) connFromCommand() (conn *recordingConn, child *exec.Cmd,
 	}
 
 	if test.numRenegotiations > 0 || test.sendKeyUpdate {
-		found := false
-		for _, flag := range command[1:] {
-			if flag == "-state" {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(command[1:], "-state")
 
 		if !found {
 			panic("-state flag missing to OpenSSL, you need this if testing renegotiation or KeyUpdate")
