@@ -257,7 +257,7 @@ var bigIntType = reflect.TypeFor[big.Int]()
 // not point to an integer or to a big.Int, it panics. It reports whether the
 // read was successful.
 func (s *String) ReadASN1Integer(out any) bool {
-	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+	if reflect.TypeOf(out).Kind() != reflect.Pointer {
 		panic("out is not a pointer")
 	}
 	switch reflect.ValueOf(out).Elem().Kind() {
@@ -603,7 +603,7 @@ func (s *String) SkipOptionalASN1(tag asn1.Tag) bool {
 // does not point to an integer or to a big.Int, it panics. It reports
 // whether the read was successful.
 func (s *String) ReadOptionalASN1Integer(out any, tag asn1.Tag, defaultValue any) bool {
-	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+	if reflect.TypeOf(out).Kind() != reflect.Pointer {
 		panic("out is not a pointer")
 	}
 	var present bool
@@ -620,7 +620,7 @@ func (s *String) ReadOptionalASN1Integer(out any, tag asn1.Tag, defaultValue any
 			if reflect.TypeOf(out).Elem() != bigIntType {
 				panic("invalid integer type")
 			}
-			if reflect.TypeOf(defaultValue).Kind() != reflect.Ptr ||
+			if reflect.TypeOf(defaultValue).Kind() != reflect.Pointer ||
 				reflect.TypeOf(defaultValue).Elem() != bigIntType {
 				panic("out points to big.Int, but defaultValue does not")
 			}
