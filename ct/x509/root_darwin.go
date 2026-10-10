@@ -13,7 +13,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
@@ -160,7 +159,7 @@ func execSecurityRoots() (*CertPool, error) {
 func verifyCertWithSystem(block *pem.Block, cert *Certificate) bool {
 	data := pem.EncodeToMemory(block)
 
-	f, err := ioutil.TempFile("", "cert")
+	f, err := os.CreateTemp("", "cert")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "can't create temporary file for cert: %v", err)
 		return false
@@ -199,7 +198,7 @@ func verifyCertWithSystem(block *pem.Block, cert *Certificate) bool {
 // settings. This code is only used for cgo-disabled builds.
 func getCertsWithTrustPolicy() (map[string]bool, error) {
 	set := map[string]bool{}
-	td, err := ioutil.TempDir("", "x509trustpolicy")
+	td, err := os.MkdirTemp("", "x509trustpolicy")
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,7 @@
 package microsoft_test
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -57,7 +57,7 @@ func loadRevokedList(t *testing.T) (disallowed *microsoft.DisallowedCerts) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	sstBytes, err := ioutil.ReadAll(sstFile)
+	sstBytes, err := io.ReadAll(sstFile)
 	if err != nil {
 		t.Error(err.Error())
 	}

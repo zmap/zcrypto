@@ -15,9 +15,9 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"net"
+	"os"
 	"os/exec"
 	"reflect"
 	"runtime"
@@ -1364,7 +1364,7 @@ func TestParseGeneralNamesAll(t *testing.T) {
 }
 
 func TestTimeInValidityPeriod(t *testing.T) {
-	fileBytes, _ := ioutil.ReadFile("testdata/davidadrian.org.cert")
+	fileBytes, _ := os.ReadFile("testdata/davidadrian.org.cert")
 	p, _ := pem.Decode(fileBytes)
 	c, err := ParseCertificate(p.Bytes)
 	if err != nil {
@@ -1469,7 +1469,7 @@ func TestParseCert(t *testing.T) {
 
 	for _, tc := range tcases {
 		t.Run(tc, func(t *testing.T) {
-			b, err := ioutil.ReadFile(tc)
+			b, err := os.ReadFile(tc)
 			require.NoError(t, err)
 
 			block, _ := pem.Decode(b)
@@ -1484,7 +1484,7 @@ func TestParseCert(t *testing.T) {
 
 	for _, tc := range tcases {
 		t.Run(tc, func(t *testing.T) {
-			b, err := ioutil.ReadFile(tc)
+			b, err := os.ReadFile(tc)
 			require.NoError(t, err)
 
 			block, _ := pem.Decode(b)
