@@ -510,7 +510,7 @@ func TestRawStructs(t *testing.T) {
 }
 
 func TestCouleBeISO8859_1(t *testing.T) {
-	for i := 0; i < 0xff; i++ {
+	for i := range 0xff {
 		b := []byte("StringWithA")
 		b = append(b, byte(i))
 		switch {
@@ -533,7 +533,7 @@ func TestCouleBeISO8859_1(t *testing.T) {
 }
 
 func TestCouleBeT61(t *testing.T) {
-	for i := 0; i < 255; i++ {
+	for i := range 255 {
 		b := []byte("StringWithA")
 		b = append(b, byte(i))
 

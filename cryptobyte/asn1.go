@@ -333,7 +333,7 @@ func asn1Signed(out *int64, n []byte) bool {
 	if length > 8 {
 		return false
 	}
-	for i := 0; i < length; i++ {
+	for i := range length {
 		*out <<= 8
 		*out |= int64(n[i])
 	}
@@ -361,7 +361,7 @@ func asn1Unsigned(out *uint64, n []byte) bool {
 		// Negative number.
 		return false
 	}
-	for i := 0; i < length; i++ {
+	for i := range length {
 		*out <<= 8
 		*out |= uint64(n[i])
 	}

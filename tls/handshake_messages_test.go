@@ -74,7 +74,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 				// have parsable prefixes because the extension
 				// data is optional and the length of the
 				// Finished varies across versions.
-				for j := 0; j < len(marshaled); j++ {
+				for j := range marshaled {
 					if m2.unmarshal(marshaled[0:j]) {
 						t.Errorf("#%d unmarshaled a prefix of length %d of %#v", i, j, m1)
 						break
@@ -90,7 +90,7 @@ func TestFuzz(t *testing.T) {
 	for _, iface := range tests {
 		m := iface.(handshakeMessage)
 
-		for j := 0; j < 1000; j++ {
+		for range 1000 {
 			len := rand.Intn(100)
 			bytes := randomBytes(len, rand)
 			// This just looks for crashes due to bounds errors etc.
@@ -257,7 +257,7 @@ func (*certificateMsg) Generate(rand *rand.Rand, size int) reflect.Value {
 	m := &certificateMsg{}
 	numCerts := rand.Intn(20)
 	m.certificates = make([][]byte, numCerts)
-	for i := 0; i < numCerts; i++ {
+	for i := range numCerts {
 		m.certificates[i] = randomBytes(rand.Intn(10)+1, rand)
 	}
 	return reflect.ValueOf(m)
@@ -376,7 +376,7 @@ func (*certificateRequestMsgTLS13) Generate(rand *rand.Rand, size int) reflect.V
 	}
 	if rand.Intn(10) > 5 {
 		m.certificateAuthorities = make([][]byte, 3)
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			m.certificateAuthorities[i] = randomBytes(rand.Intn(10)+1, rand)
 		}
 	}

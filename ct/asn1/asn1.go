@@ -90,7 +90,7 @@ func parseInt64(bytes []byte) (ret int64, err error) {
 		err = StructuralError{"integer too large"}
 		return
 	}
-	for bytesRead := 0; bytesRead < len(bytes); bytesRead++ {
+	for bytesRead := range bytes {
 		ret <<= 8
 		ret |= int64(bytes[bytesRead])
 	}
@@ -202,7 +202,7 @@ func (oi ObjectIdentifier) Equal(other ObjectIdentifier) bool {
 	if len(oi) != len(other) {
 		return false
 	}
-	for i := 0; i < len(oi); i++ {
+	for i := range oi {
 		if oi[i] != other[i] {
 			return false
 		}
@@ -430,7 +430,7 @@ func parseTagAndLength(bytes []byte, initOffset int) (ret tagAndLength, offset i
 			return
 		}
 		ret.length = 0
-		for i := 0; i < numBytes; i++ {
+		for range numBytes {
 			if offset >= len(bytes) {
 				err = SyntaxError{"truncated tag or length"}
 				return

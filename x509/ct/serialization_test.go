@@ -39,7 +39,7 @@ func createVarByteBuf(dataSize uint64) []byte {
 		buf[lenBytes-x-1] = byte(t)
 		t >>= 8
 	}
-	for x := uint64(0); x < dataSize; x++ {
+	for x := range dataSize {
 		buf[lenBytes+x] = byte(x)
 	}
 	return buf
@@ -72,7 +72,7 @@ func TestCreateVarByteBuf(t *testing.T) {
 func TestWriteVarBytes(t *testing.T) {
 	const dataSize = 453641
 	data := make([]byte, dataSize)
-	for x := uint64(0); x < dataSize; x++ {
+	for x := range uint64(dataSize) {
 		data[x] = byte(x)
 	}
 

@@ -1237,7 +1237,7 @@ func TestParseGeneralNamesOtherName(t *testing.T) {
 	}
 	var otherInts [3]int
 	var expectedInts [3]int = [3]int{461, 42, 95488}
-	for x := 0; x < 3; x++ {
+	for x := range 3 {
 		rest, err := asn1.Unmarshal(otherNames[x].Value.Bytes, &(otherInts[x]))
 		if err != nil {
 			t.Errorf("unexpected error in unmarshaling otherName %v", err)

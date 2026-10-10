@@ -104,7 +104,7 @@ func execSecurityRoots() (*CertPool, error) {
 	// The hope is that we only call verify-cert when the user has
 	// tweaked their trust policy. These 4 goroutines are only
 	// defensive in the pathological case of many trust edits.
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		wg.Go(func() {
 			for block := range blockCh {
 				cert, err := ParseCertificate(block.Bytes)
