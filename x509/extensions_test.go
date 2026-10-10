@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 	"testing"
 
@@ -137,7 +138,7 @@ func TestGeneralNamesJSON(t *testing.T) {
 
 func containsIP(s []net.IP, e net.IP) bool {
 	for _, a := range s {
-		if bytes.Compare(a, e) == 0 {
+		if bytes.Equal(a, e) {
 			return true
 		}
 	}
@@ -175,7 +176,7 @@ func containsName(s []pkix.Name, e pkix.Name) bool {
 func containsOtherName(s []pkix.OtherName, e pkix.OtherName) bool {
 	for _, a := range s {
 		if a.TypeID.Equal(e.TypeID) &&
-			bytes.Compare(a.Value.Bytes, a.Value.Bytes) == 0 {
+			bytes.Equal(a.Value.Bytes, a.Value.Bytes) {
 			return true
 		}
 	}
@@ -556,12 +557,7 @@ func TestExtendedKeyUsageExtensionJSON(t *testing.T) {
 }
 
 func containsExtKeyUsage(s []ExtKeyUsage, e ExtKeyUsage) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(s, e)
 }
 
 func TestTorServiceDescriptorHashJSON(t *testing.T) {

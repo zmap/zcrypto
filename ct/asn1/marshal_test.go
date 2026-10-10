@@ -63,7 +63,7 @@ type testSET []int
 var PST = time.FixedZone("PST", -8*60*60)
 
 type marshalTest struct {
-	in  interface{}
+	in  any
 	out string // hex encoded
 }
 

@@ -397,24 +397,6 @@ func (s *Scanner) fetcherJob(id int, ranges <-chan fetchRange, entries chan<- ma
 	wg.Done()
 }
 
-// Returns the smaller of |a| and |b|
-func min(a int64, b int64) int64 {
-	if a < b {
-		return a
-	} else {
-		return b
-	}
-}
-
-// Returns the larger of |a| and |b|
-func max(a int64, b int64) int64 {
-	if a > b {
-		return a
-	} else {
-		return b
-	}
-}
-
 // Pretty prints the passed in number of |seconds| into a more human readable
 // string.
 func humanTime(seconds int) string {

@@ -3,8 +3,8 @@ package x509
 import (
 	"encoding/json"
 	"encoding/pem"
-	"io/ioutil"
 	"net"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -66,7 +66,7 @@ func TestCertificateJSON(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.file, func(t *testing.T) {
 			path := testdataPrefix + test.file
-			certBytes, err := ioutil.ReadFile(path)
+			certBytes, err := os.ReadFile(path)
 			require.NoError(t, err)
 			p, _ := pem.Decode(certBytes)
 			require.NoError(t, err)

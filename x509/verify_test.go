@@ -397,7 +397,7 @@ func testVerify(t *testing.T) {
 					continue
 				}
 				for k, cert := range chain {
-					if strings.Index(nameToKey(&cert.Subject), expectedChain[k]) == -1 {
+					if !strings.Contains(nameToKey(&cert.Subject), expectedChain[k]) {
 						continue TryNextExpected
 					}
 				}

@@ -318,7 +318,7 @@ func (e *SignatureAlgorithmExtension) CheckImplemented() error {
 			}
 		}
 		if !found {
-			return errors.New(fmt.Sprintf("Unsupported Hash and Signature Algorithm (%d, %d)", algs.Hash, algs.Signature))
+			return fmt.Errorf("Unsupported Hash and Signature Algorithm (%d, %d)", algs.Hash, algs.Signature)
 		}
 	}
 	return nil

@@ -8,10 +8,11 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"io/ioutil"
+	"io"
 	"math/big"
 	"net/http"
 	"net/url"
+	"slices"
 
 	"github.com/zmap/zcrypto/x509"
 )
@@ -70,11 +71,9 @@ func (p *defaultProvider) FetchAndParse() (*CRLSet, error) {
 // Check - Given a parsed CRLSet, check if a given cert is present
 func (crlSet *CRLSet) Check(cert *x509.Certificate, issuerSPKIHash string) *Entry {
 	// check for BlockedSPKIs first
-	for _, spki := range crlSet.BlockedSPKIs {
-		if issuerSPKIHash == spki {
-			return &Entry{
-				SerialNumber: cert.SerialNumber,
-			}
+	if slices.Contains(crlSet.BlockedSPKIs, issuerSPKIHash) {
+		return &Entry{
+			SerialNumber: cert.SerialNumber,
 		}
 	}
 
@@ -155,7 +154,7 @@ func Fetch(url string) ([]byte, string, error) {
 	}
 
 	var reply update
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	if err != nil {
 		err = errors.New("Failed to read version reply: " + err.Error())
@@ -188,7 +187,7 @@ func Fetch(url string) ([]byte, string, error) {
 	defer resp.Body.Close()
 
 	// zip needs to seek around, so we read the whole reply into memory.
-	crxBytes, err := ioutil.ReadAll(resp.Body)
+	crxBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		err = errors.New("Failed to download CRX: " + err.Error())
 		return nil, version, err
@@ -240,7 +239,7 @@ func Fetch(url string) ([]byte, string, error) {
 		return nil, version, err
 	}
 
-	raw, err := ioutil.ReadAll(crlSetReader)
+	raw, err := io.ReadAll(crlSetReader)
 	if err != nil {
 		return nil, version, err
 	}

@@ -39,7 +39,7 @@ func createVarByteBuf(dataSize uint64) []byte {
 		buf[lenBytes-x-1] = byte(t)
 		t >>= 8
 	}
-	for x := uint64(0); x < dataSize; x++ {
+	for x := range dataSize {
 		buf[lenBytes+x] = byte(x)
 	}
 	return buf
@@ -72,7 +72,7 @@ func TestCreateVarByteBuf(t *testing.T) {
 func TestWriteVarBytes(t *testing.T) {
 	const dataSize = 453641
 	data := make([]byte, dataSize)
-	for x := uint64(0); x < dataSize; x++ {
+	for x := range uint64(dataSize) {
 		data[x] = byte(x)
 	}
 
@@ -87,7 +87,7 @@ func TestWriteVarBytes(t *testing.T) {
 	if b[0] != 0x06 || b[1] != 0xec || b[2] != 0x09 {
 		t.Errorf("Buffer has incorrect size header %02x,%02x,%02x", b[0], b[1], b[2])
 	}
-	if bytes.Compare(data, b[3:]) != 0 {
+	if !bytes.Equal(data, b[3:]) {
 		t.Errorf("Buffer data corrupt")
 	}
 }
