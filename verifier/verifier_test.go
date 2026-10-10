@@ -20,7 +20,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -735,7 +735,7 @@ func loadCRLSet(data string) (*google.CRLSet, error) {
 	}
 	defer crlSetFile.Close()
 
-	crlSetBytes, err := ioutil.ReadAll(crlSetFile)
+	crlSetBytes, err := io.ReadAll(crlSetFile)
 	if err != nil {
 		return nil, err
 	}
@@ -753,7 +753,7 @@ func loadOneCRL(data string) (*mozilla.OneCRL, error) {
 		return nil, err
 	}
 	defer oneCRLFile.Close()
-	oneCRLBytes, err := ioutil.ReadAll(oneCRLFile)
+	oneCRLBytes, err := io.ReadAll(oneCRLFile)
 	if err != nil {
 		return nil, err
 	}

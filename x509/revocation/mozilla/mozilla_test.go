@@ -1,7 +1,7 @@
 package mozilla_test
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -62,7 +62,7 @@ func loadRevokedList(t *testing.T) (onecrl *mozilla.OneCRL) {
 		t.Error(err.Error())
 	}
 	defer oneCRLFile.Close()
-	oneCRLBytes, err := ioutil.ReadAll(oneCRLFile)
+	oneCRLBytes, err := io.ReadAll(oneCRLFile)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -91,8 +91,8 @@ func TestCheck(t *testing.T) {
 }
 
 func TestFetchLocal(t *testing.T) {
-	//bytes, err := ioutil.ReadFile("testdata/records")
-	bytes, err := ioutil.ReadFile(onecrl_location)
+	// bytes, err := os.ReadFile("testdata/records")
+	bytes, err := os.ReadFile(onecrl_location)
 	require.NoError(t, err)
 
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +107,7 @@ func TestFetchLocal(t *testing.T) {
 	set, err := p.FetchAndParse()
 	require.NoError(t, err)
 	assert.NotNil(t, set.IssuerLists)
-	//assert.Len(t, set.IssuerLists, 251)
+	// assert.Len(t, set.IssuerLists, 251)
 }
 
 func TestFetchRemote(t *testing.T) {

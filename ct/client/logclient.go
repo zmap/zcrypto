@@ -12,7 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -139,7 +139,7 @@ func (c *LogClient) fetchAndParse(uri string, res interface{}) error {
 		if resp.StatusCode > 399 {
 			return errors.New("HTTP error: " + resp.Status)
 		}
-		body, err = ioutil.ReadAll(resp.Body)
+		body, err = io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if err != nil {
 			return err
@@ -174,7 +174,7 @@ func (c *LogClient) postAndParse(uri string, req interface{}, res interface{}) (
 	// Keep-Alive:
 	var body []byte
 	if resp != nil {
-		body, err = ioutil.ReadAll(resp.Body)
+		body, err = io.ReadAll(resp.Body)
 		resp.Body.Close()
 	}
 	if err != nil {

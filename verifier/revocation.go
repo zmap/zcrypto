@@ -6,7 +6,6 @@ import (
 	"crypto"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -133,7 +132,7 @@ func httpGet(ctx context.Context, url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +153,7 @@ func httpPost(ctx context.Context, url string, contentType, accept string, reqBo
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
