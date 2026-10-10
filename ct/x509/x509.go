@@ -855,11 +855,12 @@ func (e *NonFatalErrors) AddError(err error) {
 // Returns a string consisting of the values of Error() from all of the errors
 // contained in |e|
 func (e NonFatalErrors) Error() string {
-	r := "NonFatalErrors: "
+	var r strings.Builder
+	r.WriteString("NonFatalErrors: ")
 	for _, err := range e.Errors {
-		r += err.Error() + "; "
+		r.WriteString(err.Error() + "; ")
 	}
-	return r
+	return r.String()
 }
 
 // Returns true if |e| contains at least one error

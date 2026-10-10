@@ -211,14 +211,14 @@ func (oi ObjectIdentifier) Equal(other ObjectIdentifier) bool {
 	return true
 }
 func (oi ObjectIdentifier) String() string {
-	var s string
+	var s strings.Builder
 	for i, v := range oi {
 		if i > 0 {
-			s += "."
+			s.WriteString(".")
 		}
-		s += strconv.Itoa(v)
+		s.WriteString(strconv.Itoa(v))
 	}
-	return s
+	return s.String()
 }
 
 // parseObjectIdentifier parses an OBJECT IDENTIFIER from the given bytes and
