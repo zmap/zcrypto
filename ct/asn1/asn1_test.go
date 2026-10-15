@@ -391,7 +391,7 @@ type TestBigInt struct {
 
 var unmarshalTestData = []struct {
 	in  []byte
-	out interface{}
+	out any
 }{
 	{[]byte{0x02, 0x01, 0x42}, newInt(0x42)},
 	{[]byte{0x30, 0x08, 0x06, 0x06, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d}, &TestObjectIdentifierStruct{[]int{1, 2, 840, 113549}}},
@@ -450,7 +450,7 @@ type RelativeDistinguishedNameSET []AttributeTypeAndValue
 
 type AttributeTypeAndValue struct {
 	Type  ObjectIdentifier
-	Value interface{}
+	Value any
 }
 
 type Validity struct {
@@ -510,7 +510,7 @@ func TestRawStructs(t *testing.T) {
 }
 
 func TestCouleBeISO8859_1(t *testing.T) {
-	for i := 0; i < 0xff; i++ {
+	for i := range 0xff {
 		b := []byte("StringWithA")
 		b = append(b, byte(i))
 		switch {
@@ -533,7 +533,7 @@ func TestCouleBeISO8859_1(t *testing.T) {
 }
 
 func TestCouleBeT61(t *testing.T) {
-	for i := 0; i < 255; i++ {
+	for i := range 255 {
 		b := []byte("StringWithA")
 		b = append(b, byte(i))
 

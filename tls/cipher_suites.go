@@ -15,6 +15,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"hash"
+	"slices"
 
 	"github.com/zmap/zcrypto/x509"
 	"golang.org/x/crypto/chacha20poly1305"
@@ -183,7 +184,7 @@ type cipherSuite struct {
 	ka     func(version uint16) keyAgreement
 	// flags is a bitmask of the suite* values, above.
 	flags  int
-	cipher func(key, iv []byte, isRead bool) interface{}
+	cipher func(key, iv []byte, isRead bool) any
 	mac    func(key []byte) hash.Hash
 	aead   func(key, fixedNonce []byte) aead
 }
@@ -327,10 +328,8 @@ func selectCipherSuite(ids, supportedIDs []uint16, ok func(*cipherSuite) bool) *
 			continue
 		}
 
-		for _, suppID := range supportedIDs {
-			if id == suppID {
-				return candidate
-			}
+		if slices.Contains(supportedIDs, id) {
+			return candidate
 		}
 	}
 	return nil
@@ -351,12 +350,12 @@ var cipherSuitesTLS13 = []*cipherSuiteTLS13{
 	{TLS_AES_256_GCM_SHA384, 32, aeadAESGCMTLS13, crypto.SHA384},
 }
 
-func cipherRC4(key, iv []byte, isRead bool) interface{} {
+func cipherRC4(key, iv []byte, isRead bool) any {
 	cipher, _ := rc4.NewCipher(key)
 	return cipher
 }
 
-func cipher3DES(key, iv []byte, isRead bool) interface{} {
+func cipher3DES(key, iv []byte, isRead bool) any {
 	block, _ := des.NewTripleDESCipher(key)
 	if isRead {
 		return cipher.NewCBCDecrypter(block, iv)
@@ -364,7 +363,7 @@ func cipher3DES(key, iv []byte, isRead bool) interface{} {
 	return cipher.NewCBCEncrypter(block, iv)
 }
 
-func cipherAES(key, iv []byte, isRead bool) interface{} {
+func cipherAES(key, iv []byte, isRead bool) any {
 	block, _ := aes.NewCipher(key)
 	if isRead {
 		return cipher.NewCBCDecrypter(block, iv)

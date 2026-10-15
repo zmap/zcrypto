@@ -1,7 +1,7 @@
 package google_test
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -83,7 +83,7 @@ func loadRevokedList(t *testing.T) (crlset *google.CRLSet) {
 	}
 	defer crlSetFile.Close()
 
-	crlSetBytes, err := ioutil.ReadAll(crlSetFile)
+	crlSetBytes, err := io.ReadAll(crlSetFile)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -103,7 +103,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestParse6375(t *testing.T) {
-	raw, err := ioutil.ReadFile("testdata/crl-set-6375")
+	raw, err := os.ReadFile("testdata/crl-set-6375")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -141,7 +141,7 @@ func TestCheck(t *testing.T) {
 }
 
 func TestFetch(t *testing.T) {
-	bytes, err := ioutil.ReadFile("testdata/APm1SaUzZaPllaSDuZS5yng")
+	bytes, err := os.ReadFile("testdata/APm1SaUzZaPllaSDuZS5yng")
 	require.NoError(t, err)
 
 	versionResponse := `xml version="1.0" encoding="UTF-8"?>

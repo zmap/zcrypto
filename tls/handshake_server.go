@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"slices"
 	"sync/atomic"
 	"time"
 
@@ -179,15 +180,8 @@ func (hs *serverHandshakeState) processClientHello() error {
 	hs.hello = new(serverHelloMsg)
 	hs.hello.vers = c.vers
 
-	foundCompression := false
 	// We only support null compression, so check that the client offered it.
-	for _, compression := range hs.clientHello.compressionMethods {
-		if compression == compressionNone {
-			foundCompression = true
-			break
-		}
-	}
-
+	foundCompression := slices.Contains(hs.clientHello.compressionMethods, compressionNone)
 	if !foundCompression {
 		c.sendAlert(AlertHandshakeFailure)
 		return errors.New("tls: client does not support uncompressed connections")
@@ -293,24 +287,10 @@ func (hs *serverHandshakeState) processClientHello() error {
 // supportsECDHE returns whether ECDHE key exchanges can be used with this
 // pre-TLS 1.3 client.
 func supportsECDHE(c *Config, supportedCurves []CurveID, supportedPoints []uint8) bool {
-	supportsCurve := false
-	for _, curve := range supportedCurves {
-		if isTLS13OnlyKeyExchange(curve) {
-			continue
-		}
-		if c.supportsCurve(curve) {
-			supportsCurve = true
-			break
-		}
-	}
-
-	supportsPointFormat := false
-	for _, pointFormat := range supportedPoints {
-		if pointFormat == pointFormatUncompressed {
-			supportsPointFormat = true
-			break
-		}
-	}
+	supportsCurve := slices.ContainsFunc(supportedCurves, func(curve CurveID) bool {
+		return !isTLS13OnlyKeyExchange(curve) && c.supportsCurve(curve)
+	})
+	supportsPointFormat := slices.Contains(supportedPoints, pointFormatUncompressed)
 
 	return supportsCurve && supportsPointFormat
 }
@@ -411,14 +391,8 @@ func (hs *serverHandshakeState) checkForResumption() bool {
 		return false
 	}
 
-	cipherSuiteOk := false
 	// Check that the client is still offering the ciphersuite in the session.
-	for _, id := range hs.clientHello.cipherSuites {
-		if id == hs.sessionState.cipherSuite {
-			cipherSuiteOk = true
-			break
-		}
-	}
+	cipherSuiteOk := slices.Contains(hs.clientHello.cipherSuites, hs.sessionState.cipherSuite)
 	if !cipherSuiteOk {
 		return false
 	}
@@ -688,7 +662,7 @@ func (hs *serverHandshakeState) establishKeys() error {
 	clientMAC, serverMAC, clientKey, serverKey, clientIV, serverIV :=
 		keysFromMasterSecret(c.vers, hs.suite, hs.masterSecret, hs.clientHello.random, hs.hello.random, hs.suite.macLen, hs.suite.keyLen, hs.suite.ivLen)
 
-	var clientCipher, serverCipher interface{}
+	var clientCipher, serverCipher any
 	var clientHash, serverHash hash.Hash
 
 	if hs.suite.aead == nil {
