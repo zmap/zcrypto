@@ -2,13 +2,9 @@ package tls
 
 import (
 	"crypto/mldsa"
-	"crypto/rand"
-	"math/big"
 	"testing"
-	"time"
 
 	"github.com/zmap/zcrypto/x509"
-	"github.com/zmap/zcrypto/x509/pkix"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -53,19 +49,7 @@ func mldsaTestCertificate(t *testing.T, params mldsa.Parameters) Certificate {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpl := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "mldsa.test"},
-		NotBefore:    time.Now().Add(-time.Hour),
-		NotAfter:     time.Now().Add(time.Hour),
-		KeyUsage:     x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, priv.Public(), priv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return Certificate{Certificate: [][]byte{der}, PrivateKey: priv}
+	return selfSignedTestCertificate(t, priv)
 }
 
 // TestTLS12MLDSAHandshake runs TLS 1.2 handshakes authenticated with ML-DSA
