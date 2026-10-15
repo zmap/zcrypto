@@ -37,10 +37,7 @@ func TestTLS12MLDSAServerKeyExchange(t *testing.T) {
 		isRSA:   false, // ECDHE_ECDSA suite
 	}
 	err = ka.processServerKeyExchange(&Config{}, clientHello, serverHello, &x509.Certificate{}, &serverKeyExchangeMsg{key: key})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if ka.verifyError == nil {
+	if err == nil || ka.verifyError == nil {
 		t.Fatal("expected bogus ML-DSA signature to fail verification")
 	}
 }

@@ -324,10 +324,10 @@ func sha512Hash(slices [][]byte) []byte {
 
 // hashForServerKeyExchange hashes the given slices and returns their digest
 // using the given hash function (for >= TLS 1.2) or using a default based on
-// the sigType (for earlier TLS versions). For Ed25519 signatures, which don't
-// do pre-hashing, it returns the concatenation of the slices.
+// the sigType (for earlier TLS versions). For Ed25519 and ML-DSA signatures,
+// which don't do pre-hashing, it returns the concatenation of the slices.
 func hashForServerKeyExchange(sigType uint8, hashFunc crypto.Hash, version uint16, slices ...[]byte) []byte {
-	if sigType == signatureEd25519 {
+	if isDirectSigning(sigType) {
 		var signed []byte
 		for _, slice := range slices {
 			signed = append(signed, slice...)

@@ -366,6 +366,17 @@ var supportedClientCertSignatureAlgorithms = []SigAndHash{
 // hash function associated with the Ed25519 and ML-DSA signature schemes.
 var directSigning crypto.Hash = 0
 
+// isDirectSigning reports whether sigType signs its input directly, without
+// pre-hashing (Ed25519 and ML-DSA).
+func isDirectSigning(sigType uint8) bool {
+	switch sigType {
+	case signatureEd25519, signatureMLDSA44, signatureMLDSA65, signatureMLDSA87:
+		return true
+	default:
+		return false
+	}
+}
+
 // supportedSignatureAlgorithms contains the signature and hash algorithms that
 // the code advertises as supported in a TLS 1.2+ ClientHello and in a TLS 1.2+
 // CertificateRequest. The two fields are merged to match with TLS 1.3.
