@@ -301,6 +301,18 @@ var supportedHashFunc = map[uint8]crypto.Hash{
 	hashSHA512: crypto.SHA512,
 }
 
+// tls12HashID returns the TLS 1.2 HashAlgorithm identifier for h, the inverse
+// of supportedHashFunc. It returns hashNone for directSigning and for hashes
+// with no TLS 1.2 identifier.
+func tls12HashID(h crypto.Hash) uint8 {
+	for id, hash := range supportedHashFunc {
+		if hash == h {
+			return id
+		}
+	}
+	return hashNone
+}
+
 // Signature algorithms (for internal signaling use). Starting at 225 to avoid overlap with
 // TLS 1.2 codepoints (RFC 5246, Appendix A.4.1), with which these have nothing to do.
 const (

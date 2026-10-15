@@ -620,7 +620,7 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 			auth.sigType = sigType
 		}
 		auth.sh.Signature = sigType
-		auth.sh.Hash = uint8(sigHash)
+		auth.sh.Hash = tls12HashID(sigHash)
 	default:
 		break
 	}
