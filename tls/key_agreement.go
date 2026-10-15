@@ -119,7 +119,6 @@ func (ka *signedKeyAgreement) verifyParameters(config *Config, clientHello *clie
 		// handle SignatureAndHashAlgorithm
 		var sigAndHash []uint8
 		sigAndHash, sig = sig[:2], sig[2:]
-
 		tls12HashId = sigAndHash[0]
 		ka.sh.Hash = tls12HashId
 		ka.sh.Signature = sigAndHash[1]
@@ -578,7 +577,6 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	if ka.version >= VersionTLS12 {
 		signatureAlgorithm := SignatureScheme(sig[0])<<8 | SignatureScheme(sig[1])
 		sig = sig[2:]
-
 		if len(sig) < 2 {
 			return errServerKeyExchange
 		}
@@ -749,7 +747,6 @@ func (ka *dheKeyAgreement) processServerKeyExchange(config *Config, clientHello 
 	sig := k
 	serverDHParams := skx.key[:len(skx.key)-len(sig)]
 	skx.digest, ka.verifyError = ka.auth.verifyParameters(config, clientHello, serverHello, cert, serverDHParams, sig)
-
 	if config.InsecureSkipVerify {
 		return nil
 	}

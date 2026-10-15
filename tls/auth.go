@@ -82,10 +82,10 @@ func verifyHandshakeSignature(sigType uint8, pubkey crypto.PublicKey, hashFunc c
 	case signatureMLDSA65:
 		pubKey, ok := pubkey.(*mldsa.PublicKey)
 		if !ok || pubKey.Parameters() != mldsa.MLDSA65() {
-			return fmt.Errorf("expected an ML-DSA65 public key, got %T", pubkey)
+			return fmt.Errorf("expected an ML-DSA-65 public key, got %T", pubkey)
 		}
 		if err := mldsa.Verify(pubKey, signed, sig, nil); err != nil {
-			return errors.New("ML-DSA65 verification failure")
+			return errors.New("ML-DSA-65 verification failure")
 		}
 	case signatureMLDSA87:
 		pubKey, ok := pubkey.(*mldsa.PublicKey)
@@ -273,7 +273,10 @@ func signatureSchemesForCertificate(version uint16, cert *Certificate) []Signatu
 		default:
 			return nil
 		}
+	default:
+		return nil
 	}
+
 	if cert.SupportedSignatureAlgorithms != nil {
 		var filteredSigAlgs []SignatureScheme
 		for _, sigAlg := range sigAlgs {
