@@ -134,17 +134,16 @@ func (c *LogClient) fetchAndParse(uri string, res any) error {
 		return err
 	}
 	resp, err := c.httpClient.Do(req)
-	var body []byte
-	if resp != nil {
-		if resp.StatusCode > 399 {
-			return errors.New("HTTP error: " + resp.Status)
-		}
-		body, err = io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		return errors.New("HTTP error: " + resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -170,21 +169,19 @@ func (c *LogClient) postAndParse(uri string, req any, res any) (*http.Response, 
 	// httpReq.Header.Set("Keep-Alive", "timeout=15, max=100")
 	httpReq.Header.Set("Content-Type", "application/json")
 	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return resp, "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
 	// Read all of the body, if there is one, so that the http.Client can do
 	// Keep-Alive:
-	var body []byte
-	if resp != nil {
-		body, err = io.ReadAll(resp.Body)
-		resp.Body.Close()
-	}
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return resp, string(body), err
 	}
-	if resp.StatusCode == 200 {
-		if err != nil {
-			return resp, string(body), err
-		}
-		if err = json.Unmarshal(body, &res); err != nil {
+	if resp.StatusCode == http.StatusOK {
+		if err := json.Unmarshal(body, res); err != nil {
 			return resp, string(body), err
 		}
 	}
