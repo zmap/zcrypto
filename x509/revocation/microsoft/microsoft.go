@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"io/ioutil"
 	"math/big"
 
 	"github.com/zmap/zcrypto/x509"
@@ -89,7 +88,7 @@ type SerializedPropertyEntry struct {
 // certificate store that contains data for a property associated with a
 // certificate in the store.
 type SerializedCertificateEntry struct {
-	ID           uint32 //MUST be 0x00000020
+	ID           uint32 // MUST be 0x00000020
 	EncodingType uint32 // MUST be the value 0x00000001, which specifies ASN.1 encoding
 	Length       uint32 // specifies the length of the certificate field
 	Certificate  []byte
@@ -137,7 +136,7 @@ func parse(byteData []byte) (*DisallowedCerts, error) {
 			binary.Read(bytesReader, binary.LittleEndian, &certChain)
 			certs = append(certs, certChain)
 		} else { // this is a SerializedPropertyEntry, so skip it
-			io.CopyN(ioutil.Discard, bytesReader, int64(len)) // skip over value bytes
+			io.CopyN(io.Discard, bytesReader, int64(len)) // skip over value bytes
 		}
 	}
 

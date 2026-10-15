@@ -10,6 +10,7 @@ import (
 	"crypto/hmac"
 	"errors"
 	"hash"
+	"slices"
 	"sync/atomic"
 	"time"
 
@@ -209,13 +210,7 @@ func (hs *clientHandshakeStateTLS13) processHelloRetryRequest() error {
 	// a group we advertised but did not send a key share for, and send a key
 	// share for it this time.
 	if curveID := hs.serverHello.selectedGroup; curveID != 0 {
-		curveOK := false
-		for _, id := range hs.hello.supportedCurves {
-			if id == curveID {
-				curveOK = true
-				break
-			}
-		}
+		curveOK := slices.Contains(hs.hello.supportedCurves, curveID)
 		if !curveOK {
 			c.sendAlert(AlertIllegalParameter)
 			return errors.New("tls: server selected unsupported group")

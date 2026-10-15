@@ -10,6 +10,25 @@ import (
 	"time"
 )
 
+func TestLoadSystemRootsOnAppleSilicon(t *testing.T) {
+	if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
+		t.Skipf("skipping on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	roots, err := loadSystemRoots()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if roots == nil {
+		t.Fatal("no system roots")
+	}
+	// Same floor as TestSystemRoots. The cgo build uses the embedded
+	// Apple roots; the cgo-disabled build reads them through the security tool.
+	if have := len(roots.certs); have < 100 {
+		t.Fatalf("want at least 100 system roots, have %d", have)
+	}
+}
+
 func TestSystemRoots(t *testing.T) {
 	switch runtime.GOARCH {
 	case "arm", "arm64":
