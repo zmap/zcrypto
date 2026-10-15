@@ -139,9 +139,7 @@ func (res *VerificationResult) HadTrustedChain() bool {
 
 // VerifyProcedure is an interface to implement additional browser specific logic at
 // the start and end of verification.
-type VerifyProcedure interface {
-	// TODO
-}
+type VerifyProcedure any
 
 // RevocationInfo provides basic revocation information
 type RevocationInfo struct {

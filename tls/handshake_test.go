@@ -205,8 +205,8 @@ func parseTestData(r io.Reader) (flows [][]byte, err error) {
 			return nil, errors.New("invalid test data")
 		}
 
-		hexBytes := strings.Fields(line)
-		for _, hexByte := range hexBytes {
+		hexBytes := strings.FieldsSeq(line)
+		for hexByte := range hexBytes {
 			val, err := strconv.ParseUint(hexByte, 16, 8)
 			if err != nil {
 				return nil, errors.New("invalid hex byte in test data: " + err.Error())
@@ -274,7 +274,7 @@ func localPipe(t testing.TB) (net.Conn, net.Conn) {
 	var err error
 Dialing:
 	// We expect a rare mismatch, but probably not 5 in a row.
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		tooSlow := time.NewTimer(1 * time.Second)
 		defer tooSlow.Stop()
 		var c1 net.Conn

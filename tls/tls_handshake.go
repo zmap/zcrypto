@@ -277,7 +277,7 @@ func (c *Conn) GetHandshakeLog() *ServerHandshake {
 	return c.handshakeLog
 }
 
-func (c *Conn) InCipher() (cipher interface{}) {
+func (c *Conn) InCipher() (cipher any) {
 	return c.in.cipher
 }
 
@@ -285,7 +285,7 @@ func (c *Conn) InSeq() []byte {
 	return c.in.seq[:]
 }
 
-func (c *Conn) OutCipher() (cipher interface{}) {
+func (c *Conn) OutCipher() (cipher any) {
 	return c.out.cipher
 }
 

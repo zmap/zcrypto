@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"net"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -1327,12 +1328,7 @@ func (c *Config) curvePreferences() []CurveID {
 }
 
 func (c *Config) supportsCurve(curve CurveID) bool {
-	for _, cc := range c.curvePreferences() {
-		if cc == curve {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(c.curvePreferences(), curve)
 }
 
 // mutualVersion returns the protocol version to use given the advertised
@@ -1866,26 +1862,16 @@ NextCipherSuite:
 	}
 }
 
-func unexpectedMessageError(wanted, got interface{}) error {
+func unexpectedMessageError(wanted, got any) error {
 	return fmt.Errorf("tls: received unexpected handshake message of type %T when waiting for %T", got, wanted)
 }
 
 func isSupportedSignatureAlgorithm(sigAlg SignatureScheme, supportedSignatureAlgorithms []SignatureScheme) bool {
-	for _, s := range supportedSignatureAlgorithms {
-		if s == sigAlg {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(supportedSignatureAlgorithms, sigAlg)
 }
 
 func isSupportedSignatureAndHash(sigHash SigAndHash, sigHashes []SigAndHash) bool {
-	for _, s := range sigHashes {
-		if s == sigHash {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(sigHashes, sigHash)
 }
 
 var aesgcmCiphers = map[uint16]bool{

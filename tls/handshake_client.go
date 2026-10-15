@@ -172,7 +172,7 @@ func (c *ClientFingerprintConfiguration) marshal(config *Config) ([]byte, error)
 				}
 			}
 			if !found {
-				return nil, errors.New(fmt.Sprintf("tls: unimplemented cipher suite %d", suite))
+				return nil, fmt.Errorf("tls: unimplemented cipher suite %d", suite)
 			}
 		}
 
@@ -188,10 +188,10 @@ func (c *ClientFingerprintConfiguration) marshal(config *Config) ([]byte, error)
 	if len(c.CompressionMethods) > 0 {
 		copy(compressions[1:], c.CompressionMethods)
 		if c.CompressionMethods[0] != 0 {
-			return nil, errors.New(fmt.Sprintf("tls: unimplemented compression method %d", c.CompressionMethods[0]))
+			return nil, fmt.Errorf("tls: unimplemented compression method %d", c.CompressionMethods[0])
 		}
 		if len(c.CompressionMethods) > 1 {
-			return nil, errors.New(fmt.Sprintf("tls: unimplemented compression method %d", c.CompressionMethods[1]))
+			return nil, fmt.Errorf("tls: unimplemented compression method %d", c.CompressionMethods[1])
 		}
 	} else {
 		return nil, errors.New("tls: no compression method")
@@ -246,13 +246,10 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]tls13KeyShare, er
 		return nil, nil, errors.New("tls: no supported versions satisfy MinVersion and MaxVersion")
 	}
 
-	clientHelloVersion := config.maxSupportedVersion()
 	// The version at the beginning of the ClientHello was capped at TLS 1.2
 	// for compatibility reasons. The supported_versions extension is used
 	// to negotiate versions now. See RFC 8446, Section 4.2.1.
-	if clientHelloVersion > VersionTLS12 {
-		clientHelloVersion = VersionTLS12
-	}
+	clientHelloVersion := min(config.maxSupportedVersion(), VersionTLS12)
 
 	hello := &clientHelloMsg{
 		vers:                         clientHelloVersion,
@@ -402,13 +399,7 @@ func (c *Conn) clientHandshake() (err error) {
 			cacheKey = c.config.ClientFingerprintConfiguration.CacheKey.Key(c.conn.RemoteAddr())
 			candidateSession, ok := sessionCache.Get(cacheKey)
 			if ok {
-				cipherSuiteOk := false
-				for _, id := range c.config.ClientFingerprintConfiguration.CipherSuites {
-					if id == candidateSession.cipherSuite {
-						cipherSuiteOk = true
-						break
-					}
-				}
+				cipherSuiteOk := slices.Contains(c.config.ClientFingerprintConfiguration.CipherSuites, candidateSession.cipherSuite)
 				versOk := candidateSession.vers >= c.config.minSupportedVersion() &&
 					candidateSession.vers <= c.config.ClientFingerprintConfiguration.HandshakeVersion
 				if versOk && cipherSuiteOk {
@@ -608,13 +599,7 @@ func (c *Conn) loadSession(hello *clientHelloMsg) (cacheKey string,
 	}
 
 	// Check that version used for the previous session is still valid.
-	versOk := false
-	for _, v := range hello.supportedVersions {
-		if v == session.vers {
-			versOk = true
-			break
-		}
-	}
+	versOk := slices.Contains(hello.supportedVersions, session.vers)
 	if !versOk {
 		return cacheKey, nil, nil, nil
 	}
@@ -1003,7 +988,7 @@ func (hs *clientHandshakeState) establishKeys() error {
 
 	clientMAC, serverMAC, clientKey, serverKey, clientIV, serverIV :=
 		keysFromMasterSecret(c.vers, hs.suite, hs.masterSecret, hs.hello.random, hs.serverHello.random, hs.suite.macLen, hs.suite.keyLen, hs.suite.ivLen)
-	var clientCipher, serverCipher interface{}
+	var clientCipher, serverCipher any
 	var clientHash, serverHash hash.Hash
 	if hs.suite.cipher != nil {
 		clientCipher = hs.suite.cipher(clientKey, clientIV, false /* not for reading */)
@@ -1334,10 +1319,8 @@ func clientSessionCacheKey(serverAddr net.Addr, config *Config) string {
 // protocols and a list of the preference order.
 func mutualProtocol(protos, preferenceProtos []string) string {
 	for _, s := range preferenceProtos {
-		for _, c := range protos {
-			if s == c {
-				return s
-			}
+		if slices.Contains(protos, s) {
+			return s
 		}
 	}
 	return ""

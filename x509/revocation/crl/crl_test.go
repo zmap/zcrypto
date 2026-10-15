@@ -1,7 +1,7 @@
 package crl_test
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -168,7 +168,7 @@ func loadCRL(t *testing.T) (certList *pkix.CertificateList) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	crlBytes, err := ioutil.ReadAll(crlFile)
+	crlBytes, err := io.ReadAll(crlFile)
 	if err != nil {
 		t.Error(err.Error())
 	}

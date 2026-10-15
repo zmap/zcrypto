@@ -15,9 +15,9 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"net"
+	"os"
 	"os/exec"
 	"reflect"
 	"runtime"
@@ -294,7 +294,7 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		pub, priv  interface{}
+		pub, priv  any
 		checkSig   bool
 		sigAlgo    SignatureAlgorithm
 		selfSigned bool
@@ -437,7 +437,7 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 			t.Errorf("%s: ExtraExtensions didn't override SubjectKeyId", test.name)
 		}
 
-		if bytes.Index(derBytes, extraExtensionData) == -1 {
+		if !bytes.Contains(derBytes, extraExtensionData) {
 			t.Errorf("%s: didn't find extra extension in DER output", test.name)
 		}
 
@@ -968,7 +968,7 @@ func TestCreateCertificateRequest(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		priv    interface{}
+		priv    any
 		sigAlgo SignatureAlgorithm
 	}{
 		{"RSA", rsaPriv, SHA1WithRSA},
@@ -1237,7 +1237,7 @@ func TestParseGeneralNamesOtherName(t *testing.T) {
 	}
 	var otherInts [3]int
 	var expectedInts [3]int = [3]int{461, 42, 95488}
-	for x := 0; x < 3; x++ {
+	for x := range 3 {
 		rest, err := asn1.Unmarshal(otherNames[x].Value.Bytes, &(otherInts[x]))
 		if err != nil {
 			t.Errorf("unexpected error in unmarshaling otherName %v", err)
@@ -1364,7 +1364,7 @@ func TestParseGeneralNamesAll(t *testing.T) {
 }
 
 func TestTimeInValidityPeriod(t *testing.T) {
-	fileBytes, _ := ioutil.ReadFile("testdata/davidadrian.org.cert")
+	fileBytes, _ := os.ReadFile("testdata/davidadrian.org.cert")
 	p, _ := pem.Decode(fileBytes)
 	c, err := ParseCertificate(p.Bytes)
 	if err != nil {
@@ -1469,7 +1469,7 @@ func TestParseCert(t *testing.T) {
 
 	for _, tc := range tcases {
 		t.Run(tc, func(t *testing.T) {
-			b, err := ioutil.ReadFile(tc)
+			b, err := os.ReadFile(tc)
 			require.NoError(t, err)
 
 			block, _ := pem.Decode(b)
@@ -1484,7 +1484,7 @@ func TestParseCert(t *testing.T) {
 
 	for _, tc := range tcases {
 		t.Run(tc, func(t *testing.T) {
-			b, err := ioutil.ReadFile(tc)
+			b, err := os.ReadFile(tc)
 			require.NoError(t, err)
 
 			block, _ := pem.Decode(b)

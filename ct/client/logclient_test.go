@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"math"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/zmap/zcrypto/ct"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -106,7 +106,7 @@ func TestGetSTHWorks(t *testing.T) {
 	if sth.TreeHeadSignature.SignatureAlgorithm != expectedDS.SignatureAlgorithm {
 		t.Fatalf("Invalid TreeHeadSignature.SignatureAlgorithm: expected %v, got %v", sth.TreeHeadSignature.SignatureAlgorithm, expectedDS.SignatureAlgorithm)
 	}
-	if bytes.Compare(sth.TreeHeadSignature.Signature, expectedDS.Signature) != 0 {
+	if !bytes.Equal(sth.TreeHeadSignature.Signature, expectedDS.Signature) {
 		t.Fatalf("Invalid TreeHeadSignature.Signature: expected %v, got %v", sth.TreeHeadSignature.Signature, expectedDS.Signature)
 	}
 }
@@ -197,7 +197,7 @@ func TestAddJSON(t *testing.T) {
 
 	tests := []struct {
 		success bool
-		data    interface{}
+		data    any
 	}{
 		{true, struct{ hi string }{"bob"}},
 	}

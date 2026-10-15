@@ -6,7 +6,7 @@ package x509
 
 import (
 	"encoding/pem"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -40,7 +40,7 @@ func TestDetectSelfSigned(t *testing.T) {
 	}
 	for _, test := range tests {
 		path := testdataPrefix + test.Filename
-		b, err := ioutil.ReadFile(path)
+		b, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatalf("could not open %s: %s", test.Filename, err)
 		}
@@ -61,7 +61,7 @@ func TestDetectSelfSigned(t *testing.T) {
 
 func TestParseEmailInDN(t *testing.T) {
 	const expectedEmail = "ca-winshuttle@dfn.de"
-	b, err := ioutil.ReadFile(testdataPrefix + "email-in-subject.pem")
+	b, err := os.ReadFile(testdataPrefix + "email-in-subject.pem")
 	if err != nil {
 		t.Fatalf("could not open file: %s", err)
 	}

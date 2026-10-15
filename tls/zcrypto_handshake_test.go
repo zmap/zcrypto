@@ -3,6 +3,7 @@ package tls
 import (
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -215,10 +216,5 @@ func TestCipherSuitesLocalTLS13(t *testing.T) {
 }
 
 func hasCipher(list []uint16, c uint16) bool {
-	for _, l := range list {
-		if l == c {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, c)
 }
