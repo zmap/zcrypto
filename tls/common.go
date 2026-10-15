@@ -11,6 +11,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/sha512"
 	"encoding/hex"
@@ -1539,6 +1540,13 @@ func (chi *ClientHelloInfo) SupportsCertificate(c *Certificate) error {
 		case ed25519.PublicKey:
 			if vers < VersionTLS12 || len(chi.SignatureSchemes) == 0 {
 				return errors.New("connection doesn't support Ed25519")
+			}
+			ecdsaCipherSuite = true
+		case *mldsa.PublicKey:
+			// ML-DSA is only specified for TLS 1.3, but like Ed25519 it can
+			// authenticate a TLS 1.2 ECDHE_ECDSA handshake.
+			if vers < VersionTLS12 || len(chi.SignatureSchemes) == 0 {
+				return errors.New("connection doesn't support ML-DSA")
 			}
 			ecdsaCipherSuite = true
 		case *rsa.PublicKey:

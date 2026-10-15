@@ -615,6 +615,12 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	case *signedKeyAgreement:
 		auth.raw = sig
 		auth.valid = ka.verifyError == nil
+		// ECDSA cipher suites can be authenticated with any non-RSA signature
+		// (ECDSA, Ed25519, ML-DSA), so log the type the server actually used
+		// instead of the one implied by the cipher suite.
+		if !ka.isRSA {
+			auth.sigType = sigType
+		}
 		auth.sh.Signature = sigType
 		auth.sh.Hash = uint8(sigHash)
 	default:

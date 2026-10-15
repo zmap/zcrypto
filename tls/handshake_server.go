@@ -268,7 +268,7 @@ func (hs *serverHandshakeState) processClientHello() error {
 		switch priv.Public().(type) {
 		case *ecdsa.PublicKey:
 			hs.ecSignOk = true
-		case ed25519.PublicKey:
+		case ed25519.PublicKey, *mldsa.PublicKey:
 			hs.ecSignOk = true
 		case *rsa.PublicKey:
 			hs.rsaSignOk = true

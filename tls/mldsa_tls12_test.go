@@ -1,9 +1,14 @@
 package tls
 
 import (
+	"crypto/mldsa"
+	"crypto/rand"
+	"math/big"
 	"testing"
+	"time"
 
 	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/pkix"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -39,5 +44,82 @@ func TestTLS12MLDSAServerKeyExchange(t *testing.T) {
 	err = ka.processServerKeyExchange(&Config{}, clientHello, serverHello, &x509.Certificate{}, &serverKeyExchangeMsg{key: key})
 	if err == nil || ka.verifyError == nil {
 		t.Fatal("expected bogus ML-DSA signature to fail verification")
+	}
+}
+
+func mldsaTestCertificate(t *testing.T, params mldsa.Parameters) Certificate {
+	t.Helper()
+	priv, err := mldsa.GenerateKey(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "mldsa.test"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, priv.Public(), priv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return Certificate{Certificate: [][]byte{der}, PrivateKey: priv}
+}
+
+// TestTLS12MLDSAHandshake runs TLS 1.2 handshakes authenticated with ML-DSA
+// server and client certificates. ML-DSA is only specified for TLS 1.3, but
+// nothing in the TLS 1.2 messages prevents it, and a measurement tool should
+// handle whatever servers send.
+func TestTLS12MLDSAHandshake(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		params mldsa.Parameters
+	}{
+		{"mldsa44", mldsa.MLDSA44()},
+		{"mldsa65", mldsa.MLDSA65()},
+		{"mldsa87", mldsa.MLDSA87()},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			serverConfig := &Config{
+				Certificates: []Certificate{mldsaTestCertificate(t, tc.params)},
+				MaxVersion:   VersionTLS12,
+				ClientAuth:   RequireAnyClientCert,
+			}
+			clientConfig := &Config{
+				Certificates:       []Certificate{mldsaTestCertificate(t, tc.params)},
+				InsecureSkipVerify: true,
+				MaxVersion:         VersionTLS12,
+				CipherSuites:       []uint16{TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256},
+			}
+
+			c, s := localPipe(t)
+			serverErr := make(chan error, 1)
+			go func() {
+				srv := Server(s, serverConfig)
+				serverErr <- srv.Handshake()
+				srv.Close()
+			}()
+			cli := Client(c, clientConfig)
+			if err := cli.Handshake(); err != nil {
+				t.Fatalf("client handshake: %v", err)
+			}
+			defer cli.Close()
+			if err := <-serverErr; err != nil {
+				t.Fatalf("server handshake: %v", err)
+			}
+
+			if v := cli.ConnectionState().Version; v != VersionTLS12 {
+				t.Fatalf("negotiated version %x, want TLS 1.2", v)
+			}
+			sig := cli.handshakeLog.ServerKeyExchange.Signature
+			if !sig.Valid {
+				t.Error("ServerKeyExchange signature logged as invalid")
+			}
+			if sig.Type != tc.name {
+				t.Errorf("logged signature type = %q, want %q", sig.Type, tc.name)
+			}
+		})
 	}
 }
