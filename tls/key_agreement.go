@@ -323,10 +323,10 @@ func sha512Hash(slices [][]byte) []byte {
 
 // hashForServerKeyExchange hashes the given slices and returns their digest
 // using the given hash function (for >= TLS 1.2) or using a default based on
-// the sigType (for earlier TLS versions). For Ed25519 signatures, which don't
-// do pre-hashing, it returns the concatenation of the slices.
+// the sigType (for earlier TLS versions). For Ed25519 and ML-DSA signatures,
+// which don't do pre-hashing, it returns the concatenation of the slices.
 func hashForServerKeyExchange(sigType uint8, hashFunc crypto.Hash, version uint16, slices ...[]byte) []byte {
-	if sigType == signatureEd25519 {
+	if isDirectSigning(sigType) {
 		var signed []byte
 		for _, slice := range slices {
 			signed = append(signed, slice...)
@@ -392,7 +392,7 @@ type ecdheKeyAgreement struct {
 
 func isTLS13OnlyKeyExchange(curveID CurveID) bool {
 	switch curveID {
-	case MLKEM1024, X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024:
+	case X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024, MLKEM512, MLKEM768, MLKEM1024:
 		return true
 	default:
 		return false
@@ -528,6 +528,10 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	}
 	curveID := CurveID(skx.key[1])<<8 | CurveID(skx.key[2])
 
+	if isTLS13OnlyKeyExchange(curveID) {
+		return errors.New("tls: server selected TLS 1.3-only key exchange group")
+	}
+
 	publicLen := int(skx.key[3])
 	if publicLen+4 > len(skx.key) {
 		return errServerKeyExchange
@@ -609,8 +613,14 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	case *signedKeyAgreement:
 		auth.raw = sig
 		auth.valid = ka.verifyError == nil
+		// ECDSA cipher suites can be authenticated with any non-RSA signature
+		// (ECDSA, Ed25519, ML-DSA), so log the type the server actually used
+		// instead of the one implied by the cipher suite.
+		if !ka.isRSA {
+			auth.sigType = sigType
+		}
 		auth.sh.Signature = sigType
-		auth.sh.Hash = uint8(sigHash)
+		auth.sh.Hash = tls12HashID(sigHash)
 	default:
 		break
 	}

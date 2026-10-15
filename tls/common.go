@@ -11,6 +11,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/sha512"
 	"encoding/hex"
@@ -154,12 +155,15 @@ const (
 	CurveP521 CurveID = 25
 	X25519    CurveID = 29
 
-	MLKEM1024 CurveID = 514
-
 	// Hybrid PQ key exchange groups (TLS 1.3 NamedGroup)
 	SecP256r1MLKEM768  CurveID = 4587
 	X25519MLKEM768     CurveID = 4588
 	SecP384r1MLKEM1024 CurveID = 4589
+
+	// IETF Draft Pure ML-KEM
+	MLKEM512  CurveID = 512
+	MLKEM768  CurveID = 513
+	MLKEM1024 CurveID = 514
 )
 
 func (curveID *CurveID) MarshalJSON() ([]byte, error) {
@@ -298,6 +302,18 @@ var supportedHashFunc = map[uint8]crypto.Hash{
 	hashSHA512: crypto.SHA512,
 }
 
+// tls12HashID returns the TLS 1.2 HashAlgorithm identifier for h, the inverse
+// of supportedHashFunc. It returns hashNone for directSigning and for hashes
+// with no TLS 1.2 identifier.
+func tls12HashID(h crypto.Hash) uint8 {
+	for id, hash := range supportedHashFunc {
+		if hash == h {
+			return id
+		}
+	}
+	return hashNone
+}
+
 // Signature algorithms (for internal signaling use). Starting at 225 to avoid overlap with
 // TLS 1.2 codepoints (RFC 5246, Appendix A.4.1), with which these have nothing to do.
 const (
@@ -307,6 +323,9 @@ const (
 	signatureRSAPSS
 	signatureECDSA
 	signatureEd25519
+	signatureMLDSA44
+	signatureMLDSA65
+	signatureMLDSA87
 )
 
 // SigAndHash mirrors the TLS 1.2, SignatureAndHashAlgorithm struct. See
@@ -358,8 +377,19 @@ var supportedClientCertSignatureAlgorithms = []SigAndHash{
 
 // directSigning is a standard Hash value that signals that no pre-hashing
 // should be performed, and that the input should be signed directly. It is the
-// hash function associated with the Ed25519 signature scheme.
+// hash function associated with the Ed25519 and ML-DSA signature schemes.
 var directSigning crypto.Hash = 0
+
+// isDirectSigning reports whether sigType signs its input directly, without
+// pre-hashing (Ed25519 and ML-DSA).
+func isDirectSigning(sigType uint8) bool {
+	switch sigType {
+	case signatureEd25519, signatureMLDSA44, signatureMLDSA65, signatureMLDSA87:
+		return true
+	default:
+		return false
+	}
+}
 
 // supportedSignatureAlgorithms contains the signature and hash algorithms that
 // the code advertises as supported in a TLS 1.2+ ClientHello and in a TLS 1.2+
@@ -376,6 +406,9 @@ var supportedSignatureAlgorithms = []SignatureScheme{
 	PKCS1WithSHA512,
 	ECDSAWithP384AndSHA384,
 	ECDSAWithP521AndSHA512,
+	MLDSA44Sig,
+	MLDSA65Sig,
+	MLDSA87Sig,
 	PKCS1WithSHA1,
 	ECDSAWithSHA1,
 }
@@ -597,6 +630,11 @@ const (
 	ECDSAWithP256AndSHA256 SignatureScheme = 0x0403
 	ECDSAWithP384AndSHA384 SignatureScheme = 0x0503
 	ECDSAWithP521AndSHA512 SignatureScheme = 0x0603
+
+	// MLDSA algorithms
+	MLDSA44Sig SignatureScheme = 0x0904
+	MLDSA65Sig SignatureScheme = 0x0905
+	MLDSA87Sig SignatureScheme = 0x0906
 
 	// EdDSA algorithms.
 	Ed25519          SignatureScheme = 0x0807
@@ -1317,6 +1355,8 @@ var defaultCurvePreferences = []CurveID{
 	X25519, CurveP256, CurveP384, CurveP521,
 }
 
+var supportedCurvePreferences = []CurveID{X25519, CurveP256, CurveP384, CurveP521, MLKEM512, MLKEM768, MLKEM1024, X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024}
+
 func (c *Config) curvePreferences() []CurveID {
 	if c.ExplicitCurvePreferences {
 		return c.CurvePreferences
@@ -1515,6 +1555,13 @@ func (chi *ClientHelloInfo) SupportsCertificate(c *Certificate) error {
 		case ed25519.PublicKey:
 			if vers < VersionTLS12 || len(chi.SignatureSchemes) == 0 {
 				return errors.New("connection doesn't support Ed25519")
+			}
+			ecdsaCipherSuite = true
+		case *mldsa.PublicKey:
+			// ML-DSA is only specified for TLS 1.3, but like Ed25519 it can
+			// authenticate a TLS 1.2 ECDHE_ECDSA handshake.
+			if vers < VersionTLS12 || len(chi.SignatureSchemes) == 0 {
+				return errors.New("connection doesn't support ML-DSA")
 			}
 			ecdsaCipherSuite = true
 		case *rsa.PublicKey:

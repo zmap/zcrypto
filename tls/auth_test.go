@@ -161,7 +161,7 @@ func TestSupportedSignatureAlgorithms(t *testing.T) {
 		if sigType == 0 {
 			t.Errorf("%v: missing signature type", sigAlg)
 		}
-		if hash == 0 && sigAlg != Ed25519 {
+		if hash == 0 && sigAlg != Ed25519 && sigAlg != MLDSA44Sig && sigAlg != MLDSA65Sig && sigAlg != MLDSA87Sig {
 			t.Errorf("%v: missing hash", sigAlg)
 		}
 	}

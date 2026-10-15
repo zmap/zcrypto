@@ -1,6 +1,7 @@
 module github.com/zmap/zcrypto
 
 require (
+	github.com/cloudflare/circl v1.6.4
 	github.com/mreiferson/go-httpclient v0.0.0-20201222173833-5e475fde3a4d
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
@@ -16,4 +17,4 @@ require (
 	golang.org/x/text v0.41.0 // indirect
 )
 
-go 1.25.0
+go 1.27.0

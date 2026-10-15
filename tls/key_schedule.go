@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"slices"
 
+	"github.com/cloudflare/circl/kem/mlkem/mlkem512"
 	jsonKeys "github.com/zmap/zcrypto/json"
 	"golang.org/x/crypto/cryptobyte"
 	"golang.org/x/crypto/curve25519"
@@ -41,6 +42,8 @@ const (
 	secP256r1ShareSize = 65
 	secP384r1ShareSize = 97
 
+	mlkem512EKSize  = mlkem512.PublicKeySize         // 800
+	mlkem512CTSize  = mlkem512.CiphertextSize        // 768
 	mlkem768EKSize  = mlkem.EncapsulationKeySize768  // 1184
 	mlkem768CTSize  = mlkem.CiphertextSize768        // 1088
 	mlkem1024EKSize = mlkem.EncapsulationKeySize1024 // 1568
@@ -434,6 +437,56 @@ func (k *tls13SecP384r1MLKEM1024) SharedKey(serverShare []byte) ([]byte, error) 
 	return slices.Concat(ecdheSS, kemSS), nil
 }
 
+// Using CIRCL's MLKEM512 implementation
+type tls13MLKEM512 struct {
+	dk *mlkem512.PrivateKey
+}
+
+func (k *tls13MLKEM512) Group() CurveID { return MLKEM512 }
+
+func (k *tls13MLKEM512) PublicKey() []byte {
+	pk, ok := k.dk.Public().(*mlkem512.PublicKey)
+	if !ok {
+		panic("tls: unexpected MLKEM512 public key type")
+	}
+	out := make([]byte, mlkem512.PublicKeySize)
+	pk.Pack(out)
+	return out
+}
+
+func (k *tls13MLKEM512) SharedKey(serverShare []byte) ([]byte, error) {
+	if len(serverShare) != mlkem512.CiphertextSize {
+		return nil, errors.New("tls: invalid server share length for MLKEM512")
+	}
+	ss := make([]byte, mlkem512.SharedKeySize)
+	k.dk.DecapsulateTo(ss, serverShare)
+	return ss, nil
+}
+
+type tls13MLKEM768 struct {
+	dk *mlkem.DecapsulationKey768
+}
+
+func (k *tls13MLKEM768) Group() CurveID { return MLKEM768 }
+
+func (k *tls13MLKEM768) PublicKey() []byte {
+	return k.dk.EncapsulationKey().Bytes()
+}
+
+func (k *tls13MLKEM768) SharedKey(serverShare []byte) ([]byte, error) {
+	if len(serverShare) != mlkem.CiphertextSize768 {
+		return nil, errors.New("tls: invalid server share length for MLKEM768")
+	}
+	ss, err := k.dk.Decapsulate(serverShare)
+	if err != nil {
+		return nil, err
+	}
+	if len(ss) != mlkemSSSize {
+		return nil, errors.New("tls: invalid ML-KEM shared secret size")
+	}
+	return ss, nil
+}
+
 type tls13MLKEM1024 struct {
 	dk *mlkem.DecapsulationKey1024
 }
@@ -448,12 +501,10 @@ func (k *tls13MLKEM1024) PublicKey() []byte {
 // ServerHello.key_share.data = CT(1568)
 // SharedKey = KEM_ss
 func (k *tls13MLKEM1024) SharedKey(serverShare []byte) ([]byte, error) {
-	ct := serverShare
-	if ct == nil {
+	if len(serverShare) != mlkem.CiphertextSize1024 {
 		return nil, errors.New("tls: invalid server share length for MLKEM1024")
 	}
-
-	kemSS, err := k.dk.Decapsulate(ct)
+	kemSS, err := k.dk.Decapsulate(serverShare)
 	if err != nil {
 		return nil, err
 	}
@@ -513,6 +564,19 @@ func generateTLS13KeyShare(rand io.Reader, group CurveID) (tls13KeyShare, error)
 			return nil, err
 		}
 		return &tls13SecP384r1MLKEM1024{dk: dk, xparams: xp}, nil
+	// ML-KEM-512 CIRCL implementation
+	case MLKEM512:
+		_, dk, err := mlkem512.GenerateKeyPair(rand)
+		if err != nil {
+			return nil, err
+		}
+		return &tls13MLKEM512{dk: dk}, nil
+	case MLKEM768:
+		dk, err := NewDecapsulationKey768(rand)
+		if err != nil {
+			return nil, err
+		}
+		return &tls13MLKEM768{dk: dk}, nil
 	case MLKEM1024:
 		dk, err := NewDecapsulationKey1024(rand)
 		if err != nil {
@@ -661,6 +725,49 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 		shared := slices.Concat(ecdheSS, kemSS)
 		return serverShare, shared, nil
 
+	// MLKEM512 CIRCL Implementation
+	case MLKEM512:
+		if len(clientShare) != mlkem512.PublicKeySize {
+			return nil, nil, errors.New("tls: invalid client share length for MLKEM512")
+		}
+
+		ek := new(mlkem512.PublicKey)
+		if err := ek.Unpack(clientShare); err != nil {
+			return nil, nil, errors.New("tls: invalid MLKEM512 encapsulation key")
+		}
+
+		ct := make([]byte, mlkem512.CiphertextSize)
+		ss := make([]byte, mlkem512.SharedKeySize)
+		seed := make([]byte, mlkem512.EncapsulationSeedSize)
+		if _, err := io.ReadFull(rand, seed); err != nil {
+			return nil, nil, err
+		}
+
+		ek.EncapsulateTo(ct, ss, seed)
+
+		return ct, ss, nil
+
+	case MLKEM768:
+		if len(clientShare) != mlkem.EncapsulationKeySize768 {
+			return nil, nil, errors.New("tls: invalid client share length for MLKEM768")
+		}
+
+		ek, err := mlkem.NewEncapsulationKey768(clientShare)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		kemSS, ct, err := mlkemEncapsulate768(rand, ek)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if len(ct) != mlkem768CTSize || len(kemSS) != mlkemSSSize {
+			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
+		}
+
+		return ct, kemSS, nil
+
 	case MLKEM1024:
 		// ClientHello.share = EK(1568)
 		ekBytes := clientShare
@@ -676,6 +783,9 @@ func generateTLS13ServerShareAndSharedKey(rand io.Reader, group CurveID, clientS
 		kemSS, ct, err := mlkemEncapsulate1024(rand, ek)
 		if err != nil {
 			return nil, nil, err
+		}
+		if len(ct) != mlkem1024CTSize || len(kemSS) != mlkemSSSize {
+			return nil, nil, errors.New("tls: invalid ML-KEM encapsulation output size")
 		}
 
 		// ServerHello.share = CT(1568)

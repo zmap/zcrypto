@@ -19,6 +19,8 @@ import (
 
 	"github.com/zmap/zcrypto/rsa"
 	"github.com/zmap/zcrypto/x509"
+
+	"crypto/mldsa"
 )
 
 // serverHandshakeState contains details of a server handshake in progress.
@@ -260,7 +262,7 @@ func (hs *serverHandshakeState) processClientHello() error {
 		switch priv.Public().(type) {
 		case *ecdsa.PublicKey:
 			hs.ecSignOk = true
-		case ed25519.PublicKey:
+		case ed25519.PublicKey, *mldsa.PublicKey:
 			hs.ecSignOk = true
 		case *rsa.PublicKey:
 			hs.rsaSignOk = true
@@ -285,7 +287,9 @@ func (hs *serverHandshakeState) processClientHello() error {
 // supportsECDHE returns whether ECDHE key exchanges can be used with this
 // pre-TLS 1.3 client.
 func supportsECDHE(c *Config, supportedCurves []CurveID, supportedPoints []uint8) bool {
-	supportsCurve := slices.ContainsFunc(supportedCurves, c.supportsCurve)
+	supportsCurve := slices.ContainsFunc(supportedCurves, func(curve CurveID) bool {
+		return !isTLS13OnlyKeyExchange(curve) && c.supportsCurve(curve)
+	})
 	supportsPointFormat := slices.Contains(supportedPoints, pointFormatUncompressed)
 
 	return supportsCurve && supportsPointFormat
@@ -818,7 +822,7 @@ func (c *Conn) processCertsFromClient(certificate Certificate) error {
 
 	if len(certs) > 0 {
 		switch certs[0].PublicKey.(type) {
-		case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *x509.AugmentedECDSA:
+		case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *x509.AugmentedECDSA, *mldsa.PublicKey:
 		default:
 			c.sendAlert(AlertUnsupportedCertificate)
 			return fmt.Errorf("tls: client certificate contains an unsupported public key of type %T", certs[0].PublicKey)
