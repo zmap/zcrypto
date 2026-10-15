@@ -387,6 +387,10 @@ func runMain(m *testing.M) int {
 		Certificates:       make([]Certificate, 2),
 		InsecureSkipVerify: true,
 		CipherSuites:       allCipherSuites(),
+		// The recorded handshakes in testdata were generated with classical
+		// curves only. Pin them here so the default curve preferences, which
+		// lead with post-quantum groups, can change without re-recording.
+		CurvePreferences: []CurveID{X25519, CurveP256, CurveP384, CurveP521},
 	}
 	testConfig.Certificates[0].Certificate = [][]byte{testRSACertificate}
 	testConfig.Certificates[0].PrivateKey = testRSAPrivateKey
