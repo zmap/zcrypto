@@ -14,11 +14,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/mreiferson/go-httpclient"
 	"github.com/zmap/zcrypto/ct"
 )
 
@@ -113,15 +113,18 @@ type getEntryAndProofResponse struct {
 func New(uri string) *LogClient {
 	var c LogClient
 	c.Uri = uri
-	transport := &httpclient.Transport{
-		ConnectTimeout:        10 * time.Second,
-		RequestTimeout:        30 * time.Second,
-		ResponseHeaderTimeout: 30 * time.Second,
-		MaxIdleConnsPerHost:   10,
-		DisableKeepAlives:     false,
-		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.DialContext = (&net.Dialer{
+		Timeout: 10 * time.Second,
+	}).DialContext
+	transport.ResponseHeaderTimeout = 30 * time.Second
+	transport.MaxIdleConnsPerHost = 10
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	c.httpClient = &http.Client{
+		Transport: transport,
+		Timeout:   30 * time.Second,
 	}
-	c.httpClient = &http.Client{Transport: transport}
 	return &c
 }
 
