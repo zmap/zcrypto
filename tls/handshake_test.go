@@ -205,8 +205,8 @@ func parseTestData(r io.Reader) (flows [][]byte, err error) {
 			return nil, errors.New("invalid test data")
 		}
 
-		hexBytes := strings.Fields(line)
-		for _, hexByte := range hexBytes {
+		hexBytes := strings.FieldsSeq(line)
+		for hexByte := range hexBytes {
 			val, err := strconv.ParseUint(hexByte, 16, 8)
 			if err != nil {
 				return nil, errors.New("invalid hex byte in test data: " + err.Error())
@@ -274,7 +274,7 @@ func localPipe(t testing.TB) (net.Conn, net.Conn) {
 	var err error
 Dialing:
 	// We expect a rare mismatch, but probably not 5 in a row.
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		tooSlow := time.NewTimer(1 * time.Second)
 		defer tooSlow.Stop()
 		var c1 net.Conn
@@ -341,6 +341,17 @@ func TestMain(m *testing.M) {
 }
 
 func runMain(m *testing.M) int {
+	// Starting in Go 1.26, crypto/ecdsa ignores custom randomness readers by
+	// default. Enable custom randomness so the existing zeroSource produces
+	// reproducible signatures.
+	godebug := os.Getenv("GODEBUG")
+	if godebug != "" {
+		godebug += ","
+	}
+	if err := os.Setenv("GODEBUG", godebug+"cryptocustomrand=1"); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to configure deterministic crypto randomness: %v\n", err)
+		return 1
+	}
 	// TLS 1.3 cipher suites preferences are not configurable and change based
 	// on the architecture. Force them to the version with AES acceleration for
 	// test consistency.
@@ -376,6 +387,10 @@ func runMain(m *testing.M) int {
 		Certificates:       make([]Certificate, 2),
 		InsecureSkipVerify: true,
 		CipherSuites:       allCipherSuites(),
+		// The recorded handshakes in testdata were generated with classical
+		// curves only. Pin them here so the default curve preferences, which
+		// lead with post-quantum groups, can change without re-recording.
+		CurvePreferences: []CurveID{X25519, CurveP256, CurveP384, CurveP521},
 	}
 	testConfig.Certificates[0].Certificate = [][]byte{testRSACertificate}
 	testConfig.Certificates[0].PrivateKey = testRSAPrivateKey

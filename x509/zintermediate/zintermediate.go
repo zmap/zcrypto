@@ -48,10 +48,8 @@ import (
 
 	"github.com/zmap/zcrypto/x509"
 
-	"github.com/op/go-logging"
+	log "github.com/sirupsen/logrus"
 )
-
-var log = logging.MustGetLogger("")
 
 var inputFormatArg string
 
