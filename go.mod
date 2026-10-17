@@ -5,7 +5,7 @@ require (
 	github.com/mreiferson/go-httpclient v0.0.0-20201222173833-5e475fde3a4d
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
-	github.com/weppos/publicsuffix-go v0.50.4-0.20261008072451-fc2bc5756b8d
+	github.com/weppos/publicsuffix-go v0.50.4-0.20261016114600-cf6cbd408141
 	github.com/zmap/zcertificate v0.0.1
 	golang.org/x/crypto v0.58.0
 )
