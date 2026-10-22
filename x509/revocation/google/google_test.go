@@ -1,7 +1,12 @@
 package google_test
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/binary"
+	"encoding/hex"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,6 +23,42 @@ import (
 // obtained from https://firefox.settings.services.mozilla.com/v1/buckets/blocklists/collections/certificates/records
 const crlset_location = `./testdata/test_crlset`
 const VERSION = "4619"
+
+// buildCRLSet assembles a minimal CRLSet in the wire format Parse expects:
+// a little-endian uint16 header length, the JSON header, then an (empty) body.
+func buildCRLSet(t *testing.T, headerJSON string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	require.NoError(t, binary.Write(&buf, binary.LittleEndian, uint16(len(headerJSON))))
+	buf.WriteString(headerJSON)
+	return buf.Bytes()
+}
+
+// blocked_spkis ship base64-encoded in the CRLSet header, but the verifier
+// invokes Check with hex.EncodeToString(parent.SPKIFingerprint) (the same hex
+// form used for IssuerList keys). A CRLSet from Parse must therefore flag a
+// cert whose issuer SPKI is blocked when Check is queried with the hex hash.
+// This asserts the observable behavior, not the internal encoding, so it holds
+// whether the mismatch is reconciled in Parse or in Check.
+func TestCheckMatchesBlockedSPKI(t *testing.T) {
+	raw := make([]byte, 32)
+	for i := range raw {
+		raw[i] = byte(i)
+	}
+	b64 := base64.StdEncoding.EncodeToString(raw)
+	hexSPKI := hex.EncodeToString(raw)
+
+	header := `{"Sequence":1,"NumParents":0,"BlockedSPKIs":["` + b64 + `"]}`
+	cs, err := google.Parse(buildCRLSet(t, header), "test")
+	require.NoError(t, err)
+
+	// Parse normalizes blocked SPKIs to hex, matching IssuerList keys.
+	require.Equal(t, []string{hexSPKI}, cs.BlockedSPKIs)
+
+	// Exactly how verifier.VerifyWithContext calls Check: issuer SPKI hash as hex.
+	entry := cs.Check(&x509.Certificate{SerialNumber: big.NewInt(1)}, hexSPKI)
+	require.NotNil(t, entry, "a blocked SPKI must match when Check is queried with its hex hash")
+}
 
 const revoked_intermediate = `
 -----BEGIN CERTIFICATE-----
