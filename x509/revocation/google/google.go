@@ -3,6 +3,7 @@ package google
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -284,7 +285,18 @@ func Parse(in []byte, version string) (*CRLSet, error) {
 	crlSet.Sequence = header.Sequence
 	crlSet.Version = version
 	crlSet.NumParents = header.NumParents
-	crlSet.BlockedSPKIs = header.BlockedSPKIs
+	// Blocked SPKIs ship base64-encoded in the header, but Check compares them
+	// against hex-encoded issuer SPKI hashes (the form IssuerList keys use and
+	// the verifier passes). Normalize to hex once here so the comparison works
+	// without per-call re-encoding.
+	crlSet.BlockedSPKIs = make([]string, 0, len(header.BlockedSPKIs))
+	for _, b := range header.BlockedSPKIs {
+		raw, err := base64.StdEncoding.DecodeString(b)
+		if err != nil {
+			return nil, errors.New("Failed to decode blocked SPKI: " + err.Error())
+		}
+		crlSet.BlockedSPKIs = append(crlSet.BlockedSPKIs, hex.EncodeToString(raw))
+	}
 
 	for rest.Len() > 0 {
 		rawEntry := RawEntry{}
