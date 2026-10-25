@@ -937,6 +937,9 @@ type Certificate struct {
 	CABFOrganizationIdentifier *CABFOrganizationIdentifier
 	QCStatements               *QCStatements
 
+	// Smallstep step-ca provisioner extension
+	StepProvisioner *StepProvisioner
+
 	// Used to speed up the zlint checks. Populated by the GetParsedDNSNames method.
 	parsedDNSNames []ParsedDomainName
 	// Used to speed up the zlint checks. Populated by the GetParsedCommonName method
@@ -2272,6 +2275,15 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				return nil, err
 			}
 			out.QCStatements = &qcStatements
+		} else if e.Id.Equal(oidExtStepProvisioner) {
+			stepProvisioner := StepProvisioner{}
+			if _, err := asn1.Unmarshal(e.Value, &stepProvisioner); err != nil {
+				if asn1.AllowPermissiveParsing {
+					continue
+				}
+				return nil, err
+			}
+			out.StepProvisioner = &stepProvisioner
 		}
 
 		//if e.Critical {
