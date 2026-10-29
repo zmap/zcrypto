@@ -57,6 +57,9 @@ func IsURL(str string) bool {
 	if str == "" || utf8.RuneCountInString(str) >= maxURLRuneCount || len(str) <= minURLRuneCount || strings.HasPrefix(str, ".") {
 		return false
 	}
+	if isPlainHostname(str) {
+		return true
+	}
 	strTemp := str
 	if strings.Contains(str, ":") && !strings.Contains(str, "://") {
 		// support no indicated urlscheme but with colon for port number
@@ -74,4 +77,122 @@ func IsURL(str string) bool {
 		return false
 	}
 	return rxURL.MatchString(str)
+}
+
+// isPlainHostname reports whether str, which has already passed the length and
+// leading-dot guards of IsURL, is certainly accepted by IsURL because it is a
+// plain ASCII multi-label hostname. It exists only to skip url.Parse and rxURL
+// for the overwhelmingly common case of DNS names.
+//
+// The result is one-sided: true means IsURL would return true; false means
+// "not sure" and the caller must run the full url.Parse and rxURL check.
+// Anything outside the shapes below, including names that rxURL would accept,
+// returns false.
+//
+// Derivation from rxURL. For input made only of [A-Za-z0-9.-] the scheme,
+// username, port and path groups cannot match (they need one of "://", "@",
+// ":", "/", "?" or "#"), and url.Parse cannot fail, never yields a Host, and
+// leaves a Path that contains a dot, so only the host part decides:
+//
+//	[P] C [ "." TLD ] [ "." ]
+//
+// where C is one or more alphanumerics with hyphen runs of at most two,
+// starting and ending alphanumeric (no dots), TLD is one or more letters and P
+// is either empty or "[A-Za-z0-9][A-Za-z0-9-_]*[A-Za-z0-9]([-.][A-Za-z0-9]+)*"
+// (the "www." and subdomain alternatives are not used here). The rules below
+// each build one such match, so they are sufficient and deliberately not
+// necessary:
+//
+//   - a trailing dot is left to the regexp (its "\.?" would accept one, but the
+//     last label must then end with a letter or digit, which excludes it here);
+//   - letters are ASCII letters of either case;
+//   - the name has at least two labels and no empty label (so no leading or
+//     doubled dot), and every label starts and ends with a letter or digit;
+//   - the last label is TLD and contains letters only;
+//   - with two labels, the first label is C: hyphen runs of at most two;
+//   - with three or more labels, P covers the first label (at least two
+//     characters, any hyphens), every middle label (hyphen runs of at most
+//     one, since P continues with single-hyphen "-x" or ".x" pieces) and the
+//     first character of the second-to-last label together with the dot
+//     before it; C is the rest of the second-to-last label, so that label
+//     needs at least two characters, an alphanumeric second character and
+//     hyphen runs of at most two.
+//
+// The regexp imposes no per-label or per-name length cap; the overall length
+// bounds are the guards in IsURL.
+func isPlainHostname(str string) bool {
+	dots := 0
+	for i := 0; i < len(str); i++ {
+		c := str[i]
+		switch {
+		case c == '.':
+			dots++
+		case c == '-' || isASCIIAlnum(c):
+		default:
+			return false
+		}
+	}
+	if dots == 0 {
+		return false
+	}
+	labels := dots + 1
+	rest := str
+	for idx := 0; idx < labels; idx++ {
+		label := rest
+		if j := strings.IndexByte(rest, '.'); j >= 0 {
+			label, rest = rest[:j], rest[j+1:]
+		}
+		if len(label) == 0 || !isASCIIAlnum(label[0]) || !isASCIIAlnum(label[len(label)-1]) {
+			return false
+		}
+		switch {
+		case idx == labels-1:
+			for j := 0; j < len(label); j++ {
+				if !isASCIILetter(label[j]) {
+					return false
+				}
+			}
+		case labels == 2:
+			if maxHyphenRun(label) > 2 {
+				return false
+			}
+		case idx == 0:
+			if len(label) < 2 {
+				return false
+			}
+		case idx == labels-2:
+			if len(label) < 2 || !isASCIIAlnum(label[1]) || maxHyphenRun(label) > 2 {
+				return false
+			}
+		default:
+			if maxHyphenRun(label) > 1 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func isASCIILetter(c byte) bool {
+	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+}
+
+func isASCIIAlnum(c byte) bool {
+	return isASCIILetter(c) || c >= '0' && c <= '9'
+}
+
+// maxHyphenRun returns the length of the longest run of '-' in s.
+func maxHyphenRun(s string) int {
+	best, run := 0, 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == '-' {
+			run++
+			if run > best {
+				best = run
+			}
+		} else {
+			run = 0
+		}
+	}
+	return best
 }
