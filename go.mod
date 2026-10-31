@@ -4,7 +4,7 @@ require (
 	github.com/cloudflare/circl v1.6.4
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
-	github.com/weppos/publicsuffix-go v0.50.4-0.20261018191641-fa5685825dd4
+	github.com/weppos/publicsuffix-go v0.50.4-0.20261029103633-70f1a6e1c795
 	github.com/zmap/zcertificate v0.0.1
 	golang.org/x/crypto v0.58.0
 )
