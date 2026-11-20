@@ -8,9 +8,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/zmap/zcrypto/internal/testenv"
 )
 
 func TestTLSVersions(t *testing.T) {
+	// Dials badssl.com; skipped under -short so CI does not depend on it.
+	testenv.MustHaveExternalNetwork(t)
+
 	tests := []struct {
 		version uint16
 		addr    string
@@ -43,6 +47,9 @@ func TestTLSVersions(t *testing.T) {
 }
 
 func TestCipherSuitesBadSSL(t *testing.T) {
+	// Dials badssl.com; skipped under -short so CI does not depend on it.
+	testenv.MustHaveExternalNetwork(t)
+
 	tests := []struct {
 		cipherSuite uint16
 		addr        string
